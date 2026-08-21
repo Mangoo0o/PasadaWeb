@@ -147,17 +147,23 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     Number(booking.destination_lng) || 120.3250,
   ];
 
-  // Try getting live GPS for driver position
+  // Real-time live GPS tracking for driver movement
   useEffect(() => {
+    let watchId: number | null = null;
     if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
+      watchId = navigator.geolocation.watchPosition(
         (pos) => {
           setDriverCoords([pos.coords.latitude, pos.coords.longitude]);
         },
         () => {},
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
       );
     }
+    return () => {
+      if (watchId !== null && 'geolocation' in navigator) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, []);
 
   const [tripState, setTripState] = useState<'assigned' | 'arrived' | 'in_transit' | 'completed'>(() => {
@@ -166,13 +172,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     return 'assigned';
   });
 
-  // Phase 1 Route: Driver -> Passenger Pickup
+  // Phase 1 Route: Driver -> Passenger Pickup (Cyan)
   const [roadToPickup, setRoadToPickup] = useState<[number, number][]>([
     driverCoords,
     passengerPickupCoords,
   ]);
 
-  // Phase 2 Route: Passenger Pickup -> Destination Drop-off
+  // Phase 2 Route: Driver / Pickup -> Destination Drop-off (Orange)
   const [roadToDestination, setRoadToDestination] = useState<[number, number][]>([
     passengerPickupCoords,
     destinationDropCoords,
@@ -182,18 +188,18 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // Fetch OSRM Road polyline dynamically based on current phase
+  // Dynamically update road polyline matching the active phase
   useEffect(() => {
     let active = true;
 
     if (tripState === 'assigned' || tripState === 'arrived') {
-      // Phase 1: Only fetch driver to passenger route
+      // Phase 1: Route to Passenger Pickup
       fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
         if (active) setRoadToPickup(road);
       });
     } else if (tripState === 'in_transit') {
-      // Phase 2: Only fetch passenger pickup to destination route
-      fetchOSRMRoute(passengerPickupCoords, destinationDropCoords).then((road) => {
+      // Phase 2: Route from Current Location to Destination
+      fetchOSRMRoute(driverCoords, destinationDropCoords).then((road) => {
         if (active) setRoadToDestination(road);
       });
     }
@@ -236,7 +242,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const isHeadingToPickup = tripState === 'assigned' || tripState === 'arrived';
   const activeFocusPoints = isHeadingToPickup
     ? [driverCoords, passengerPickupCoords]
-    : [passengerPickupCoords, destinationDropCoords];
+    : [driverCoords, destinationDropCoords];
 
   return (
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
@@ -315,7 +321,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </>
           ) : (
             <>
-              {/* Path 2: Passenger Pickup to Drop-off Destination (Orange Solid) */}
+              {/* Path 2: Driver to Drop-off Destination (Orange Solid) */}
               <Polyline
                 positions={roadToDestination}
                 pathOptions={{
@@ -326,7 +332,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   lineJoin: 'round',
                 }}
               />
-              <Marker position={passengerPickupCoords} icon={createDriverTricycleIcon()} />
+              <Marker position={driverCoords} icon={createDriverTricycleIcon()} />
               <Marker position={destinationDropCoords} icon={createDestinationIcon()} />
             </>
           )}
