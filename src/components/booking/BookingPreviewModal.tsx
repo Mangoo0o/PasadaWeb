@@ -78,32 +78,27 @@ const createDestinationIcon = () => {
   });
 };
 
-// Auto focus and fit bounds prioritized on the passenger's pickup and destination
+// Auto focus tightly on the passenger's pickup and destination with locked close street zoom
 const FitPassengerFocusBounds: React.FC<{ 
   passengerCoords: [number, number]; 
   destinationCoords: [number, number]; 
-  driverCoords: [number, number];
-}> = ({ passengerCoords, destinationCoords, driverCoords }) => {
+}> = ({ passengerCoords, destinationCoords }) => {
   const map = useMap();
   useEffect(() => {
     if (passengerCoords && destinationCoords) {
-      const points: [number, number][] = [passengerCoords, destinationCoords];
-      
-      // Include driver in bounds if reasonably close in vicinity
-      const latDiff = Math.abs(driverCoords[0] - passengerCoords[0]);
-      const lngDiff = Math.abs(driverCoords[1] - passengerCoords[1]);
-      if (latDiff < 0.04 && lngDiff < 0.04) {
-        points.push(driverCoords);
-      }
-
-      const bounds = L.latLngBounds(points);
+      const bounds = L.latLngBounds([passengerCoords, destinationCoords]);
       map.fitBounds(bounds, { 
-        paddingTopLeft: [70, 40],
-        paddingBottomRight: [200, 40],
-        maxZoom: 16 
+        paddingTopLeft: [40, 30],
+        paddingBottomRight: [80, 30],
+        maxZoom: 16.5
       });
+      if (map.getZoom() < 15) {
+        map.setZoom(15);
+      }
+    } else if (passengerCoords) {
+      map.setView(passengerCoords, 16);
     }
-  }, [map, passengerCoords, destinationCoords, driverCoords]);
+  }, [map, passengerCoords, destinationCoords]);
   return null;
 };
 
@@ -225,7 +220,6 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             <FitPassengerFocusBounds
               passengerCoords={passengerPickupCoords}
               destinationCoords={destinationDropCoords}
-              driverCoords={currentDriverCoords}
             />
 
             {/* Marker 1: Driver Current Location */}
