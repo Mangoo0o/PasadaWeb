@@ -220,7 +220,9 @@ export const updateBookingStatus = async (
 export const fetchActiveTrip = async (userId: string, isDriver = false): Promise<Booking | null> => {
   try {
     const column = isDriver ? 'driver_id' : 'passenger_id';
-    const activeStatuses: BookingStatus[] = ['driver_assigned', 'driver_arrived', 'in_transit'];
+    const activeStatuses: BookingStatus[] = isDriver 
+      ? ['driver_assigned', 'driver_arrived', 'in_transit']
+      : ['searching', 'driver_assigned', 'driver_arrived', 'in_transit'];
     
     const { data, error } = await supabase
       .from('bookings')

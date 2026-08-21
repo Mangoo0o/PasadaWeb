@@ -18,14 +18,26 @@ export const App: React.FC = () => {
     return 'home';
   };
 
-  const [activeTab, setActiveTab] = useState<string>(() => getRoleDefaultTab(user?.role));
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const saved = localStorage.getItem('pasada_active_tab');
+    if (saved) return saved;
+    return getRoleDefaultTab(user?.role);
+  });
 
-  // Sync active tab whenever user or role changes upon login
+  const handleSetActiveTab = (tab: string) => {
+    setActiveTab(tab);
+    localStorage.setItem('pasada_active_tab', tab);
+  };
+
+  // Sync default tab only on initial login if no tab saved
   useEffect(() => {
     if (user?.role) {
-      setActiveTab(getRoleDefaultTab(user.role));
+      const savedTab = localStorage.getItem('pasada_active_tab');
+      if (!savedTab) {
+        handleSetActiveTab(getRoleDefaultTab(user.role));
+      }
     }
-  }, [user?.role, user?.id]);
+  }, [user?.role]);
 
   // Loading state while verifying Supabase session on startup
   if (isLoading) {
@@ -52,7 +64,7 @@ export const App: React.FC = () => {
       case 'home':
         return <PassengerHome />;
       case 'driver':
-        return <DriverDashboard setActiveTab={setActiveTab} />;
+        return <DriverDashboard setActiveTab={handleSetActiveTab} />;
       case 'dispatch':
         return <DriverDispatch />;
       case 'profile':
@@ -64,14 +76,14 @@ export const App: React.FC = () => {
       case 'history':
         return <HistoryAndReceipts />;
       default:
-        return user?.role === 'driver' ? <DriverDashboard setActiveTab={setActiveTab} /> : <PassengerHome />;
+        return user?.role === 'driver' ? <DriverDashboard setActiveTab={handleSetActiveTab} /> : <PassengerHome />;
     }
   };
 
   return (
     <AppShell
       activeTab={activeTab}
-      setActiveTab={setActiveTab}
+      setActiveTab={handleSetActiveTab}
     >
       {renderActiveView()}
     </AppShell>

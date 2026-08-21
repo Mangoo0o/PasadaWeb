@@ -181,22 +181,62 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
     };
   }, [handleUseCurrentGPS]);
 
-  // Listen to active booking updates in realtime
+  // Restore active passenger trip on startup / browser refresh
+  useEffect(() => {
+    let isMounted = true;
+    const initPassengerActiveTrip = async () => {
+      if (user?.id) {
+        const ongoing = await fetchActiveTrip(user.id, false);
+        if (ongoing && isMounted) {
+          setActiveBooking(ongoing);
+          if (ongoing.origin_lat && ongoing.origin_lng) {
+            setOriginLat(ongoing.origin_lat);
+            setOriginLng(ongoing.origin_lng);
+            if (ongoing.origin_name) setOriginName(ongoing.origin_name);
+          }
+          if (ongoing.destination_lat && ongoing.destination_lng) {
+            setDestLat(ongoing.destination_lat);
+            setDestLng(ongoing.destination_lng);
+            if (ongoing.destination_name) {
+              setDestinationName(ongoing.destination_name);
+              setSearchQuery(ongoing.destination_name);
+            }
+          }
+          if (ongoing.estimated_fare) setCurrentFare(ongoing.estimated_fare);
+          if (ongoing.estimated_distance_km) setEstimatedDistance(ongoing.estimated_distance_km);
+
+          if (ongoing.status === 'searching') setBookingState('searching');
+          else if (ongoing.status === 'driver_assigned') setBookingState('assigned');
+          else if (ongoing.status === 'driver_arrived') setBookingState('arrived');
+          else if (ongoing.status === 'in_transit') setBookingState('in_transit');
+          else if (ongoing.status === 'completed') {
+            setBookingState('completed');
+            setShowRatingModal(true);
+          }
+        }
+      }
+    };
+    initPassengerActiveTrip();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  // Subscribe to real-time status updates for active booking
   useEffect(() => {
     if (!activeBooking?.id) return;
 
     const unsubscribe = subscribeToBooking(activeBooking.id, (updated) => {
       setActiveBooking(updated);
-      if (updated.status === 'driver_assigned' || updated.status === 'driver_arrived') {
+      if (updated.status === 'driver_assigned') {
         setBookingState('assigned');
+      } else if (updated.status === 'driver_arrived') {
+        setBookingState('arrived');
       } else if (updated.status === 'in_transit') {
         setBookingState('in_transit');
       } else if (updated.status === 'completed') {
         setBookingState('completed');
-        setTimeout(() => {
-          setBookingState('idle');
-          setActiveBooking(null);
-        }, 4000);
+        setShowRatingModal(true);
       } else if (updated.status === 'cancelled') {
         setBookingState('idle');
         setActiveBooking(null);
