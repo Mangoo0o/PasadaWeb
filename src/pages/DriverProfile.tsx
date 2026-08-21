@@ -49,27 +49,27 @@ export const DriverProfile: React.FC = () => {
     <div className="w-full max-w-2xl mx-auto space-y-5 pt-3 pb-24 px-3 sm:px-4 font-sans">
       
       {/* Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-[#003f87] text-white flex items-center justify-center shadow-md">
-            <UserCheck className="w-5 h-5 text-[#00C1FD]" />
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#003f87] text-white flex items-center justify-center shadow-md shrink-0 aspect-square">
+            <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#00C1FD]" />
           </div>
-          <div>
-            <h1 className="text-sm font-black text-[#003f87] dark:text-[#00C1FD]">
-              Driver Profile &amp; Verification
+          <div className="min-w-0">
+            <h1 className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] truncate">
+              Driver Profile
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium">
-              Bauang Municipal Transport Licensing (MTFRB)
+            <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">
+              Bauang MTFRB Licensing
             </p>
           </div>
         </div>
 
         <button
           onClick={signOut}
-          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer"
+          className="p-1.5 sm:p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer shrink-0"
           title="Sign Out"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
       </header>
 
