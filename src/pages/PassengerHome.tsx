@@ -8,7 +8,13 @@ import {
   LogIn,
   LogOut,
   AlertCircle,
-  X
+  X,
+  Star,
+  ShieldCheck,
+  CheckCircle2,
+  MapPin,
+  Sparkles,
+  Navigation
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -25,7 +31,9 @@ import {
   createBookingRequest, 
   subscribeToBooking, 
   updateBookingStatus, 
-  fetchActiveDrivers 
+  fetchActiveDrivers,
+  fetchActiveTrip,
+  submitPassengerRating
 } from '../services/bookingService';
 import { setAppLanguage } from '../i18n/config';
 
@@ -64,7 +72,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
   // Active Booking
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
-  const [bookingState, setBookingState] = useState<'idle' | 'searching' | 'assigned' | 'in_transit' | 'completed'>('idle');
+  const [bookingState, setBookingState] = useState<'idle' | 'searching' | 'assigned' | 'arrived' | 'in_transit' | 'completed'>('idle');
+
+  // Rating & Review State
+  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [ratingScore, setRatingScore] = useState<number>(5);
+  const [ratingComment, setRatingComment] = useState<string>('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState<boolean>(false);
+  const [hasRated, setHasRated] = useState<boolean>(false);
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
@@ -289,6 +304,30 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
     setActiveBooking(null);
   };
 
+  const handleSubmitRating = async () => {
+    if (!activeBooking || !user) return;
+    setIsSubmittingRating(true);
+    const driverId = activeBooking.driver_id || activeBooking.driver?.id;
+    if (driverId) {
+      await submitPassengerRating({
+        bookingId: activeBooking.id,
+        driverId,
+        passengerId: user.id,
+        rating: ratingScore,
+        comment: ratingComment
+      });
+    }
+    setIsSubmittingRating(false);
+    setHasRated(true);
+    setTimeout(() => {
+      setShowRatingModal(false);
+      setBookingState('idle');
+      setActiveBooking(null);
+      setHasRated(false);
+      setRatingComment('');
+    }, 1200);
+  };
+
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
       {/* 1. Full Screen Interactive Map */}
@@ -327,7 +366,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               {searchQuery && (
                 <button
                   onClick={handleClearDestination}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -348,117 +387,112 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
             {user ? (
               <button
                 onClick={signOut}
-                className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors shrink-0 border border-rose-200 cursor-pointer"
+                className="p-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold transition-all shrink-0 cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             ) : (
               <button
-                onClick={signOut}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-black bg-[#00C1FD] text-[#00346F] shadow-sm hover:bg-sky-400 active:scale-95 transition-all shrink-0 cursor-pointer"
+                onClick={onOpenAuthModal}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold bg-[#00346F] text-white hover:bg-[#00234d] transition-all shadow-sm shrink-0 cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Login</span>
+                <LogIn className="w-3.5 h-3.5 text-[#00C1FD]" />
+                <span className="text-[11px]">Login</span>
               </button>
             )}
           </div>
-
-          {/* Autocomplete Search Dropdown for Location-Based Fares */}
-          {isSearchFocused && searchQuery.trim().length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 max-h-60 overflow-y-auto space-y-1">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">
-                Mga Destinasyon:
-              </div>
-              {locationFares
-                .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
-                .map(loc => (
-                  <div
-                    key={loc.id}
-                    onClick={() => handleSelectLocationFare(loc)}
-                    className="p-2 rounded-lg hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition-colors border border-transparent hover:border-sky-200"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950 text-base flex items-center justify-center shrink-0">
-                        {getLocationIconEmoji(loc.icon, loc.location_name)}
-                      </span>
-                      <div>
-                        <div className="text-xs font-black text-slate-800 dark:text-slate-100">
-                          {loc.location_name}
-                        </div>
-                        <div className="text-[10px] text-slate-500">
-                          {loc.notes || 'Official LGU Tariff Zone'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                        ₱{Number(loc.standard_fare).toFixed(2)}
-                      </div>
-                      <span className="text-[9px] font-bold text-[#00346F] dark:text-[#00C1FD] bg-sky-50 dark:bg-sky-950 px-1.5 py-0.5 rounded">
-                        Fixed Tariff
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* 3. BOTTOM FLOATING ACTION BAR: ONLY SHOWN WHEN A LOCATION IS SELECTED OR WHEN TRIP IS ACTIVE */}
-      {(hasSelectedDestination || bookingState !== 'idle') && (
-        <div className="absolute bottom-20 sm:bottom-6 left-3.5 right-3.5 max-w-lg mx-auto z-40 animate-in fade-in slide-in-from-bottom-3 duration-200">
+      {/* 3. SEARCH AUTOCOMPLETE DROPDOWN */}
+      {isSearchFocused && (
+        <div className="absolute top-[72px] sm:top-[76px] left-3 right-3 max-w-xl mx-auto z-40 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[60vh] flex flex-col animate-in fade-in slide-in-from-top-2">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Mga Destinasyon sa Bauang
+            </span>
+            <button
+              onClick={() => setIsSearchFocused(false)}
+              className="text-xs font-bold text-[#00346F] dark:text-[#00C1FD] hover:underline cursor-pointer"
+            >
+              Isara
+            </button>
+          </div>
+
+          <div className="overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1">
+            {locationFares
+                .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
+                .map((loc) => {
+              const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
+              const price = isDiscountEligible ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)) : Number(loc.standard_fare);
+
+              return (
+                <button
+                  key={loc.id}
+                  onClick={() => handleSelectLocationFare(loc)}
+                  className="w-full p-3 text-left hover:bg-sky-50 dark:hover:bg-slate-800/80 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-xl shrink-0 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-white dark:group-hover:bg-slate-700 shadow-sm transition-colors">
+                      {emoji}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-[#00346F] dark:group-hover:text-[#00C1FD]">
+                        {loc.location_name}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0 pl-2">
+                    <span className="text-xs sm:text-sm font-black text-[#00346F] dark:text-[#00C1FD] block">
+                      ₱{price.toFixed(2)}
+                    </span>
+                    {isDiscountEligible && (
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block">
+                        20% OFF
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 4. BOTTOM FLOATING ACTION BAR & DISPATCH TRACKER */}
+      {hasSelectedDestination && (
+        <div className="absolute bottom-20 sm:bottom-22 left-3 right-3 max-w-xl mx-auto z-40 space-y-2">
+          
+          {/* Booking Error Notice */}
           {bookingError && (
-            <div className="mb-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 shadow-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-bold flex items-center gap-2 shadow-sm animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{bookingError}</span>
             </div>
           )}
 
-          {/* Idle State: Bottom Left Estimated Price Rate + Bottom Right Book Button */}
+          {/* Idle Booking Setup Card */}
           {bookingState === 'idle' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.2)] p-3 sm:p-3.5 flex items-center justify-between gap-3 relative overflow-visible">
-              {/* Floating Clear (X) Button outside on the top-right edge */}
-              <button
-                onClick={handleClearDestination}
-                className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:scale-110 active:scale-95 flex items-center justify-center transition-all cursor-pointer z-10"
-                title="Clear destination"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Left Side: Estimated Price Rate & Destination with Icon */}
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-lg shrink-0">
-                  {getLocationIconEmoji(selectedLocationFare?.icon, selectedLocationFare?.location_name || destinationName)}
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.2)] p-3.5 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00346F] to-[#0056b3] text-white flex items-center justify-center font-black text-sm shadow shrink-0">
+                  ₱{currentFare}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-                    Estimated Price Rate
-                  </span>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl sm:text-3xl font-black text-[#00346F] dark:text-[#00C1FD] tracking-tight">
-                      ₱{currentFare}.00
-                    </span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
-                      isDiscountEligible
-                        ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800'
-                        : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
-                    }`}>
-                      {getPassengerTypeLabel()}
-                    </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                    {estimatedDistance} km • ~{Math.max(4, Math.round(estimatedDistance * 3.5))} min
                   </div>
-                  <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[170px] sm:max-w-xs">
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                     {selectedLocationFare?.location_name || destinationName}
                   </div>
                 </div>
               </div>
 
-              {/* Right Side: Book CTA Button */}
               <button
                 onClick={handleStartBooking}
-                className="px-5 sm:px-6 h-[44px] bg-gradient-to-r from-[#00346F] to-[#004A99] text-white rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 shadow-[0_4px_16px_rgba(0,52,111,0.28)] hover:from-[#00234d] hover:to-[#00346F] active:scale-[0.97] transition-all cursor-pointer shrink-0"
+                className="px-5 py-3 bg-[#00346F] hover:bg-[#00234d] text-white rounded-xl font-black text-xs sm:text-sm shadow-md shadow-[#00346F]/25 flex items-center gap-2 active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 <Bike className="w-4 h-4 text-[#00C1FD]" />
                 <span>Mag-book</span>
@@ -466,86 +500,213 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
             </div>
           )}
 
-          {/* Searching State */}
+          {/* Searching Dispatch State */}
           {bookingState === 'searching' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.2)] p-3.5 text-center space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xl p-4 text-center space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-center gap-3">
-                <div className="relative w-8 h-8 flex items-center justify-center">
+                <div className="relative w-9 h-9 flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full bg-sky-200 animate-ping"></div>
-                  <div className="w-7 h-7 rounded-lg bg-[#00346F] text-white flex items-center justify-center relative z-10 shadow">
-                    <Bike className="w-3.5 h-3.5 text-[#00C1FD] animate-bounce" />
+                  <div className="w-8 h-8 rounded-xl bg-[#00346F] text-white flex items-center justify-center relative z-10 shadow">
+                    <Bike className="w-4 h-4 text-[#00C1FD] animate-bounce" />
                   </div>
                 </div>
                 <div className="text-left">
-                  <h4 className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100">
-                    Naghahanap ng Driver...
+                  <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                    Naghahanap ng Driver sa Bauang...
                   </h4>
-                  <p className="text-[10px] text-slate-500">
-                    {selectedLocationFare?.location_name || destinationName} • ₱{currentFare}.00
+                  <p className="text-xs text-slate-500">
+                    {selectedLocationFare?.location_name || destinationName} • <strong>₱{currentFare}.00</strong>
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={handleCancelBooking}
-                className="w-full py-2 rounded-lg bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
               >
                 Kanselahin ang Booking
               </button>
             </div>
           )}
 
-          {/* Real Driver Assigned / In Transit Card */}
-          {(bookingState === 'assigned' || bookingState === 'in_transit') && activeBooking && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.2)] p-3 space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
+          {/* Real Driver Assigned / En Route Card */}
+          {bookingState === 'assigned' && activeBooking && (
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#00346F]/30 dark:border-sky-500/30 shadow-xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-[#00346F] dark:bg-sky-950 dark:text-[#00C1FD] flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#00C1FD]" />
+                  <span>PAPUNTA NA SI MANONG DRIVER</span>
+                </span>
+                <span className="text-xs font-black text-emerald-600">
+                  ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                </span>
+              </div>
+
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#00346F] text-white flex items-center justify-center font-black text-sm shadow shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#00346F] text-white flex items-center justify-center font-black text-lg shadow-md shrink-0 border-2 border-white">
                   {activeBooking.driver?.profile?.full_name?.charAt(0) || 'D'}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 truncate">
-                    {activeBooking.driver?.profile?.full_name || 'Assigned Driver'}
-                  </h4>
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
-                    <span className="font-bold text-[#00346F] dark:text-[#00C1FD]">#{activeBooking.driver?.body_number || 'BODY'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="font-black text-sm text-slate-900 dark:text-slate-100 truncate">
+                      {activeBooking.driver?.profile?.full_name || 'Juan Dela Cruz (Driver)'}
+                    </h4>
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  </div>
+                  <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 font-mono font-bold text-[11px] text-[#00346F] dark:text-[#00C1FD]">
+                      Body #{activeBooking.driver?.body_number || '0142'}
+                    </span>
                     <span>•</span>
-                    <span>₱{Number(activeBooking.estimated_fare).toFixed(2)}</span>
+                    <span className="font-semibold">{activeBooking.driver?.plate_number || '1234-AB'}</span>
                   </div>
                 </div>
 
                 {activeBooking.driver?.profile?.phone_number && (
                   <a
                     href={`tel:${activeBooking.driver.profile.phone_number}`}
-                    className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 shrink-0 transition-transform active:scale-95"
+                    className="p-3 rounded-xl bg-emerald-600 text-white shadow-md hover:bg-emerald-700 shrink-0 transition-transform active:scale-95 flex items-center justify-center"
+                    title="Tawagan ang Driver"
                   >
-                    <PhoneCall className="w-3.5 h-3.5" />
+                    <PhoneCall className="w-4 h-4" />
                   </a>
                 )}
               </div>
-
-              <button
-                onClick={handleCancelBooking}
-                className="w-full py-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold text-[11px] hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
-              >
-                I-cancel ang Byahe
-              </button>
             </div>
           )}
 
-          {/* Trip Completed State */}
-          {bookingState === 'completed' && activeBooking && (
-            <div className="bg-emerald-50 backdrop-blur-md rounded-xl border border-emerald-200 shadow-[0_8px_30px_rgba(16,185,129,0.2)] p-3 text-center animate-in fade-in slide-in-from-bottom-2">
-              <h4 className="font-black text-xs sm:text-sm text-emerald-800">
-                Tapos na ang Byahe! Salamat sa Pagsakay!
-              </h4>
-              <p className="text-[11px] text-emerald-700 mt-0.5">
-                Kabuuang Bayarin: <strong>₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}</strong>
+          {/* Driver Arrived Notification Banner */}
+          {bookingState === 'arrived' && activeBooking && (
+            <div className="bg-emerald-500 text-white rounded-2xl p-4 shadow-xl space-y-2 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-amber-300 animate-pulse" />
+                <h4 className="font-black text-sm">
+                  Nasa Sakayan Na ang Iyong Tricycle!
+                </h4>
+              </div>
+              <p className="text-xs text-emerald-100">
+                Paki-abangan si Manong Driver na may <strong>Body #{activeBooking.driver?.body_number || '0142'}</strong> (Plate: {activeBooking.driver?.plate_number || '1234-AB'}).
               </p>
             </div>
           )}
+
+          {/* In Transit Active Journey Banner */}
+          {bookingState === 'in_transit' && activeBooking && (
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#FF6B00]/40 shadow-xl p-4 space-y-2 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                  KASALUKUYANG BUMIBIYAHE
+                </span>
+                <span className="text-xs font-black text-[#00346F] dark:text-[#00C1FD]">
+                  ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                </span>
+              </div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Patungong: {selectedLocationFare?.location_name || destinationName}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
+
+      {/* 5. PASSENGER E-RECEIPT & 5-STAR REVIEW RATING MODAL */}
+      {showRatingModal && activeBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+            
+            {hasRated ? (
+              <div className="py-8 space-y-2 animate-in zoom-in">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  Salamat sa Feedback!
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Naitatala na ang iyong rating sa profile ng driver.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-[#00346F] text-[#00C1FD] flex items-center justify-center mx-auto shadow-md">
+                  <Bike className="w-6 h-6" />
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    Tapos na ang Biyahe!
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Salamat sa pagsakay kasama si {activeBooking.driver?.profile?.full_name || 'Driver'}.
+                  </p>
+                </div>
+
+                {/* E-Receipt Strip */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
+                  <div className="text-left">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Bayad na Pamasahe</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {activeBooking.destination_name}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black text-[#00346F] dark:text-[#00C1FD]">
+                      ₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Interactive 5-Star Selector */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                    I-rate ang serbisyo ni Manong Driver:
+                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setRatingScore(star)}
+                        className="p-1.5 transition-transform active:scale-125 cursor-pointer"
+                      >
+                        <Star
+                          className={`w-7 h-7 transition-colors ${
+                            star <= ratingScore
+                              ? 'text-amber-400 fill-amber-400 drop-shadow-sm'
+                              : 'text-slate-300 dark:text-slate-600'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Optional Review Comment */}
+                <textarea
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
+                  placeholder="Mag-iwan ng komento (hal. Maingat magmaneho, magalang)..."
+                  rows={2}
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00346F]/20 resize-none"
+                />
+
+                {/* Submit CTA */}
+                <button
+                  onClick={handleSubmitRating}
+                  disabled={isSubmittingRating}
+                  className="w-full py-3.5 rounded-full bg-[#00346F] hover:bg-[#00234d] text-white font-bold text-sm shadow-lg shadow-[#00346F]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
+                  <span>{isSubmittingRating ? 'Isinusumite...' : 'Ipadala ang Rating at Tapusin'}</span>
+                </button>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

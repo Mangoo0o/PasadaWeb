@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Bike, 
@@ -19,10 +19,27 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { fetchDriverReviews } from '../services/bookingService';
 
 export const DriverProfile: React.FC = () => {
   const { t } = useTranslation();
   const { user, driverProfile, signOut } = useAuth();
+  const [liveReviews, setLiveReviews] = useState<Array<{
+    id: string;
+    rating: number;
+    comment: string;
+    created_at: string;
+    passenger_name?: string;
+    route?: string;
+  }>>([]);
+
+  useEffect(() => {
+    if (driverProfile?.id || user?.id) {
+      fetchDriverReviews(driverProfile?.id || user?.id || '').then((revs) => {
+        if (revs.length > 0) setLiveReviews(revs);
+      });
+    }
+  }, [driverProfile?.id, user?.id]);
 
   if (!user || user.role !== 'driver') {
     return null;
@@ -159,80 +176,85 @@ export const DriverProfile: React.FC = () => {
         </div>
         
         <div className="space-y-2.5">
-          {/* Review 1 */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-sky-100 text-[#003f87] font-bold text-xs flex items-center justify-center">
-                  M
+          {liveReviews.length > 0 ? (
+            liveReviews.map((rev) => (
+              <div key={rev.id} className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-sky-100 text-[#003f87] font-bold text-xs flex items-center justify-center">
+                      {rev.passenger_name?.charAt(0) || 'P'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 block">{rev.passenger_name}</span>
+                      <span className="text-[10px] text-slate-400">{rev.route || 'Bauang Tricycle Service'}</span>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400">
+                    {Array.from({ length: rev.rating }).map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 block">Maria Santos</span>
-                  <span className="text-[10px] text-slate-400">Poblacion ➔ Taberna Beach</span>
+                {rev.comment && (
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
+                    "{rev.comment}"
+                  </p>
+                )}
+              </div>
+            ))
+          ) : (
+            <>
+              {/* Review 1 */}
+              <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-sky-100 text-[#003f87] font-bold text-xs flex items-center justify-center">
+                      M
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 block">Maria Santos</span>
+                      <span className="text-[10px] text-slate-400">Poblacion ➔ Taberna Beach</span>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  </div>
                 </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
+                  "Napakabait ni Manong Driver at maingat magpatakbo. Tamang taripa ang siningil patungong tabing-dagat."
+                </p>
               </div>
-              <div className="flex text-amber-400">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
-              "Napakabait ni Manong Driver at maingat magpatakbo. Tamang taripa ang siningil patungong tabing-dagat."
-            </p>
-          </div>
 
-          {/* Review 2 */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center">
-                  J
+              {/* Review 2 */}
+              <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center">
+                      J
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 block">Juan Dela Peña</span>
+                      <span className="text-[10px] text-slate-400">Bauang Market ➔ Central TODA</span>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  </div>
                 </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 block">Juan Dela Peña</span>
-                  <span className="text-[10px] text-slate-400">Bauang Market ➔ Central TODA</span>
-                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
+                  "Mabilis dumating sa sakayan. Sakto sa rate ng PasadaGuide at malinis ang tricycle."
+                </p>
               </div>
-              <div className="flex text-amber-400">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
-              "Mabilis dumating sa sakayan. Sakto sa rate ng PasadaGuide at malinis ang tricycle."
-            </p>
-          </div>
-
-          {/* Review 3 */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
-                  C
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 block">Carlos E.</span>
-                  <span className="text-[10px] text-slate-400">Acao ➔ Saints Peter &amp; Paul Church</span>
-                </div>
-              </div>
-              <div className="flex text-amber-400">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-              </div>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic bg-slate-50/70 dark:bg-slate-800/50 p-2.5 rounded-xl">
-              "Magalang at tapat sa pamasahe. Maraming salamat Ka-Pasada!"
-            </p>
-          </div>
+            </>
+          )}
         </div>
       </section>
 

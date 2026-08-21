@@ -152,7 +152,7 @@ export const updateBookingStatus = async (
   try {
     const updates: any = { status };
     if (driverId) updates.driver_id = driverId;
-    if (finalFare) updates.final_fare = finalFare;
+    if (finalFare !== undefined) updates.final_fare = finalFare;
     if (status === 'driver_assigned') updates.accepted_at = new Date().toISOString();
     if (status === 'driver_arrived') updates.arrived_at = new Date().toISOString();
     if (status === 'in_transit') updates.started_at = new Date().toISOString();
@@ -164,9 +164,162 @@ export const updateBookingStatus = async (
       .eq('id', bookingId);
 
     if (error) throw error;
+
+    // Driver State Synchronization
+    if (driverId) {
+      if (status === 'driver_assigned') {
+        // Lock driver from receiving new calls while on trip
+        await supabase
+          .from('drivers')
+          .update({ is_available: false })
+          .eq('id', driverId);
+      } else if (status === 'completed') {
+        // Restore driver availability and increment metrics
+        try {
+          const { data: driverData } = await supabase
+            .from('drivers')
+            .select('earnings_today, total_trips')
+            .eq('id', driverId)
+            .single();
+
+          const prevEarnings = Number(driverData?.earnings_today || 0);
+          const prevTrips = Number(driverData?.total_trips || 0);
+          const addedFare = Number(finalFare || 0);
+
+          await supabase
+            .from('drivers')
+            .update({
+              is_available: true,
+              earnings_today: prevEarnings + addedFare,
+              total_trips: prevTrips + 1
+            })
+            .eq('id', driverId);
+        } catch {
+          await supabase
+            .from('drivers')
+            .update({ is_available: true })
+            .eq('id', driverId);
+        }
+      }
+    }
+
+    // Also update local storage dispatches queue for instant same-browser testing tabs
+    try {
+      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+      const updatedQueue = queue.map((b: Booking) => b.id === bookingId ? { ...b, ...updates } : b);
+      localStorage.setItem('pasada_open_queue', JSON.stringify(updatedQueue));
+      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status } }));
+    } catch {}
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
+  }
+};
+
+export const fetchActiveTrip = async (userId: string, isDriver = false): Promise<Booking | null> => {
+  try {
+    const column = isDriver ? 'driver_id' : 'passenger_id';
+    const activeStatuses: BookingStatus[] = ['driver_assigned', 'driver_arrived', 'in_transit'];
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles(*)')
+      .eq(column, userId)
+      .in('status', activeStatuses)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      // Fallback simple query
+      const fallback = await supabase
+        .from('bookings')
+        .select('*')
+        .eq(column, userId)
+        .in('status', activeStatuses)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return fallback.data as Booking | null;
+    }
+
+    return data as Booking;
+  } catch {
+    return null;
+  }
+};
+
+export const submitPassengerRating = async (params: {
+  bookingId: string;
+  driverId: string;
+  passengerId: string;
+  rating: number;
+  comment?: string;
+}): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from('ratings')
+      .insert({
+        booking_id: params.bookingId,
+        driver_id: params.driverId,
+        passenger_id: params.passengerId,
+        rating: params.rating,
+        comment: params.comment || ''
+      });
+
+    if (error) throw error;
+
+    // Recalculate Driver Average Rating
+    try {
+      const { data: allRatings } = await supabase
+        .from('ratings')
+        .select('rating')
+        .eq('driver_id', params.driverId);
+
+      if (allRatings && allRatings.length > 0) {
+        const sum = allRatings.reduce((acc, r) => acc + Number(r.rating || 5), 0);
+        const avg = Math.round((sum / allRatings.length) * 100) / 100;
+        await supabase
+          .from('drivers')
+          .update({ rating_avg: avg })
+          .eq('id', params.driverId);
+      }
+    } catch {}
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+};
+
+export const fetchDriverReviews = async (driverId: string): Promise<Array<{
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  passenger_name?: string;
+  route?: string;
+}>> => {
+  try {
+    const { data, error } = await supabase
+      .from('ratings')
+      .select('*, passenger:profiles(full_name), booking:bookings(origin_name, destination_name)')
+      .eq('driver_id', driverId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error || !data) return [];
+    return data.map((r: any) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      created_at: r.created_at,
+      passenger_name: r.passenger?.full_name || 'Ka-Pasada Commuter',
+      route: r.booking ? `${r.booking.origin_name} ➔ ${r.booking.destination_name}` : undefined
+    }));
+  } catch {
+    return [];
   }
 };
 
@@ -203,14 +356,12 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
 
     const serverBookings: Booking[] = (!error && data) ? (data as Booking[]) : [];
     
-    // Read local queue for instant tab sync
     let localQueue: Booking[] = [];
     try {
       localQueue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]')
         .filter((b: Booking) => b.status === 'searching');
     } catch {}
 
-    // Merge and deduplicate
     const map = new Map<string, Booking>();
     [...serverBookings, ...localQueue].forEach(b => {
       if (b && b.id && !map.has(b.id)) {

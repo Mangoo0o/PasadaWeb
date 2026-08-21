@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
-import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches } from '../services/bookingService';
+import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 
 export const DriverDispatch: React.FC = () => {
@@ -27,9 +27,19 @@ export const DriverDispatch: React.FC = () => {
   const [activeTrip, setActiveTrip] = useState<Booking | null>(null);
   const [tripState, setTripState] = useState<'idle' | 'assigned' | 'arrived' | 'in_transit' | 'completed'>('idle');
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
+  const [completedFare, setCompletedFare] = useState<number | null>(null);
 
   useEffect(() => {
     const loadDispatches = async () => {
+      if (user?.id) {
+        const existingActive = await fetchActiveTrip(user.id, true);
+        if (existingActive) {
+          setActiveTrip(existingActive);
+          if (existingActive.status === 'driver_assigned') setTripState('assigned');
+          else if (existingActive.status === 'driver_arrived') setTripState('arrived');
+          else if (existingActive.status === 'in_transit') setTripState('in_transit');
+        }
+      }
       const dispatches = await fetchOpenDispatches();
       setOpenDispatches(dispatches);
     };
@@ -44,37 +54,41 @@ export const DriverDispatch: React.FC = () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, []);
+  }, [user?.id]);
 
   const handleAcceptBooking = async (booking: Booking) => {
     setActiveTrip(booking);
     setTripState('assigned');
-    await updateBookingStatus(booking.id, 'driver_assigned', driverProfile?.id);
+    await updateBookingStatus(booking.id, 'driver_assigned', driverProfile?.id || user?.id);
   };
 
   const handleArrivePickup = async () => {
     setTripState('arrived');
     if (activeTrip) {
-      await updateBookingStatus(activeTrip.id, 'driver_arrived');
+      await updateBookingStatus(activeTrip.id, 'driver_arrived', driverProfile?.id || user?.id);
     }
   };
 
   const handleStartTrip = async () => {
     setTripState('in_transit');
     if (activeTrip) {
-      await updateBookingStatus(activeTrip.id, 'in_transit');
+      await updateBookingStatus(activeTrip.id, 'in_transit', driverProfile?.id || user?.id);
     }
   };
 
   const handleCompleteTrip = async () => {
-    setTripState('completed');
     if (activeTrip) {
-      await updateBookingStatus(activeTrip.id, 'completed', driverProfile?.id, activeTrip.estimated_fare);
+      const fare = activeTrip.estimated_fare;
+      setTripState('completed');
+      setCompletedFare(fare);
+      await updateBookingStatus(activeTrip.id, 'completed', driverProfile?.id || user?.id, fare);
     }
-    setTimeout(() => {
-      setActiveTrip(null);
-      setTripState('idle');
-    }, 2500);
+  };
+
+  const handleDismissCompleted = () => {
+    setActiveTrip(null);
+    setTripState('idle');
+    setCompletedFare(null);
   };
 
   if (!user || user.role !== 'driver') {
@@ -249,6 +263,42 @@ export const DriverDispatch: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Trip Completed Cash Collection Summary Dialog */}
+      {completedFare !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Matagumpay na Naitawid!
+              </h3>
+              <p className="text-xs text-slate-500">
+                Naihatid nang maayos ang pasahero sa destinasyon.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
+              <span className="text-[10px] uppercase font-black text-emerald-800 dark:text-emerald-300">
+                Singiling Pamasahe (Cash)
+              </span>
+              <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                ₱{completedFare.toFixed(2)}
+              </div>
+            </div>
+
+            <button
+              onClick={handleDismissCompleted}
+              className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 active:scale-98 transition-all cursor-pointer"
+            >
+              Bumalik sa Pila ng Terminal
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Booking Route Preview Modal */}
       {previewBooking && (
