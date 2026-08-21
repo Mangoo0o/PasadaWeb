@@ -4,6 +4,8 @@ import { AppShell } from './components/layout/AppShell';
 import { AuthPage } from './pages/AuthPage';
 import { PassengerHome } from './pages/PassengerHome';
 import { DriverDashboard } from './pages/DriverDashboard';
+import { DriverDispatch } from './pages/DriverDispatch';
+import { DriverProfile } from './pages/DriverProfile';
 import { AdminPortal } from './pages/AdminPortal';
 import { TouristGuide } from './pages/TouristGuide';
 import { HistoryAndReceipts } from './pages/HistoryAndReceipts';
@@ -50,7 +52,11 @@ export const App: React.FC = () => {
       case 'home':
         return <PassengerHome />;
       case 'driver':
-        return <DriverDashboard />;
+        return <DriverDashboard setActiveTab={setActiveTab} />;
+      case 'dispatch':
+        return <DriverDispatch />;
+      case 'profile':
+        return <DriverProfile />;
       case 'admin':
         return <AdminPortal />;
       case 'tourist':
@@ -58,7 +64,7 @@ export const App: React.FC = () => {
       case 'history':
         return <HistoryAndReceipts />;
       default:
-        return <PassengerHome />;
+        return user?.role === 'driver' ? <DriverDashboard setActiveTab={setActiveTab} /> : <PassengerHome />;
     }
   };
 

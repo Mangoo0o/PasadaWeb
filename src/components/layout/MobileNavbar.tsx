@@ -5,7 +5,9 @@ import {
   Compass, 
   History, 
   ShieldCheck, 
-  Navigation 
+  Navigation,
+  User,
+  LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -21,10 +23,10 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
   const getTabs = () => {
     if (user?.role === 'driver') {
       return [
-        { id: 'driver', label: 'Dashboard', icon: Navigation },
-        { id: 'home', label: 'Mapa', icon: Bike },
-        { id: 'history', label: 'Kasaysayan', icon: History },
-        { id: 'tourist', label: 'Galaan', icon: Compass },
+        { id: 'driver', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'dispatch', label: 'Dispatch', icon: Navigation },
+        { id: 'history', label: 'History', icon: History },
+        { id: 'profile', label: 'Profile', icon: User },
       ];
     }
     if (user?.role === 'admin') {
