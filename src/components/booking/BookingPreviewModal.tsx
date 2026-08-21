@@ -289,8 +289,8 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
         {/* 2. SMOOTH GRADIENT OVERLAY (Fades smoothly to transparent upward so map is visible) */}
         <div className="absolute bottom-0 left-0 right-0 z-[400] pt-16 pb-5 px-5 bg-gradient-to-t from-white via-white/95 via-70% to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:via-70% dark:to-transparent flex flex-col space-y-3.5 pointer-events-auto">
           
-          {/* Simple Clean Route Summary */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm space-y-2">
+          {/* Simple Clean Route Summary Directly on Gradient */}
+          <div className="space-y-2 px-1">
             {/* Pickup */}
             <div className="flex items-start gap-2.5">
               <div className="w-2.5 h-2.5 rounded-full bg-[#00A3FF] ring-4 ring-[#00A3FF]/20 shrink-0 mt-1"></div>
@@ -305,7 +305,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
 
             {/* Connecting Line */}
-            <div className="border-l-2 border-dashed border-slate-200 dark:border-slate-700 ml-1 h-2"></div>
+            <div className="border-l-2 border-dashed border-slate-300 dark:border-slate-700 ml-1 h-2"></div>
 
             {/* Destination */}
             <div className="flex items-start gap-2.5">
