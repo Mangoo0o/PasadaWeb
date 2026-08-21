@@ -173,7 +173,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md h-[540px] sm:h-[580px] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
+      <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md h-[640px] sm:h-[700px] max-h-[92vh] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
         
         {/* Floating Close Button */}
         <button
