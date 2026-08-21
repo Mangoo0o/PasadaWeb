@@ -195,6 +195,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <MapContainer
         center={defaultCenter}
         zoom={14}
+        zoomControl={false}
         scrollWheelZoom={true}
         className="w-full h-full"
       >

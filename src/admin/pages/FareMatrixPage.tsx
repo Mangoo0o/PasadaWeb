@@ -349,6 +349,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             <MapContainer
               center={[16.5333, 120.3333]}
               zoom={14}
+              zoomControl={false}
               scrollWheelZoom={true}
               style={{ width: '100%', height: '100%' }}
             >
@@ -578,6 +579,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     <MapContainer
                       center={[lat, lng]}
                       zoom={14}
+                      zoomControl={false}
                       style={{ width: '100%', height: '100%' }}
                     >
                       <TileLayer

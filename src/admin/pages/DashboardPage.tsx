@@ -221,6 +221,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <MapContainer
               center={[16.5333, 120.3333]}
               zoom={13}
+              zoomControl={false}
               style={{ height: '100%', width: '100%' }}
             >
               <TileLayer
