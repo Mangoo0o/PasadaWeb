@@ -78,19 +78,32 @@ const createDestinationIcon = () => {
   });
 };
 
-// Auto fit bounds for all 3 points, offset slightly upward so bottom sheet doesn't occlude
-const FitMultiBounds: React.FC<{ points: [number, number][] }> = ({ points }) => {
+// Auto focus and fit bounds prioritized on the passenger's pickup and destination
+const FitPassengerFocusBounds: React.FC<{ 
+  passengerCoords: [number, number]; 
+  destinationCoords: [number, number]; 
+  driverCoords: [number, number];
+}> = ({ passengerCoords, destinationCoords, driverCoords }) => {
   const map = useMap();
   useEffect(() => {
-    if (points.length >= 2) {
+    if (passengerCoords && destinationCoords) {
+      const points: [number, number][] = [passengerCoords, destinationCoords];
+      
+      // Include driver in bounds if reasonably close in vicinity
+      const latDiff = Math.abs(driverCoords[0] - passengerCoords[0]);
+      const lngDiff = Math.abs(driverCoords[1] - passengerCoords[1]);
+      if (latDiff < 0.04 && lngDiff < 0.04) {
+        points.push(driverCoords);
+      }
+
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { 
-        paddingTopLeft: [50, 40],
-        paddingBottomRight: [180, 40],
+        paddingTopLeft: [70, 40],
+        paddingBottomRight: [200, 40],
         maxZoom: 16 
       });
     }
-  }, [map, points]);
+  }, [map, passengerCoords, destinationCoords, driverCoords]);
   return null;
 };
 
@@ -196,11 +209,11 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
           </div>
         </div>
 
-        {/* 1. FULL-MODAL BLEED MAP */}
+        {/* 1. FULL-MODAL BLEED MAP (Auto centered on Passenger) */}
         <div className="absolute inset-0 w-full h-full z-0 bg-slate-100 dark:bg-slate-800">
           <MapContainer
-            center={currentDriverCoords}
-            zoom={14}
+            center={passengerPickupCoords}
+            zoom={15}
             className="w-full h-full"
             zoomControl={false}
           >
@@ -209,8 +222,10 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            <FitMultiBounds
-              points={[currentDriverCoords, passengerPickupCoords, destinationDropCoords]}
+            <FitPassengerFocusBounds
+              passengerCoords={passengerPickupCoords}
+              destinationCoords={destinationDropCoords}
+              driverCoords={currentDriverCoords}
             />
 
             {/* Marker 1: Driver Current Location */}
