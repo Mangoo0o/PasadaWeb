@@ -247,54 +247,48 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
       
-      {/* 1. TOP DUAL-LOCATION HUD BAR */}
-      <div className="absolute top-4 left-3 right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl p-3.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+      {/* 1. TOP GRADIENT OVERLAY (Fades smoothly to transparent downward so map is visible) */}
+      <div className="absolute top-0 left-0 right-0 z-[10000] pt-4 pb-12 px-4 sm:px-6 bg-gradient-to-b from-white via-white/95 via-75% to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:via-75% dark:to-transparent pointer-events-auto">
+        <div className="max-w-lg mx-auto space-y-2">
           
-          {/* Header Row: Active Phase Badge + Phone Action + Fare */}
-          <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`w-2.5 h-2.5 rounded-full ${isHeadingToPickup ? 'bg-[#00A3FF]' : 'bg-[#FF6B00]'} animate-pulse shrink-0`}></span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
-                {isHeadingToPickup ? '1. Pupunta sa Sakayan' : '2. Patungo sa Babaan'}
-              </span>
+          {/* Top Info Bar: Fare & Quick Passenger Call */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
               {booking.passenger?.full_name && (
-                <span className="text-[10px] text-slate-400 font-medium truncate hidden sm:inline">
-                  • {booking.passenger.full_name}
+                <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
+                  Pasahero: {booking.passenger.full_name}
                 </span>
               )}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
               {booking.passenger?.phone_number && (
                 <a
                   href={`tel:${booking.passenger.phone_number}`}
-                  className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95"
+                  className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95 shrink-0"
                   title="Tawagan ang Pasahero"
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
                 </a>
               )}
-              <div className="text-right">
-                <span className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD]">
-                  ₱{booking.estimated_fare.toFixed(2)}
-                </span>
-              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-sm sm:text-base font-black text-[#003f87] dark:text-[#00C1FD]">
+                ₱{booking.estimated_fare.toFixed(2)}
+              </span>
             </div>
           </div>
 
-          {/* Location Stack Matching User Design */}
-          <div className="space-y-1 px-0.5">
+          {/* Location Stack with Clean Sakayan & Babaan */}
+          <div className="space-y-1">
             {/* SAKAYAN */}
             <div className="flex items-start gap-2.5">
               <div className={`w-3 h-3 rounded-full bg-[#00A3FF] shrink-0 mt-0.5 ${
-                isHeadingToPickup ? 'ring-4 ring-[#00A3FF]/25 shadow-sm' : 'opacity-70'
+                isHeadingToPickup ? 'ring-4 ring-[#00A3FF]/25 shadow-sm' : 'opacity-60'
               }`}></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[10px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
                   SAKAYAN
                 </span>
-                <span className={`text-xs truncate block mt-0.5 ${
+                <span className={`text-xs sm:text-sm truncate block mt-0.5 ${
                   isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
                   {booking.origin_name}
@@ -308,13 +302,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             {/* BABAAN */}
             <div className="flex items-start gap-2.5">
               <div className={`w-3 h-3 rounded-full bg-[#FF6B00] shrink-0 mt-0.5 ${
-                !isHeadingToPickup ? 'ring-4 ring-[#FF6B00]/25 shadow-sm' : 'opacity-70'
+                !isHeadingToPickup ? 'ring-4 ring-[#FF6B00]/25 shadow-sm' : 'opacity-60'
               }`}></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[10px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
                   BABAAN
                 </span>
-                <span className={`text-xs truncate block mt-0.5 ${
+                <span className={`text-xs sm:text-sm truncate block mt-0.5 ${
                   !isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
                   {booking.destination_name}
