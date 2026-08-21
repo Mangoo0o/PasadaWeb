@@ -431,12 +431,12 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
           </div>
 
           {/* Action Buttons Row */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-0.5">
             {/* Cancel Button */}
             {tripState !== 'completed' && (
               <button
                 onClick={handleOpenCancelModal}
-                className="px-4 py-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
+                className="px-4 py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>I-cancel</span>
@@ -448,30 +448,30 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               {tripState === 'assigned' && (
                 <button
                   onClick={handleArrivePickup}
-                  className="w-full py-3 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#003f87]/30 transition-all active:scale-95 cursor-pointer"
+                  className="w-full py-3.5 px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <Navigation className="w-4 h-4 text-[#00C1FD]" />
-                  <span>Nakarating na sa Sakayan</span>
+                  <span>Nasa Sakayan Na</span>
                 </button>
               )}
 
               {tripState === 'arrived' && (
                 <button
                   onClick={handleStartTrip}
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer animate-pulse"
+                  className="w-full py-3.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <Bike className="w-4 h-4 text-white" />
-                  <span>Simulan ang Byahe (Pasahero Nakasakay Na)</span>
+                  <span>Simulan ang Byahe</span>
                 </button>
               )}
 
               {tripState === 'in_transit' && (
                 <button
                   onClick={handleCompleteTrip}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#003f87] to-[#0056b3] hover:from-[#002f66] hover:to-[#003f87] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#003f87]/30 transition-all active:scale-95 cursor-pointer"
+                  className="w-full py-3.5 px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
-                  <span>Tapusin at Singilin (₱{booking.estimated_fare.toFixed(2)})</span>
+                  <span>Tapusin ang Byahe (₱{booking.estimated_fare.toFixed(2)})</span>
                 </button>
               )}
             </div>
