@@ -8,11 +8,9 @@ import {
   Navigation, 
   CheckCircle2, 
   Bike, 
-  User, 
-  Clock, 
-  Sparkles,
-  ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  Circle
 } from 'lucide-react';
 import { Booking } from '../../types/database.types';
 
@@ -22,42 +20,39 @@ interface BookingPreviewModalProps {
   onAccept: (booking: Booking) => void;
 }
 
-// Custom Leaflet Markers with distinct styling
+// Clean Minimal SVG Markers
 const createPassengerPickupIcon = () => {
   return L.divIcon({
-    className: 'custom-preview-passenger-pin',
+    className: 'custom-minimal-passenger-pin',
     html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
-        <div style="position: absolute; width: 44px; height: 44px; background: rgba(0, 193, 253, 0.4); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="background: linear-gradient(135deg, #003f87, #0056b3); color: #00C1FD; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,63,135,0.45); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+        <div style="position: absolute; width: 36px; height: 36px; background: rgba(0, 63, 135, 0.2); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="background: #003f87; color: #ffffff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,63,135,0.35); border: 2.5px solid #ffffff; z-index: 2;">
+          <div style="width: 8px; height: 8px; background: #00C1FD; border-radius: 50%;"></div>
         </div>
       </div>
     `,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -20],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -16],
   });
 };
 
 const createDestinationIcon = () => {
   return L.divIcon({
-    className: 'custom-preview-dest-pin',
+    className: 'custom-minimal-dest-pin',
     html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
-        <div style="position: absolute; width: 44px; height: 44px; background: rgba(252, 212, 0, 0.35); border-radius: 50%; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></div>
-        <div style="background: linear-gradient(135deg, #fcd400, #e5be00); color: #003f87; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(252,212,0,0.5); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+        <div style="background: #fcd400; color: #003f87; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(252,212,0,0.4); border: 2.5px solid #ffffff; z-index: 2;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         </div>
       </div>
     `,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -20],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -16],
   });
 };
 
@@ -67,7 +62,7 @@ const FitRouteBounds: React.FC<{ origin: [number, number]; destination: [number,
   useEffect(() => {
     if (origin && destination) {
       const bounds = L.latLngBounds([origin, destination]);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
     }
   }, [map, origin, destination]);
   return null;
@@ -80,45 +75,39 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 }) => {
   if (!booking) return null;
 
-  const originLat = booking.origin_lat || 16.5333;
-  const originLng = booking.origin_lng || 120.3333;
-  const destLat = booking.destination_lat || 16.5385;
-  const destLng = booking.destination_lng || 120.3250;
+  // Ensure coordinates are centered gracefully in Bauang area
+  const rawOriginLat = booking.origin_lat || 16.5333;
+  const rawOriginLng = booking.origin_lng || 120.3333;
+  const rawDestLat = booking.destination_lat || 16.5385;
+  const rawDestLng = booking.destination_lng || 120.3250;
+
+  // Clamp if coordinates are wildly out of municipal bounds for local display
+  const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+  
+  const originLat = isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310;
+  const originLng = isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320;
+  const destLat = isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385;
+  const destLng = isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250;
 
   const originCoords: [number, number] = [originLat, originLng];
   const destCoords: [number, number] = [destLat, destLng];
   const routePolyline: [number, number][] = [originCoords, destCoords];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+      <div className="bg-white dark:bg-slate-900 rounded-[28px] w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
         
-        {/* Header */}
-        <div className="p-4 bg-[#003f87] text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-[#00C1FD]">
-              <Navigation className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-black text-sm text-white">
-                Detalye ng Tawag ng Pasahero
-              </h3>
-              <p className="text-[10px] text-sky-200 font-medium">
-                Live Route &amp; Pickup Preview
-              </p>
-            </div>
-          </div>
+        {/* Floating Minimal Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3.5 right-3.5 z-[500] w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-md flex items-center justify-center transition-all cursor-pointer"
+          title="Isara"
+        >
+          <X className="w-4 h-4" />
+        </button>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Interactive Leaflet Map Preview */}
-        <div className="relative h-64 w-full bg-slate-100 dark:bg-slate-800">
+        {/* Clean Map Section */}
+        <div className="relative h-52 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
           <MapContainer
             center={originCoords}
             zoom={14}
@@ -126,140 +115,139 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             zoomControl={false}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              attribution='&copy; OpenStreetMap'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Fit Map Bounds */}
             <FitRouteBounds origin={originCoords} destination={destCoords} />
 
-            {/* Passenger Pickup Pin */}
+            {/* Passenger Pickup Marker */}
             <Marker position={originCoords} icon={createPassengerPickupIcon()}>
               <Popup>
-                <div className="p-1 text-xs">
-                  <strong className="text-[#003f87] block">Sakayan ng Pasahero</strong>
-                  <span>{booking.origin_name}</span>
+                <div className="text-xs font-semibold">
+                  <span className="text-[#003f87] font-bold block">Sakayan</span>
+                  {booking.origin_name}
                 </div>
               </Popup>
             </Marker>
 
-            {/* Destination Pin */}
+            {/* Destination Marker */}
             <Marker position={destCoords} icon={createDestinationIcon()}>
               <Popup>
-                <div className="p-1 text-xs">
-                  <strong className="text-amber-600 block">Babaan (Destination)</strong>
-                  <span>{booking.destination_name}</span>
+                <div className="text-xs font-semibold">
+                  <span className="text-amber-600 font-bold block">Babaan</span>
+                  {booking.destination_name}
                 </div>
               </Popup>
             </Marker>
 
-            {/* Distinctive Glow Outline Path */}
+            {/* White Backdrop Polyline for High Contrast */}
             <Polyline
               positions={routePolyline}
               pathOptions={{
                 color: '#ffffff',
-                weight: 8,
+                weight: 6,
                 opacity: 0.9,
                 lineCap: 'round',
-                lineJoin: 'round'
               }}
             />
 
-            {/* Distinctive Colored Route Path (Electric Neon Amber / Orange with Dash styling) */}
+            {/* Clean Blue Accent Route Path */}
             <Polyline
               positions={routePolyline}
               pathOptions={{
-                color: '#FF6B00',
-                weight: 5,
-                opacity: 1,
-                dashArray: '10, 8',
+                color: '#003f87',
+                weight: 4,
+                opacity: 0.95,
                 lineCap: 'round',
-                lineJoin: 'round'
               }}
             />
           </MapContainer>
 
-          {/* Map Legend Overlay */}
-          <div className="absolute bottom-2 left-2 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl p-2 text-[10px] font-bold border border-slate-200 dark:border-slate-700 shadow-md space-y-1">
-            <div className="flex items-center gap-1.5 text-[#003f87] dark:text-[#00C1FD]">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#003f87]"></div>
-              <span>Sakayan (Passenger)</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#fcd400]"></div>
-              <span>Babaan (Destination)</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[#FF6B00]">
-              <div className="w-4 h-0.5 border-t-2 border-dashed border-[#FF6B00]"></div>
-              <span>Ruta ng Biyahe</span>
-            </div>
+          {/* Simple Floating Route Badge */}
+          <div className="absolute bottom-2.5 left-3 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#003f87]"></span>
+            <span>{booking.estimated_distance_km} km</span>
+            <span className="text-slate-300 dark:text-slate-600">•</span>
+            <span className="text-slate-500 font-medium">{booking.estimated_duration_min} min biyahe</span>
           </div>
         </div>
 
-        {/* Route Details Card */}
-        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
-          {/* Origin and Destination Breakdown */}
-          <div className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
-            <div className="flex items-start gap-2.5">
-              <div className="w-3 h-3 rounded-full bg-[#003f87] mt-1 shrink-0"></div>
-              <div>
-                <div className="text-[10px] uppercase font-black text-slate-400">Sakayan (Pickup Location)</div>
-                <div className="font-bold text-sm text-slate-900 dark:text-white">{booking.origin_name}</div>
+        {/* Content Details */}
+        <div className="p-5 space-y-4">
+          
+          {/* Minimal Vertical Itinerary */}
+          <div className="space-y-3">
+            {/* Pickup */}
+            <div className="flex items-start gap-3">
+              <div className="w-4 h-4 rounded-full bg-[#003f87] flex items-center justify-center text-white mt-0.5 shrink-0 shadow-sm">
+                <div className="w-1.5 h-1.5 bg-[#00C1FD] rounded-full"></div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Sakayan (Pickup)
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {booking.origin_name}
+                </div>
               </div>
             </div>
 
-            <div className="border-l-2 border-dashed border-slate-300 dark:border-slate-600 ml-1.5 h-4"></div>
+            {/* Connecting line */}
+            <div className="border-l-2 border-dashed border-slate-200 dark:border-slate-700 ml-2 h-2.5"></div>
 
-            <div className="flex items-start gap-2.5">
-              <div className="w-3 h-3 rounded-full bg-[#fcd400] mt-1 shrink-0"></div>
-              <div>
-                <div className="text-[10px] uppercase font-black text-slate-400">Babaan (Destination)</div>
-                <div className="font-bold text-sm text-slate-900 dark:text-white">{booking.destination_name}</div>
+            {/* Dropoff */}
+            <div className="flex items-start gap-3">
+              <div className="w-4 h-4 rounded-full bg-[#fcd400] flex items-center justify-center text-[#003f87] mt-0.5 shrink-0 shadow-sm">
+                <div className="w-1.5 h-1.5 bg-[#003f87] rounded-full"></div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Babaan (Destination)
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {booking.destination_name}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-emerald-50 dark:bg-emerald-950/40 rounded-xl p-2.5 border border-emerald-200 dark:border-emerald-800">
-              <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">Taripa</div>
-              <div className="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400">
+          {/* Clean Fare Display */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+            <div>
+              <div className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
+                Regulated Fare (Taripa)
+              </div>
+              <div className="text-xs text-slate-500 font-medium">
+                Standard LGU Bauang rate
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-2xl font-black text-[#003f87] dark:text-[#00C1FD]">
                 ₱{booking.estimated_fare.toFixed(2)}
-              </div>
-            </div>
-
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700">
-              <div className="text-[10px] font-bold text-slate-400 uppercase">Distansya</div>
-              <div className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200">
-                {booking.estimated_distance_km} km
-              </div>
-            </div>
-
-            <div className="bg-sky-50 dark:bg-sky-950/40 rounded-xl p-2.5 border border-sky-200 dark:border-sky-800">
-              <div className="text-[10px] font-bold text-sky-800 dark:text-sky-300 uppercase">Tantiya</div>
-              <div className="text-base sm:text-lg font-black text-sky-700 dark:text-sky-400">
-                {booking.estimated_duration_min} min
               </div>
             </div>
           </div>
 
           {/* Action CTAs */}
-          <div className="flex gap-2 pt-2">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              Isara
-            </button>
-
+          <div className="space-y-2 pt-1">
             <button
               onClick={() => onAccept(booking)}
-              className="flex-2 py-3.5 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm shadow-lg shadow-[#003f87]/25 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+              className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
               <span>Tanggapin ang Biyahe</span>
             </button>
+
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 text-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              Isara
+            </button>
           </div>
+
         </div>
 
       </div>
