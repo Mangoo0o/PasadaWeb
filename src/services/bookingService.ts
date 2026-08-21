@@ -116,11 +116,21 @@ export const subscribeToBooking = (
         filter: `id=eq.${bookingId}`,
       },
       async () => {
-        const { data } = await supabase
+        let { data, error } = await supabase
           .from('bookings')
           .select('*, driver:drivers(*, profile:profiles(*))')
           .eq('id', bookingId)
           .single();
+
+        if (error || !data) {
+          const fallback = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+          data = fallback.data;
+        }
+
         if (data) {
           onUpdate(data as Booking);
         }
@@ -169,7 +179,14 @@ export const fetchUserBookings = async (userId: string, isDriver = false): Promi
       .eq(column, userId)
       .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error || !data) {
+      const fallback = await supabase
+        .from('bookings')
+        .select('*')
+        .eq(column, userId)
+        .order('created_at', { ascending: false });
+      return (fallback.data as Booking[]) || [];
+    }
     return data as Booking[];
   } catch (err) {
     return [];
