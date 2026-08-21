@@ -78,11 +78,10 @@ const createDestinationIcon = () => {
   });
 };
 
-// Auto focus tightly on the passenger's pickup and destination with safe non-colliding bounds
+// Auto focus on the complete preview trip with safe non-colliding bounds
 const FitPassengerFocusBounds: React.FC<{ 
-  passengerCoords: [number, number]; 
-  destinationCoords: [number, number]; 
-}> = ({ passengerCoords, destinationCoords }) => {
+  points: [number, number][];
+}> = ({ points }) => {
   const map = useMap();
   useEffect(() => {
     let timer: any;
@@ -91,16 +90,16 @@ const FitPassengerFocusBounds: React.FC<{
     timer = setTimeout(() => {
       try {
         if (!map || !(map as any)._mapPane) return;
-        if (passengerCoords && destinationCoords) {
-          const bounds = L.latLngBounds([passengerCoords, destinationCoords]);
+        if (points.length >= 2) {
+          const bounds = L.latLngBounds(points);
           map.fitBounds(bounds, { 
-            paddingTopLeft: [40, 30],
-            paddingBottomRight: [80, 30],
+            paddingTopLeft: [60, 40],
+            paddingBottomRight: [160, 40],
             maxZoom: 16.5,
             animate: false
           });
-        } else if (passengerCoords) {
-          map.setView(passengerCoords, 16, { animate: false });
+        } else if (points.length === 1) {
+          map.setView(points[0], 16, { animate: false });
         }
       } catch {}
     }, 50);
@@ -108,7 +107,7 @@ const FitPassengerFocusBounds: React.FC<{
     return () => {
       clearTimeout(timer);
     };
-  }, [map, passengerCoords, destinationCoords]);
+  }, [map, points]);
   return null;
 };
 
@@ -137,32 +136,35 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 }) => {
   if (!booking) return null;
 
-  // Coordinate Sanitization / Bauang Vicinity Checks
-  const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+  const initialDriverLat = Number(driverLat) || 16.5333;
+  const initialDriverLng = Number(driverLng) || 120.3333;
+  const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
-  const rawDriverLat = driverLat || 16.5333;
-  const rawDriverLng = driverLng || 120.3333;
-  const currentDriverCoords: [number, number] = [
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333,
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333,
-  ];
-
-  const rawOriginLat = booking.origin_lat || 16.5310;
-  const rawOriginLng = booking.origin_lng || 120.3320;
   const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
+    Number(booking.origin_lat) || 16.5310,
+    Number(booking.origin_lng) || 120.3320,
   ];
 
-  const rawDestLat = booking.destination_lat || 16.5385;
-  const rawDestLng = booking.destination_lng || 120.3250;
   const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
+    Number(booking.destination_lat) || 16.5385,
+    Number(booking.destination_lng) || 120.3250,
   ];
+
+  // Try live GPS for driver
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setDriverCoords([pos.coords.latitude, pos.coords.longitude]);
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
 
   const [driverToPassengerRoad, setDriverToPassengerRoad] = useState<[number, number][]>([
-    currentDriverCoords,
+    driverCoords,
     passengerPickupCoords,
   ]);
 
@@ -175,7 +177,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     let active = true;
 
     Promise.all([
-      fetchOSRMRoute(currentDriverCoords, passengerPickupCoords),
+      fetchOSRMRoute(driverCoords, passengerPickupCoords),
       fetchOSRMRoute(passengerPickupCoords, destinationDropCoords),
     ]).then(([road1, road2]) => {
       if (active) {
@@ -187,7 +189,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     return () => {
       active = false;
     };
-  }, [booking.id, driverLat, driverLng]);
+  }, [booking.id, driverCoords[0], driverCoords[1]]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
@@ -228,12 +230,11 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             />
 
             <FitPassengerFocusBounds
-              passengerCoords={passengerPickupCoords}
-              destinationCoords={destinationDropCoords}
+              points={[driverCoords, passengerPickupCoords, destinationDropCoords]}
             />
 
             {/* Marker 1: Driver Current Location */}
-            <Marker position={currentDriverCoords} icon={createDriverTricycleIcon()}>
+            <Marker position={driverCoords} icon={createDriverTricycleIcon()}>
               <Popup>
                 <div className="text-xs font-semibold">
                   <span className="text-[#003f87] font-bold block">Lokasyon Mo (Driver)</span>
