@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   MapPin,
   Sparkles,
-  Navigation
+  Navigation,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -80,6 +81,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   const [ratingComment, setRatingComment] = useState<string>('');
   const [isSubmittingRating, setIsSubmittingRating] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
+
+  // Cancel Confirmation Modal State
+  const [showPassengerCancelModal, setShowPassengerCancelModal] = useState<boolean>(false);
+  const [isCancellingBooking, setIsCancellingBooking] = useState<boolean>(false);
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
@@ -336,10 +341,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
     }
   };
 
-  const handleCancelBooking = async () => {
+  const handleCancelBooking = () => {
+    setShowPassengerCancelModal(true);
+  };
+
+  const handleConfirmCancelBooking = async () => {
+    setIsCancellingBooking(true);
     if (activeBooking?.id) {
       await updateBookingStatus(activeBooking.id, 'cancelled');
     }
+    setIsCancellingBooking(false);
+    setShowPassengerCancelModal(false);
     setBookingState('idle');
     setActiveBooking(null);
   };
@@ -767,6 +779,43 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               </>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* 6. PASSENGER CANCEL CONFIRMATION MODAL */}
+      {showPassengerCancelModal && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Kanselahin ang Booking?
+              </h3>
+              <p className="text-xs text-slate-500">
+                Sigurado ka bang nais mong kanselahin ang iyong booking request?
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                disabled={isCancellingBooking}
+                onClick={handleConfirmCancelBooking}
+                className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isCancellingBooking ? 'Kinakansela...' : 'Oo, Kanselahin'}
+              </button>
+              <button
+                disabled={isCancellingBooking}
+                onClick={() => setShowPassengerCancelModal(false)}
+                className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Huwag Kanselahin (Ipagpatuloy ang Biyahe)
+              </button>
+            </div>
           </div>
         </div>
       )}

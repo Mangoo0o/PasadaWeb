@@ -10,7 +10,8 @@ import {
   X, 
   MapPin, 
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { Booking } from '../types/database.types';
 import { updateBookingStatus } from '../services/bookingService';
@@ -171,6 +172,8 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   ]);
 
   const [completedFare, setCompletedFare] = useState<number | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -208,11 +211,16 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     await updateBookingStatus(booking.id, 'completed', booking.driver_id, fare);
   };
 
-  const handleCancelTrip = async () => {
-    if (window.confirm('Sigurado ka bang nais mong kanselahin ang biyahe?')) {
-      await updateBookingStatus(booking.id, 'cancelled');
-      onExitTravel();
-    }
+  const handleOpenCancelModal = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancelTrip = async () => {
+    setIsCancelling(true);
+    await updateBookingStatus(booking.id, 'cancelled');
+    setIsCancelling(false);
+    setShowCancelModal(false);
+    onExitTravel();
   };
 
   const isHeadingToPickup = tripState === 'assigned' || tripState === 'arrived';
@@ -372,7 +380,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             {/* Cancel Button */}
             {tripState !== 'completed' && (
               <button
-                onClick={handleCancelTrip}
+                onClick={handleOpenCancelModal}
                 className="px-4 py-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
               >
                 <X className="w-3.5 h-3.5" />
@@ -449,6 +457,43 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             >
               Bumalik sa Pila ng Terminal
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. CANCEL CONFIRMATION MODAL */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Kanselahin ang Biyahe?
+              </h3>
+              <p className="text-xs text-slate-500">
+                Sigurado ka bang nais mong kanselahin ang biyahe na ito? Magiging bukas muli ang iyong linya sa ibang pasahero.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                disabled={isCancelling}
+                onClick={handleConfirmCancelTrip}
+                className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isCancelling ? 'Kinakansela...' : 'Oo, Kanselahin'}
+              </button>
+              <button
+                disabled={isCancelling}
+                onClick={() => setShowCancelModal(false)}
+                className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Huwag Kanselahin (Bumalik sa Biyahe)
+              </button>
+            </div>
           </div>
         </div>
       )}
