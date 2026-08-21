@@ -5,7 +5,6 @@ import {
   Check, 
   Plus, 
   Trash2, 
-  MapPin, 
   Target, 
   Sparkles, 
   Crosshair, 
@@ -15,21 +14,28 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } 
 import L from 'leaflet';
 import type { LocationFare, Terminal } from '../types';
 import { PDFExportButton } from '../components/ui/PDFExportButton';
-import { findMatchingLocationByProximity } from '../../services/fareService';
+import { 
+  findMatchingLocationByProximity, 
+  LOCATION_ICON_OPTIONS, 
+  getLocationIconEmoji 
+} from '../../services/fareService';
 
 interface FareMatrixPageProps {
   locationFares: LocationFare[];
   terminals: Terminal[];
-  onSaveLocationFare: (fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number }) => void;
+  onSaveLocationFare: (fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => void;
   onDeleteLocationFare: (id: string) => void;
 }
 
-const locationPinIcon = L.divIcon({
-  className: 'admin-loc-pin',
-  html: `<div style="background:#00346F;color:#ffffff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;border:2.5px solid #00C1FD;box-shadow:0 3px 10px rgba(0,52,111,0.4);cursor:pointer;">📍</div>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
-});
+const createAdminLocPin = (loc: LocationFare) => {
+  const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
+  return L.divIcon({
+    className: 'admin-loc-pin',
+    html: `<div style="background:#00346F;color:#ffffff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2.5px solid #00C1FD;box-shadow:0 3px 10px rgba(0,52,111,0.4);cursor:pointer;">${emoji}</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+};
 
 const testClickPinIcon = L.divIcon({
   className: 'admin-test-pin',
@@ -63,25 +69,50 @@ function ModalLocationPicker({
   lat,
   lng,
   radiusMeters,
-  onLocationChange
+  onLocationChange,
+  icon
 }: {
   lat: number;
   lng: number;
   radiusMeters: number;
   onLocationChange: (lat: number, lng: number) => void;
+  icon?: string;
 }) {
+  const map = useMap();
+
   useMapEvents({
     click(e) {
       onLocationChange(e.latlng.lat, e.latlng.lng);
     },
   });
 
+  useEffect(() => {
+    map.panTo([lat, lng]);
+  }, [lat, lng, map]);
+
+  const markerIcon = L.divIcon({
+    className: 'modal-picker-pin',
+    html: `<div style="background:#00346F;color:#ffffff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #00C1FD;box-shadow:0 4px 14px rgba(0,52,111,0.5);cursor:move;">${getLocationIconEmoji(icon)}</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+
   return (
     <>
       <MapInvalidateSize />
+      <Circle
+        center={[lat, lng]}
+        radius={radiusMeters}
+        pathOptions={{
+          color: '#00346F',
+          fillColor: '#00C1FD',
+          fillOpacity: 0.22,
+          weight: 2.5
+        }}
+      />
       <Marker
         position={[lat, lng]}
-        icon={locationPinIcon}
+        icon={markerIcon}
         draggable={true}
         eventHandlers={{
           dragend: (e) => {
@@ -90,18 +121,6 @@ function ModalLocationPicker({
             onLocationChange(position.lat, position.lng);
           },
         }}
-      >
-        <Popup>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, textAlign: 'center' }}>
-            📍 Set Destination Coordinates<br />
-            <span style={{ color: '#006688' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
-          </div>
-        </Popup>
-      </Marker>
-      <Circle
-        center={[lat, lng]}
-        radius={radiusMeters}
-        pathOptions={{ color: '#00346F', fillColor: '#00C1FD', fillOpacity: 0.2, weight: 2 }}
       />
     </>
   );
@@ -110,7 +129,7 @@ function ModalLocationPicker({
 export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({ 
   locationFares, 
   terminals, 
-  onSaveLocationFare,
+  onSaveLocationFare, 
   onDeleteLocationFare 
 }) => {
   const [selectedFare, setSelectedFare] = useState<LocationFare | null>(null);
@@ -124,6 +143,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const [proximityRadius, setProximityRadius] = useState<number>(800);
   const [lat, setLat] = useState<number>(16.5333);
   const [lng, setLng] = useState<number>(120.3333);
+  const [icon, setIcon] = useState<string>('pin');
   const [notes, setNotes] = useState<string>('');
 
   // Interactive Tester State
@@ -147,6 +167,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setProximityRadius(800);
     setLat(16.5333);
     setLng(120.3333);
+    setIcon('landmark');
     setNotes('LGU Ordinance Rate Schedule');
     setIsModalOpen(true);
   };
@@ -160,6 +181,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setProximityRadius(Number(fare.proximity_radius_meters || 800));
     setLat(Number(fare.lat));
     setLng(Number(fare.lng));
+    setIcon(fare.icon || 'pin');
     setNotes(fare.notes || '');
     setIsModalOpen(true);
   };
@@ -175,6 +197,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
       proximity_radius_meters: proximityRadius,
       lat,
       lng,
+      icon,
       notes
     });
     setIsModalOpen(false);
@@ -249,11 +272,18 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 locationFares.map((loc) => (
                   <tr key={loc.id}>
                     <td>
-                      <div style={{ fontWeight: 700, color: 'var(--color-pasada-navy)' }}>
-                        {loc.location_name}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        {loc.notes || 'LGU Standard Tariff'} • {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: '1.35rem', width: 34, height: 34, borderRadius: 8, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {getLocationIconEmoji(loc.icon, loc.location_name)}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--color-pasada-navy)' }}>
+                            {loc.location_name}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            {loc.notes || 'LGU Standard Tariff'} • {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td style={{ fontWeight: 800, color: 'var(--success)', fontSize: '1rem' }}>
@@ -328,7 +358,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               />
               <MapClickTester onMapClick={handleMapTestClick} />
 
-              {/* All Location Proximity Circles */}
+              {/* All Location Proximity Circles with Icon Pins */}
               {locationFares.map((loc) => {
                 const isMatched = testResult?.matchedLocation?.id === loc.id;
                 return (
@@ -343,10 +373,10 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         weight: isMatched ? 3 : 1.5,
                       }}
                     />
-                    <Marker position={[loc.lat, loc.lng]} icon={locationPinIcon}>
+                    <Marker position={[loc.lat, loc.lng]} icon={createAdminLocPin(loc)}>
                       <Popup>
                         <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          📍 {loc.location_name}<br />
+                          {getLocationIconEmoji(loc.icon, loc.location_name)} {loc.location_name}<br />
                           <span style={{ color: '#16a34a' }}>₱{Number(loc.standard_fare).toFixed(2)}</span> • Radius: {loc.proximity_radius_meters}m
                         </div>
                       </Popup>
@@ -359,9 +389,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               {testPin && (
                 <Marker position={[testPin.lat, testPin.lng]} icon={testClickPinIcon}>
                   <Popup>
-                    <div style={{ fontSize: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800 }}>
                       🎯 Test Click Pin<br />
-                      {testPin.lat.toFixed(4)}, {testPin.lng.toFixed(4)}
+                      <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
+                        {testPin.lat.toFixed(4)}, {testPin.lng.toFixed(4)}
+                      </span>
                     </div>
                   </Popup>
                 </Marker>
@@ -369,29 +401,32 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             </MapContainer>
           </div>
 
-          {/* Test Proximity Output Box */}
+          {/* Test Decision Output Box */}
           {testResult && (
             <div style={{
-              background: 'var(--bg-primary)',
+              marginTop: 16,
+              padding: 14,
               borderRadius: 12,
-              padding: 16,
-              border: '1px solid var(--border-color)',
-              marginTop: 14
+              background: testResult.isExactProximityMatch ? 'rgba(22, 163, 74, 0.08)' : 'rgba(2, 132, 199, 0.08)',
+              border: `1.5px solid ${testResult.isExactProximityMatch ? 'rgba(22, 163, 74, 0.4)' : 'rgba(2, 132, 199, 0.4)'}`
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  Proximity Decision Result:
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: testResult.isExactProximityMatch ? '#15803d' : '#0369a1'
+                }}>
+                  {testResult.isExactProximityMatch ? '✅ Proximity Geofence Match' : 'ℹ️ Closest Location Assigned'}
                 </span>
-                <span className={`badge ${testResult.isExactProximityMatch ? 'badge-success' : 'badge-info'}`}>
-                  {testResult.isExactProximityMatch ? 'Within Proximity Radius' : 'Nearest Zone Match'}
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  Distance: {testResult.distanceMeters}m
                 </span>
               </div>
 
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-pasada-navy)', marginBottom: 4 }}>
-                📍 {testResult.matchedLocation?.location_name}
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-                {testResult.proximityStatusText}
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-pasada-navy)', marginBottom: 2 }}>
+                {getLocationIconEmoji(testResult.matchedLocation.icon, testResult.matchedLocation.location_name)} {testResult.matchedLocation.location_name}
               </div>
 
               <div style={{
@@ -432,6 +467,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
             <form onSubmit={handleSave}>
               <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                {/* Location Name */}
                 <div className="form-group">
                   <label className="form-label">Destination Location Name</label>
                   <input
@@ -442,6 +478,40 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     placeholder="e.g. Lomboy Grape Farms, Bagbag Beach, Central West"
                     className="input-field"
                   />
+                </div>
+
+                {/* Location Icon Selector */}
+                <div className="form-group">
+                  <label className="form-label">Location Icon / Category Pin</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    {LOCATION_ICON_OPTIONS.map((opt) => {
+                      const isSelected = icon === opt.id || icon === opt.icon;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setIcon(opt.id)}
+                          className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '8px 4px',
+                            fontSize: '0.72rem',
+                            border: isSelected ? '2px solid #00C1FD' : '1px solid var(--border-color)',
+                            gap: 3,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.3rem' }}>{opt.icon}</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
+                            {opt.label.split('/')[0]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -514,6 +584,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         lat={lat}
                         lng={lng}
                         radiusMeters={proximityRadius}
+                        icon={icon}
                         onLocationChange={(newLat, newLng) => {
                           setLat(newLat);
                           setLng(newLng);

@@ -1,6 +1,44 @@
 import { supabase } from '../api/supabaseClient';
 import { LocationFare } from '../types/database.types';
 
+// Preset icon options for Admin Location Creator & Map Displays
+export const LOCATION_ICON_OPTIONS = [
+  { id: 'landmark', label: 'Munisipyo / Plaza', icon: '🏛️' },
+  { id: 'church', label: 'Simbahan / Church', icon: '⛪' },
+  { id: 'market', label: 'Palengke / Market', icon: '🛒' },
+  { id: 'school', label: 'Paaralan / School', icon: '🏫' },
+  { id: 'farm', label: 'Farm / Vineyard', icon: '🍇' },
+  { id: 'beach', label: 'Beach / Baybayin', icon: '🏖️' },
+  { id: 'resort', label: 'Resort / Coastal', icon: '🌊' },
+  { id: 'hospital', label: 'Ospital / Health', icon: '🏥' },
+  { id: 'barangay', label: 'Barangay / Home', icon: '🏠' },
+  { id: 'gas', label: 'Gas / Junction', icon: '⛽' },
+  { id: 'park', label: 'Park / Nature', icon: '🌲' },
+  { id: 'pin', label: 'General Pin', icon: '📍' },
+];
+
+export const getLocationIconEmoji = (iconId?: string, locationName?: string): string => {
+  if (iconId) {
+    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === iconId || opt.icon === iconId);
+    if (found) return found.icon;
+    if (iconId.length <= 4) return iconId;
+  }
+  // Automatic keyword fallback
+  const name = (locationName || '').toLowerCase();
+  if (name.includes('plaza') || name.includes('munisipyo') || name.includes('hall')) return '🏛️';
+  if (name.includes('church') || name.includes('parish') || name.includes('peter')) return '⛪';
+  if (name.includes('market') || name.includes('palengke') || name.includes('trading')) return '🛒';
+  if (name.includes('school') || name.includes('elementary') || name.includes('high')) return '🏫';
+  if (name.includes('grape') || name.includes('farm') || name.includes('vineyard') || name.includes('lomboy')) return '🍇';
+  if (name.includes('beach') || name.includes('sunset') || name.includes('baybay') || name.includes('bagbag')) return '🏖️';
+  if (name.includes('resort') || name.includes('coast') || name.includes('paringao')) return '🌊';
+  if (name.includes('hospital') || name.includes('clinic') || name.includes('health')) return '🏥';
+  if (name.includes('barangay') || name.includes('center') || name.includes('baccuit')) return '🏠';
+  if (name.includes('junction') || name.includes('highway') || name.includes('quinavite')) return '⛽';
+  if (name.includes('valley') || name.includes('calumbaya')) return '🌲';
+  return '📍';
+};
+
 // Robust local fallback for Bauang Municipality locations & official tariff
 export const DEFAULT_LOCATION_FARES: LocationFare[] = [
   {
@@ -13,6 +51,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 600,
     standard_fare: 20.00,
     discounted_fare: 16.00,
+    icon: 'landmark',
     notes: 'Zone 1: Central Commercial Hub & Town Hall'
   },
   {
@@ -25,6 +64,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 500,
     standard_fare: 20.00,
     discounted_fare: 16.00,
+    icon: 'church',
     notes: 'Zone 1: Historical Landmark & Church Ground'
   },
   {
@@ -37,6 +77,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 700,
     standard_fare: 20.00,
     discounted_fare: 16.00,
+    icon: 'market',
     notes: 'Zone 1: Commercial Market & Terminal Exchange'
   },
   {
@@ -49,6 +90,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 800,
     standard_fare: 25.00,
     discounted_fare: 20.00,
+    icon: 'school',
     notes: 'Zone 2: Residential Community & School Zone'
   },
   {
@@ -61,6 +103,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 1000,
     standard_fare: 30.00,
     discounted_fare: 24.00,
+    icon: 'barangay',
     notes: 'Zone 3: South Barangay Highway Corridor'
   },
   {
@@ -73,6 +116,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 1000,
     standard_fare: 35.00,
     discounted_fare: 28.00,
+    icon: 'farm',
     notes: 'Zone 3: Pioneer Vineyard & Farm Tourism Zone'
   },
   {
@@ -85,6 +129,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 1200,
     standard_fare: 40.00,
     discounted_fare: 32.00,
+    icon: 'beach',
     notes: 'Zone 4: Coastal Beach & Resort Tourist Hub'
   },
   {
@@ -97,6 +142,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 1200,
     standard_fare: 45.00,
     discounted_fare: 36.00,
+    icon: 'resort',
     notes: 'Zone 4: North Coastal Beach & Hotel Zone'
   },
   {
@@ -109,6 +155,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 900,
     standard_fare: 35.00,
     discounted_fare: 28.00,
+    icon: 'gas',
     notes: 'Zone 3: East Inland Agricultural District'
   },
   {
@@ -121,6 +168,7 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     proximity_radius_meters: 1200,
     standard_fare: 50.00,
     discounted_fare: 40.00,
+    icon: 'park',
     notes: 'Zone 5: Outer Foothills & Extended Barangay Route'
   }
 ];
@@ -149,23 +197,27 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
       return DEFAULT_LOCATION_FARES;
     }
 
-    return data.map((item: any) => ({
+    return (data || []).map((item: any) => ({
       id: item.id,
       origin_terminal_id: item.origin_terminal_id,
-      terminal_name: item.terminals?.name || 'Central TODA',
+      terminal_name: item.terminals?.name || 'Bauang Terminal',
       location_name: item.location_name,
       lat: Number(item.lat),
       lng: Number(item.lng),
       proximity_radius_meters: Number(item.proximity_radius_meters || 800),
-      standard_fare: Number(item.standard_fare),
-      discounted_fare: item.discounted_fare ? Number(item.discounted_fare) : Math.round(Number(item.standard_fare) * 0.8),
+      standard_fare: Number(item.standard_fare || 20.00),
+      discounted_fare: item.discounted_fare ? Number(item.discounted_fare) : Math.round(Number(item.standard_fare || 20.00) * 0.8),
+      icon: item.icon || 'pin',
       notes: item.notes || '',
       is_active: item.is_active !== false,
       created_at: item.created_at,
       updated_at: item.updated_at
-    })) as LocationFare[];
-  } catch (err) {
-    console.error('Error fetching location fares:', err);
+    }));
+  } catch (err: any) {
+    console.warn('Exception fetching location_fares, using fallback:', err.message);
+    if (originTerminalId) {
+      return DEFAULT_LOCATION_FARES.filter(f => f.origin_terminal_id === originTerminalId);
+    }
     return DEFAULT_LOCATION_FARES;
   }
 };
@@ -183,6 +235,7 @@ export const saveLocationFare = async (
       proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
       standard_fare: Number(fare.standard_fare),
       discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
+      icon: fare.icon || 'pin',
       notes: fare.notes || 'LGU Location Tariff',
       is_active: fare.is_active !== false,
       updated_at: new Date().toISOString()
@@ -219,6 +272,7 @@ export const saveLocationFare = async (
       proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
       standard_fare: Number(fare.standard_fare),
       discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
+      icon: fare.icon || 'pin',
       notes: fare.notes || 'LGU Location Tariff',
       is_active: fare.is_active !== false,
       updated_at: new Date().toISOString()
@@ -243,19 +297,20 @@ export const deleteLocationFare = async (id: string): Promise<{ success: boolean
   }
 };
 
-// Compute Haversine distance in meters
-export const calculateDistanceMeters = (
+// Calculate Haversine distance in meters
+export const calculateHaversineDistanceMeters = (
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number
 ): number => {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const R = 6371e3; // Earth radius in meters
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c);
@@ -272,68 +327,61 @@ export interface ProximityMatchResult {
 
 // Proximity Matching Engine: Determines the official price based on proximity to configured destination locations
 export const findMatchingLocationByProximity = (
-  destLat: number,
-  destLng: number,
-  locationFares: LocationFare[],
-  originTerminalId?: string
+  targetLat: number,
+  targetLng: number,
+  allLocations: LocationFare[],
+  terminalId?: string
 ): ProximityMatchResult | null => {
-  const candidateLocations = locationFares.filter(loc => {
-    if (!loc.is_active && loc.is_active !== undefined) return false;
-    if (originTerminalId && loc.origin_terminal_id && loc.origin_terminal_id !== originTerminalId) {
-      // If we have locations specific to the terminal, prefer them; otherwise allow all
-      return true;
-    }
-    return true;
-  });
+  if (!allLocations || allLocations.length === 0) return null;
 
-  if (candidateLocations.length === 0) return null;
+  // Filter active locations
+  const activeLocations = allLocations.filter(loc => loc.is_active !== false);
+  const pool = terminalId 
+    ? activeLocations.filter(loc => loc.origin_terminal_id === terminalId)
+    : activeLocations;
 
-  // Calculate distance in meters to each location
-  const locationsWithDistance = candidateLocations.map(loc => {
-    const dist = calculateDistanceMeters(destLat, destLng, loc.lat, loc.lng);
+  const candidatePool = pool.length > 0 ? pool : activeLocations;
+
+  // Calculate distance from target destination to each location center
+  const evaluated = candidatePool.map(loc => {
+    const distanceMeters = calculateHaversineDistanceMeters(targetLat, targetLng, loc.lat, loc.lng);
     const radius = loc.proximity_radius_meters || 800;
-    const isWithinRadius = dist <= radius;
+    const isInsideProximity = distanceMeters <= radius;
     return {
       location: loc,
-      distanceMeters: dist,
+      distanceMeters,
       proximityRadius: radius,
-      isWithinRadius,
+      isInsideProximity
     };
   });
 
   // 1. Check if any location contains the destination coordinates within its proximity radius
-  const exactMatches = locationsWithDistance.filter(item => item.isWithinRadius);
-
-  if (exactMatches.length > 0) {
-    // Pick the closest exact match
-    exactMatches.sort((a, b) => a.distanceMeters - b.distanceMeters);
-    const best = exactMatches[0];
-    const standardFare = Number(best.location.standard_fare);
-    const discountedFare = Number(best.location.discounted_fare || Math.round(standardFare * 0.8));
-
+  const matchingInside = evaluated.filter(e => e.isInsideProximity);
+  if (matchingInside.length > 0) {
+    // Pick the closest center among matched
+    matchingInside.sort((a, b) => a.distanceMeters - b.distanceMeters);
+    const best = matchingInside[0];
     return {
       matchedLocation: best.location,
       isExactProximityMatch: true,
       distanceMeters: best.distanceMeters,
-      standardFare,
-      discountedFare,
+      standardFare: Number(best.location.standard_fare),
+      discountedFare: Number(best.location.discounted_fare || Math.round(best.location.standard_fare * 0.8)),
       proximityStatusText: `Within ${best.distanceMeters}m of ${best.location.location_name} (Radius: ${best.proximityRadius}m)`
     };
   }
 
   // 2. If outside all defined proximity radiuses, match the closest location
-  locationsWithDistance.sort((a, b) => a.distanceMeters - b.distanceMeters);
-  const nearest = locationsWithDistance[0];
-  const standardFare = Number(nearest.location.standard_fare);
-  const discountedFare = Number(nearest.location.discounted_fare || Math.round(standardFare * 0.8));
+  evaluated.sort((a, b) => a.distanceMeters - b.distanceMeters);
+  const nearest = evaluated[0];
   const kmDist = (nearest.distanceMeters / 1000).toFixed(1);
 
   return {
     matchedLocation: nearest.location,
     isExactProximityMatch: false,
     distanceMeters: nearest.distanceMeters,
-    standardFare,
-    discountedFare,
+    standardFare: Number(nearest.location.standard_fare),
+    discountedFare: Number(nearest.location.discounted_fare || Math.round(nearest.location.standard_fare * 0.8)),
     proximityStatusText: `Nearest Zone: ${nearest.location.location_name} (~${kmDist} km)`
   };
 };

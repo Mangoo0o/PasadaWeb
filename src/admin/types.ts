@@ -72,6 +72,7 @@ export interface LocationFare {
   proximity_radius_meters: number;
   standard_fare: number;
   discounted_fare?: number;
+  icon?: string;
   notes?: string;
   is_active?: boolean;
   origin_terminal?: Terminal;

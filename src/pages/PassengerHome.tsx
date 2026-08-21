@@ -18,7 +18,8 @@ import { fetchTouristSpots } from '../services/touristService';
 import { 
   fetchLocationFares, 
   findMatchingLocationByProximity, 
-  ProximityMatchResult 
+  ProximityMatchResult,
+  getLocationIconEmoji
 } from '../services/fareService';
 import { 
   createBookingRequest, 
@@ -357,8 +358,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                     className="p-2 rounded-lg hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition-colors border border-transparent hover:border-sky-200"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="p-1 rounded-md bg-sky-100 dark:bg-sky-950 text-[#00346F] dark:text-[#00C1FD] text-xs">
-                        📍
+                      <span className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950 text-base flex items-center justify-center shrink-0">
+                        {getLocationIconEmoji(loc.icon, loc.location_name)}
                       </span>
                       <div>
                         <div className="text-xs font-black text-slate-800 dark:text-slate-100">
@@ -406,21 +407,26 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                 <X className="w-3.5 h-3.5" />
               </button>
 
-              {/* Left Side: Estimated Price Rate & Destination */}
-              <div className="min-w-0 flex-1">
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-                  Estimated Price Rate
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-black text-[#00346F] dark:text-[#00C1FD] tracking-tight">
-                    ₱{currentFare}.00
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 shrink-0">
-                    Fixed Tariff
-                  </span>
+              {/* Left Side: Estimated Price Rate & Destination with Icon */}
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-lg shrink-0">
+                  {getLocationIconEmoji(selectedLocationFare?.icon, selectedLocationFare?.location_name || destinationName)}
                 </div>
-                <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[180px] sm:max-w-xs">
-                  {selectedLocationFare?.location_name || destinationName}
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                    Estimated Price Rate
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl sm:text-3xl font-black text-[#00346F] dark:text-[#00C1FD] tracking-tight">
+                      ₱{currentFare}.00
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 shrink-0">
+                      Fixed
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[170px] sm:max-w-xs">
+                    {selectedLocationFare?.location_name || destinationName}
+                  </div>
                 </div>
               </div>
 

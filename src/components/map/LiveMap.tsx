@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Terminal, LocationFare } from '../../types/database.types';
+import { getLocationIconEmoji } from '../../services/fareService';
 
 // Custom SVG Icons
 const createTricycleIcon = () => {
@@ -25,8 +26,8 @@ const createTerminalIcon = () => {
   return L.divIcon({
     className: 'custom-terminal-pin',
     html: `
-      <div style="background-color: #00346F; color: #ffffff; width: 34px; height: 34px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,52,111,0.35); border: 2px solid #00C1FD;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00C1FD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <div style="background-color: #00346F; color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,52,111,0.35); border: 2.5px solid #00C1FD;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
         </svg>
       </div>
@@ -42,11 +43,14 @@ const createPickupIcon = () => {
     className: 'custom-pickup-pin',
     html: `
       <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        <div style="width: 20px; height: 20px; background-color: #00346F; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,52,111,0.4); z-index: 2;"></div>
+        <div style="position: absolute; width: 36px; height: 36px; background-color: rgba(0, 193, 253, 0.35); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="background-color: #00346F; color: #00C1FD; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,52,111,0.4); border: 2.5px solid #ffffff; z-index: 2;">
+          <div style="width: 8px; height: 8px; background-color: #00C1FD; border-radius: 50%;"></div>
+        </div>
       </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
     popupAnchor: [0, -12],
   });
 };
@@ -71,20 +75,20 @@ const createDestIcon = () => {
 };
 
 const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
+  const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
   return L.divIcon({
     className: 'custom-location-fare-pin',
     html: `
-      <div style="display: inline-flex; align-items: center; gap: 4px; background: ${isSelected ? '#00346F' : '#ffffff'}; color: ${isSelected ? '#ffffff' : '#00346F'}; padding: 3px 8px; border-radius: 20px; border: 2px solid ${isSelected ? '#00C1FD' : '#cbd5e1'}; font-weight: 800; font-size: 11px; box-shadow: 0 3px 10px rgba(0,0,0,0.18); cursor: pointer; white-space: nowrap; transform: translate(-50%, -100%);">
-        <span style="background: ${isSelected ? '#00C1FD' : '#e0f2fe'}; color: ${isSelected ? '#00346F' : '#0369a1'}; padding: 1px 5px; border-radius: 12px; font-size: 10px; font-weight: 900;">
-          ₱${Number(loc.standard_fare).toFixed(0)}
-        </span>
-        <span style="max-width: 110px; overflow: hidden; text-overflow: ellipsis;">
-          ${loc.location_name}
-        </span>
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -100%);">
+        <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: ${isSelected ? '#00346F' : '#ffffff'}; border: 2.5px solid ${isSelected ? '#00C1FD' : '#00346F'}; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.22); font-size: 16px; transition: transform 0.2s;">
+          ${emoji}
+        </div>
+        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid ${isSelected ? '#00C1FD' : '#00346F'}; margin-top: -1px;"></div>
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [34, 40],
+    iconAnchor: [17, 40],
+    popupAnchor: [0, -36],
   });
 };
 

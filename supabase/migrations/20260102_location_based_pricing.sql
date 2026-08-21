@@ -12,11 +12,20 @@ create table if not exists public.location_fares (
   proximity_radius_meters integer not null default 800,
   standard_fare numeric(6,2) not null default 20.00,
   discounted_fare numeric(6,2),
+  icon text default 'pin',
   notes text,
   is_active boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Ensure icon column exists if table was already created
+do $$ 
+begin
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='location_fares' and column_name='icon') then
+    alter table public.location_fares add column icon text default 'pin';
+  end if;
+end $$;
 
 -- 2. Grants & RLS
 grant usage on schema public to anon, authenticated, service_role;
@@ -27,8 +36,8 @@ alter table public.location_fares enable row level security;
 drop policy if exists "Allow all write location_fares" on public.location_fares;
 create policy "Allow all write location_fares" on public.location_fares for all using (true) with check (true);
 
--- 3. Seed Initial Bauang Location Fares (Valid UUID format & Dynamic Terminal Foreign Key)
-insert into public.location_fares (id, origin_terminal_id, location_name, lat, lng, proximity_radius_meters, standard_fare, discounted_fare, notes)
+-- 3. Seed Initial Bauang Location Fares (Valid UUID format, Dynamic Terminal Foreign Key & Custom Icons)
+insert into public.location_fares (id, origin_terminal_id, location_name, lat, lng, proximity_radius_meters, standard_fare, discounted_fare, icon, notes)
 values
   (
     'a0000001-0000-0000-0000-000000000001',
@@ -39,6 +48,7 @@ values
     600,
     20.00,
     16.00,
+    'landmark',
     'Zone 1: Central Commercial Hub & Town Hall'
   ),
   (
@@ -50,6 +60,7 @@ values
     500,
     20.00,
     16.00,
+    'church',
     'Zone 1: Historical Landmark & Church Ground'
   ),
   (
@@ -61,6 +72,7 @@ values
     700,
     20.00,
     16.00,
+    'market',
     'Zone 1: Commercial Market & Terminal Exchange'
   ),
   (
@@ -72,6 +84,7 @@ values
     800,
     25.00,
     20.00,
+    'school',
     'Zone 2: Residential Community & School Zone'
   ),
   (
@@ -83,6 +96,7 @@ values
     1000,
     30.00,
     24.00,
+    'barangay',
     'Zone 3: South Barangay Highway Corridor'
   ),
   (
@@ -94,6 +108,7 @@ values
     1000,
     35.00,
     28.00,
+    'farm',
     'Zone 3: Pioneer Vineyard & Farm Tourism Zone'
   ),
   (
@@ -105,6 +120,7 @@ values
     1200,
     40.00,
     32.00,
+    'beach',
     'Zone 4: Coastal Beach & Resort Tourist Hub'
   ),
   (
@@ -116,6 +132,7 @@ values
     1200,
     45.00,
     36.00,
+    'resort',
     'Zone 4: North Coastal Beach & Hotel Zone'
   ),
   (
@@ -127,6 +144,7 @@ values
     900,
     35.00,
     28.00,
+    'gas',
     'Zone 3: East Inland Agricultural District'
   ),
   (
@@ -138,6 +156,7 @@ values
     1200,
     50.00,
     40.00,
+    'park',
     'Zone 5: Outer Foothills & Extended Barangay Route'
   )
 on conflict (id) do update set
@@ -146,4 +165,5 @@ on conflict (id) do update set
   proximity_radius_meters = excluded.proximity_radius_meters,
   lat = excluded.lat,
   lng = excluded.lng,
+  icon = excluded.icon,
   notes = excluded.notes;
