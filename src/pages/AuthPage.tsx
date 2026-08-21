@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Lock, 
   Mail, 
@@ -16,7 +16,8 @@ import {
   GraduationCap,
   HeartHandshake,
   Accessibility,
-  ChevronDown
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types/database.types';
@@ -27,6 +28,8 @@ export const AuthPage: React.FC = () => {
   const [view, setView] = useState<'login' | 'register'>('login');
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [passengerType, setPassengerType] = useState<'regular' | 'student' | 'senior' | 'pwd'>('regular');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -46,6 +49,51 @@ export const AuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const PASSENGER_TYPE_OPTIONS = [
+    {
+      id: 'regular',
+      label: 'Regular Passenger',
+      sublabel: 'Standard Tariff Rate',
+      icon: User,
+      badge: null
+    },
+    {
+      id: 'student',
+      label: 'Student / Estudyante',
+      sublabel: 'With valid student ID',
+      icon: GraduationCap,
+      badge: '20% OFF'
+    },
+    {
+      id: 'senior',
+      label: 'Senior Citizen',
+      sublabel: '60 years old & above',
+      icon: HeartHandshake,
+      badge: '20% OFF'
+    },
+    {
+      id: 'pwd',
+      label: 'Person with Disability (PWD)',
+      sublabel: 'With valid PWD card',
+      icon: Accessibility,
+      badge: '20% OFF'
+    }
+  ] as const;
+
+  const currentOption = PASSENGER_TYPE_OPTIONS.find(o => o.id === passengerType) || PASSENGER_TYPE_OPTIONS[0];
+  const CurrentIcon = currentOption.icon;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +214,7 @@ export const AuthPage: React.FC = () => {
             </div>
           )}
 
-          {/* 1. LOGIN VIEW (Clean login without role toggle, without social login, without forgot password) */}
+          {/* 1. LOGIN VIEW */}
           {view === 'login' && (
             <div className="transition-all duration-300 animate-in fade-in">
               <h2 className="text-lg font-bold text-[#071e27] dark:text-slate-100 mb-4">
@@ -306,31 +354,94 @@ export const AuthPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* PASSENGER ONLY: Classification Dropdown (Regular, Student, Senior, PWD) */}
+                {/* PASSENGER ONLY: Custom Modern Dropdown */}
                 {role === 'passenger' && (
-                  <div>
+                  <div className="relative" ref={dropdownRef}>
                     <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
-                      Passenger Type (Diskwento / Classification)
+                      Passenger Classification
                     </label>
-                    <div className="relative group">
-                      <GraduationCap className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] pointer-events-none transition-colors" />
-                      <select
-                        id="reg-passenger-type"
-                        value={passengerType}
-                        onChange={(e) => setPassengerType(e.target.value as any)}
-                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-9 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12 cursor-pointer appearance-none"
-                      >
-                        <option value="regular">Regular Passenger (Standard Tariff)</option>
-                        <option value="student">Student / Estudyante (20% Discount)</option>
-                        <option value="senior">Senior Citizen (20% Discount)</option>
-                        <option value="pwd">Person with Disability / PWD (20% Discount)</option>
-                      </select>
-                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <ChevronDown className="w-4 h-4" />
+
+                    {/* Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className={`w-full h-12 px-3.5 bg-white dark:bg-slate-800 border rounded-xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                        isDropdownOpen
+                          ? 'border-[#003f87] ring-2 ring-[#003f87]/15 shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-slate-700 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center shrink-0">
+                          <CurrentIcon className="w-4 h-4" />
+                        </div>
+                        <div className="truncate">
+                          <span className="text-xs sm:text-sm font-bold text-[#071e27] dark:text-slate-100 block truncate">
+                            {currentOption.label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {currentOption.badge && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            {currentOption.badge}
+                          </span>
+                        )}
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-[#003f87]' : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* Popover Menu */}
+                    {isDropdownOpen && (
+                      <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {PASSENGER_TYPE_OPTIONS.map((opt) => {
+                          const isSelected = passengerType === opt.id;
+                          const ItemIcon = opt.icon;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setPassengerType(opt.id);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`w-full p-2.5 rounded-lg flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-sky-50 dark:bg-sky-950/50 text-[#003f87] dark:text-[#00C1FD]'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                  isSelected 
+                                    ? 'bg-[#003f87] text-white dark:bg-[#00C1FD] dark:text-slate-900' 
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                }`}>
+                                  <ItemIcon className="w-3.5 h-3.5" />
+                                </div>
+                                <div>
+                                  <span className="text-xs font-bold block">{opt.label}</span>
+                                  <span className="text-[10px] text-slate-400 block">{opt.sublabel}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {opt.badge && (
+                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                                    {opt.badge}
+                                  </span>
+                                )}
+                                {isSelected && <Check className="w-4 h-4 text-[#003f87] dark:text-[#00C1FD]" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {passengerType !== 'regular' && (
-                      <p className="text-[10px] text-emerald-600 font-bold mt-1 ml-1 flex items-center gap-1 animate-in fade-in">
+                      <p className="text-[10px] text-emerald-600 font-bold mt-1.5 ml-1 flex items-center gap-1 animate-in fade-in">
                         <span>✓ 20% discount will automatically apply to all your trips.</span>
                       </p>
                     )}
