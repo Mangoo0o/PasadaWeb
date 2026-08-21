@@ -254,6 +254,8 @@ export const DriverDispatch: React.FC = () => {
       {previewBooking && (
         <BookingPreviewModal
           booking={previewBooking}
+          driverLat={driverProfile?.current_lat}
+          driverLng={driverProfile?.current_lng}
           onClose={() => setPreviewBooking(null)}
           onAccept={(bk) => {
             setPreviewBooking(null);

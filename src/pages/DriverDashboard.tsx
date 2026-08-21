@@ -266,6 +266,8 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       {previewBooking && (
         <BookingPreviewModal
           booking={previewBooking}
+          driverLat={driverProfile?.current_lat}
+          driverLng={driverProfile?.current_lng}
           onClose={() => setPreviewBooking(null)}
           onAccept={async (bk) => {
             setPreviewBooking(null);
