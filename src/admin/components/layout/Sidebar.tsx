@@ -20,7 +20,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Overview Dashboard', icon: LayoutDashboard },
     { id: 'fare-matrix', label: 'Fare Matrix & Rates', icon: DollarSign },
-    { id: 'terminals', label: 'Locations & Terminals', icon: MapPin },
     { 
       id: 'drivers', 
       label: 'Driver Approvals', 

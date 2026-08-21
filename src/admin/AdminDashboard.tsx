@@ -6,7 +6,6 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { DashboardPage } from './pages/DashboardPage';
 import { FareMatrixPage } from './pages/FareMatrixPage';
-import { TerminalsPage } from './pages/TerminalsPage';
 import { DriversPage } from './pages/DriversPage';
 import { PassengersPage } from './pages/PassengersPage';
 import { ComplaintsPage } from './pages/ComplaintsPage';
@@ -478,14 +477,6 @@ const AdminContent: React.FC = () => {
               terminals={terminals}
               onSaveLocationFare={handleSaveLocationFare}
               onDeleteLocationFare={handleDeleteLocationFare}
-            />
-          )}
-
-          {activeTab === 'terminals' && (
-            <TerminalsPage
-              terminals={terminals}
-              onAddTerminal={handleAddTerminal}
-              onUpdateTerminal={handleUpdateTerminal}
             />
           )}
 

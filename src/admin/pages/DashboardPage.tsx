@@ -138,7 +138,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Total Terminals Managed */}
         <div 
           className="glass-card" 
-          onClick={() => setActiveTab('terminals')}
+          onClick={() => setActiveTab('fare-matrix')}
           style={{ padding: '20px 22px', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
