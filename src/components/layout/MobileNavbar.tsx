@@ -18,19 +18,30 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  const getDriverOrAdminTab = () => {
-    if (user?.role === 'admin') return { id: 'admin', label: 'TODA Admin', icon: ShieldCheck };
-    return { id: 'driver', label: 'Driver', icon: Navigation };
+  const getTabs = () => {
+    if (user?.role === 'driver') {
+      return [
+        { id: 'driver', label: 'Dashboard', icon: Navigation },
+        { id: 'home', label: 'Mapa', icon: Bike },
+        { id: 'history', label: 'Kasaysayan', icon: History },
+        { id: 'tourist', label: 'Galaan', icon: Compass },
+      ];
+    }
+    if (user?.role === 'admin') {
+      return [
+        { id: 'admin', label: 'Admin Suite', icon: ShieldCheck },
+        { id: 'home', label: 'Passenger App', icon: Bike },
+        { id: 'history', label: 'History', icon: History },
+      ];
+    }
+    return [
+      { id: 'home', label: 'Pasada', icon: Bike },
+      { id: 'tourist', label: 'Explore', icon: Compass },
+      { id: 'history', label: 'History', icon: History },
+    ];
   };
 
-  const driverTab = getDriverOrAdminTab();
-
-  const tabs = [
-    { id: 'home', label: 'Pasada', icon: Bike },
-    { id: 'tourist', label: 'Explore', icon: Compass },
-    { id: 'history', label: 'History', icon: History },
-    driverTab,
-  ];
+  const tabs = getTabs();
 
   return (
     <nav className="fixed bottom-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.1)] rounded-t-3xl px-2 py-1.5 border-t border-outline-variant/10">

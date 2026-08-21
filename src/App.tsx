@@ -10,18 +10,20 @@ import { HistoryAndReceipts } from './pages/HistoryAndReceipts';
 
 export const App: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const getRoleDefaultTab = (role?: string) => {
+    if (role === 'driver') return 'driver';
+    if (role === 'admin') return 'admin';
+    return 'home';
+  };
 
-  // Sync default active tab based on user's Supabase role upon login
+  const [activeTab, setActiveTab] = useState<string>(() => getRoleDefaultTab(user?.role));
+
+  // Sync active tab whenever user or role changes upon login
   useEffect(() => {
-    if (user?.role === 'driver') {
-      setActiveTab('driver');
-    } else if (user?.role === 'admin') {
-      setActiveTab('admin');
-    } else if (user?.role === 'passenger') {
-      setActiveTab('home');
+    if (user?.role) {
+      setActiveTab(getRoleDefaultTab(user.role));
     }
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
 
   // Loading state while verifying Supabase session on startup
   if (isLoading) {

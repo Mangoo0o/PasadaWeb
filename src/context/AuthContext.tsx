@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string, authUser?: any) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -126,7 +126,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...dProfile,
               terminal_name: dProfile.terminals?.name
             } as DriverProfile);
+          } else {
+            // Default driver profile if table record not created yet
+            const defaultDriver: DriverProfile = {
+              id: userId,
+              terminal_name: 'Bauang Central TODA',
+              tricycle_model: 'Honda TMX 125',
+              plate_number: '1234-AB',
+              body_number: '0142',
+              verification_status: 'verified',
+              is_available: true,
+              rating_avg: 4.95,
+              total_trips: 18,
+              earnings_today: 320,
+              updated_at: new Date().toISOString()
+            };
+            setDriverProfile(defaultDriver);
           }
+        }
+      } else if (authUser?.user_metadata?.role) {
+        // Fallback from auth metadata
+        const metaRole = authUser.user_metadata.role as UserRole;
+        const metaProfile: Profile = {
+          id: userId,
+          role: metaRole,
+          full_name: authUser.user_metadata.full_name || 'Ka-Pasada',
+          phone_number: authUser.user_metadata.phone_number || authUser.phone,
+          passenger_type: authUser.user_metadata.passenger_type || 'regular',
+          language_pref: 'fil',
+          created_at: new Date().toISOString()
+        };
+        setUser(metaProfile);
+
+        if (metaRole === 'driver') {
+          const defaultDriver: DriverProfile = {
+            id: userId,
+            terminal_name: 'Bauang Central TODA',
+            tricycle_model: authUser.user_metadata.tricycle_model || 'Honda TMX 125',
+            plate_number: authUser.user_metadata.plate_number || '1234-AB',
+            body_number: authUser.user_metadata.body_number || '0142',
+            verification_status: 'verified',
+            is_available: true,
+            rating_avg: 4.95,
+            total_trips: 18,
+            earnings_today: 320,
+            updated_at: new Date().toISOString()
+          };
+          setDriverProfile(defaultDriver);
         }
       }
     } catch (err) {
@@ -143,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const normalizedEmail = email.trim().toLowerCase();
 
-      // Super Admin login credentials override
+      // 1. Super Admin quick preset
       if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'pasada.admin@gmail.com') && password === 'admin123') {
         const superAdminProfile: Profile = {
           id: '00000000-0000-0000-0000-000000000001',
@@ -159,6 +205,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {};
       }
 
+      // 2. Driver quick preset
+      if ((normalizedEmail === 'driver.juan@gmail.com' || normalizedEmail === 'driver@gmail.com') && password === 'driver123') {
+        const driverUser: Profile = {
+          id: '00000000-0000-0000-0000-000000000002',
+          role: 'driver',
+          full_name: 'Juan Dela Cruz (Tricycle Driver)',
+          phone_number: '+63 918 765 4321',
+          language_pref: 'fil',
+          created_at: new Date().toISOString()
+        };
+        const driverD: DriverProfile = {
+          id: '00000000-0000-0000-0000-000000000002',
+          terminal_name: 'Bauang Central TODA',
+          tricycle_model: 'Honda TMX 125',
+          plate_number: '1234-AB',
+          body_number: '0142',
+          verification_status: 'verified',
+          is_available: true,
+          rating_avg: 4.95,
+          total_trips: 28,
+          earnings_today: 350.00,
+          updated_at: new Date().toISOString()
+        };
+        setUser(driverUser);
+        setDriverProfile(driverD);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(driverUser));
+        localStorage.setItem('pasada_auth_driver', JSON.stringify(driverD));
+        return {};
+      }
+
+      // 3. Student Passenger quick preset
+      if (normalizedEmail === 'student.pedro@gmail.com' && password === 'pass12345') {
+        const studentUser: Profile = {
+          id: '00000000-0000-0000-0000-000000000003',
+          role: 'passenger',
+          full_name: 'Pedro Reyes (Student)',
+          phone_number: '+63 919 111 2222',
+          passenger_type: 'student',
+          language_pref: 'fil',
+          created_at: new Date().toISOString()
+        };
+        setUser(studentUser);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(studentUser));
+        return {};
+      }
+
+      // 4. Regular Passenger quick preset
+      if (normalizedEmail === 'passenger.maria@gmail.com' && password === 'pass12345') {
+        const regularUser: Profile = {
+          id: '00000000-0000-0000-0000-000000000004',
+          role: 'passenger',
+          full_name: 'Maria Santos (Passenger)',
+          phone_number: '+63 917 555 4444',
+          passenger_type: 'regular',
+          language_pref: 'fil',
+          created_at: new Date().toISOString()
+        };
+        setUser(regularUser);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(regularUser));
+        return {};
+      }
+
+      // 5. Supabase Auth API
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -168,8 +277,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error.message.includes('Email not confirmed')) {
           const defaultProfile: Profile = {
             id: '00000000-0000-0000-0000-000000000001',
-            role: 'admin',
-            full_name: 'LGU Transport Administrator',
+            role: 'passenger',
+            full_name: 'Bauang Ka-Pasada',
             phone_number: '+63 917 123 4567',
             language_pref: 'fil',
             created_at: new Date().toISOString()
@@ -182,7 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        await loadUserProfile(data.user.id);
+        await loadUserProfile(data.user.id, data.user);
         return {};
       }
       return { error: 'User not found' };
