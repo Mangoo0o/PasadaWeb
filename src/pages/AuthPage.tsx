@@ -174,14 +174,14 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f4faff] min-h-screen text-[#071e27] antialiased relative overflow-hidden flex flex-col items-center justify-center p-4 selection:bg-[#0056b3] selection:text-white font-sans">
+    <div className="bg-[#f4faff] min-h-screen min-h-[100dvh] w-full text-[#071e27] antialiased relative overflow-x-hidden overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 py-8 sm:py-12 selection:bg-[#0056b3] selection:text-white font-sans">
       
       {/* Decorative Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#0056b3]/15 to-transparent pointer-events-none -z-10"></div>
-      <div className="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#0056b3]/10 blur-3xl pointer-events-none -z-10"></div>
-      <div className="absolute -bottom-[10%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#fcd400]/10 blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#0056b3]/15 to-transparent pointer-events-none -z-10"></div>
+      <div className="fixed -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#0056b3]/10 blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed -bottom-[10%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#fcd400]/10 blur-3xl pointer-events-none -z-10"></div>
 
-      <main className="w-full max-w-md px-3 py-6 relative z-10">
+      <main className="w-full max-w-md px-1 sm:px-3 py-2 sm:py-6 relative z-10 my-auto">
         
         {/* Branding Header */}
         <header className="text-center mb-6">
@@ -197,7 +197,7 @@ export const AuthPage: React.FC = () => {
         </header>
 
         {/* Main Glass Panel */}
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-6 sm:p-7 border border-white/60 dark:border-slate-800 relative overflow-hidden">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-6 sm:p-7 border border-white/60 dark:border-slate-800 relative">
           
           {/* Feedback Alerts */}
           {errorMsg && (
