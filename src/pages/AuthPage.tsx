@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  ShieldCheck, 
-  Bike, 
-  Car, 
-  User, 
   Lock, 
   Mail, 
   Phone, 
   Eye, 
   EyeOff, 
-  ArrowRight, 
+  ArrowLeft, 
   AlertCircle, 
   CheckCircle2, 
   Loader2,
-  Sparkles
+  Sparkles,
+  Car,
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types/database.types';
@@ -21,68 +20,81 @@ import { UserRole } from '../types/database.types';
 export const AuthPage: React.FC = () => {
   const { signIn, signUp } = useAuth();
   
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [role, setRole] = useState<UserRole>('passenger');
+  const [view, setView] = useState<'login' | 'register'>('login');
+  const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   
-  // Form fields
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   
-  // Driver specific fields
-  const [bodyNumber, setBodyNumber] = useState('');
-  const [plateNumber, setPlateNumber] = useState('');
-  const [tricycleModel, setTricycleModel] = useState('Honda TMX 125');
+  // Register fields
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPlate, setRegPlate] = useState('');
+  const [regBodyNumber, setRegBodyNumber] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
 
   // Status
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsLoading(true);
 
     try {
-      if (mode === 'login') {
-        const res = await signIn(email, password);
-        if (res.error) {
-          setErrorMsg(res.error);
-        }
-      } else {
-        if (!fullName.trim()) {
-          setErrorMsg('Paki-lagay ang iyong buong pangalan.');
-          setIsLoading(false);
-          return;
-        }
-
-        const res = await signUp({
-          role,
-          email: email.trim(),
-          password,
-          fullName: fullName.trim(),
-          phoneNumber: phoneNumber.trim(),
-          bodyNumber: role === 'driver' ? bodyNumber.trim() : undefined,
-          plateNumber: role === 'driver' ? plateNumber.trim() : undefined,
-          tricycleModel: role === 'driver' ? tricycleModel : undefined
-        });
-
-        if (res.error) {
-          setErrorMsg(res.error);
-        } else {
-          setSuccessMsg('Matagumpay ang pagpaparehistro! Maaari ka nang mag-login.');
-          setTimeout(() => {
-            setMode('login');
-            setSuccessMsg(null);
-          }, 1500);
-        }
+      const res = await signIn(loginEmail.trim(), loginPassword);
+      if (res.error) {
+        setErrorMsg(res.error);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'May naganap na error. Pakisubukan muli.');
+      setErrorMsg(err.message || 'Hindi makapag-login. Pakisubukang muli.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setIsLoading(true);
+
+    try {
+      if (!regName.trim()) {
+        setErrorMsg('Paki-lagay ang iyong buong pangalan.');
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await signUp({
+        role: role as UserRole,
+        email: regEmail.trim(),
+        password: regPassword,
+        fullName: regName.trim(),
+        phoneNumber: regPhone.trim(),
+        plateNumber: role === 'driver' ? regPlate.trim() : undefined,
+        bodyNumber: role === 'driver' ? (regBodyNumber.trim() || regPlate.trim()) : undefined,
+      });
+
+      if (res.error) {
+        setErrorMsg(res.error);
+      } else {
+        setSuccessMsg('Matagumpay ang pagpaparehistro! Maaari ka nang mag-login.');
+        setTimeout(() => {
+          setView('login');
+          setLoginEmail(regEmail);
+          setSuccessMsg(null);
+        }, 1500);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'May naganap na error sa pagpaparehistro.');
     } finally {
       setIsLoading(false);
     }
@@ -91,71 +103,76 @@ export const AuthPage: React.FC = () => {
   // Quick fill helper for testing / demonstration
   const handleQuickFill = (targetRole: 'passenger' | 'driver' | 'admin') => {
     setErrorMsg(null);
-    setMode('login');
+    setView('login');
     if (targetRole === 'admin') {
-      setEmail('admin@gmail.com');
-      setPassword('admin123');
+      setRole('passenger');
+      setLoginEmail('admin@gmail.com');
+      setLoginPassword('admin123');
     } else if (targetRole === 'driver') {
-      setEmail('driver.juan@gmail.com');
-      setPassword('driver123');
+      setRole('driver');
+      setLoginEmail('driver.juan@gmail.com');
+      setLoginPassword('driver123');
     } else {
-      setEmail('passenger.maria@gmail.com');
-      setPassword('pass12345');
+      setRole('passenger');
+      setLoginEmail('passenger.maria@gmail.com');
+      setLoginPassword('pass12345');
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#001D40] via-[#00346F] to-[#00122A] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
-      {/* Background Decorative Rings */}
-      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#00C1FD]/10 blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#00346F]/50 blur-3xl pointer-events-none"></div>
+    <div className="bg-[#f4faff] min-h-screen text-[#071e27] antialiased relative overflow-hidden flex flex-col items-center justify-center p-4 selection:bg-[#0056b3] selection:text-white font-sans">
+      
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#0056b3]/15 to-transparent pointer-events-none -z-10"></div>
+      <div className="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#0056b3]/10 blur-3xl pointer-events-none -z-10"></div>
+      <div className="absolute -bottom-[10%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#fcd400]/10 blur-3xl pointer-events-none -z-10"></div>
 
-      <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-slate-200/80 dark:border-slate-800 overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <main className="w-full max-w-md px-3 py-6 relative z-10">
         
-        {/* Brand Header */}
-        <div className="bg-gradient-to-r from-[#00346F] to-[#004A99] p-6 text-white text-center relative overflow-hidden">
-          <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/5 pointer-events-none"></div>
-          
-          <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-lg">
-            <ShieldCheck className="w-8 h-8 text-[#00C1FD]" />
+        {/* Branding Header */}
+        <header className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#003f87] text-white shadow-lg shadow-[#003f87]/25 mb-3">
+            <Car className="w-8 h-8 text-[#00C1FD]" />
           </div>
-
-          <h1 className="text-2xl font-black tracking-tight text-white">
+          <h1 className="text-3xl font-black text-[#003f87] tracking-tight">
             PasadaGuide
           </h1>
-          <p className="text-xs font-semibold text-sky-200 mt-1 uppercase tracking-wider">
-            Bauang Municipality Smart Transport
+          <p className="text-sm font-medium text-[#424752] mt-0.5">
+            Your ride, your rules.
           </p>
-        </div>
+        </header>
 
-        {/* Mode Switcher Tabs (Login vs Sign Up) */}
-        <div className="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-black">
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setErrorMsg(null); }}
-            className={`py-2.5 rounded-xl transition-all ${
-              mode === 'login'
-                ? 'bg-white dark:bg-slate-900 text-[#00346F] dark:text-[#00C1FD] shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Mag-login (Sign In)
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('signup'); setErrorMsg(null); }}
-            className={`py-2.5 rounded-xl transition-all ${
-              mode === 'signup'
-                ? 'bg-white dark:bg-slate-900 text-[#00346F] dark:text-[#00C1FD] shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Mag-rehistro (Sign Up)
-          </button>
-        </div>
+        {/* Main Glass Panel */}
+        <div className="bg-white/85 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-6 border border-white/60 dark:border-slate-800 relative overflow-hidden">
+          
+          {/* Mode Toggle (Passenger / Driver) */}
+          <div className="bg-[#d5ecf8] dark:bg-slate-800 rounded-full p-1 flex mb-5 relative">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#003f87] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
+                role === 'driver' ? 'left-[calc(50%+2px)]' : 'left-1'
+              }`}
+            />
+            <button 
+              type="button"
+              onClick={() => setRole('passenger')}
+              className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
+                role === 'passenger' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
+              }`}
+            >
+              Passenger
+            </button>
+            <button 
+              type="button"
+              onClick={() => setRole('driver')}
+              className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
+                role === 'driver' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
+              }`}
+            >
+              Driver
+            </button>
+          </div>
 
-        {/* Form Body */}
-        <div className="p-6">
+          {/* Feedback Alerts */}
           {errorMsg && (
             <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -170,212 +187,290 @@ export const AuthPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            {/* If Sign Up: Select Role */}
-            {mode === 'signup' && (
-              <div className="space-y-1.5 mb-2">
-                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                  Uri ng Account
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRole('passenger')}
-                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all ${
-                      role === 'passenger'
-                        ? 'border-[#00346F] bg-sky-50 dark:bg-sky-950/40 text-[#00346F] dark:text-[#00C1FD] font-black'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-semibold'
-                    }`}
-                  >
-                    <User className="w-4 h-4" />
-                    <span className="text-xs">Pasahero</span>
-                  </button>
+          {/* 1. LOGIN VIEW */}
+          {view === 'login' && (
+            <div className="transition-all duration-300 animate-in fade-in">
+              <h2 className="text-lg font-bold text-[#071e27] dark:text-slate-100 mb-4">
+                Welcome Back
+              </h2>
 
-                  <button
-                    type="button"
-                    onClick={() => setRole('driver')}
-                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all ${
-                      role === 'driver'
-                        ? 'border-[#00346F] bg-sky-50 dark:bg-sky-950/40 text-[#00346F] dark:text-[#00C1FD] font-black'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-semibold'
-                    }`}
-                  >
-                    <Bike className="w-4 h-4" />
-                    <span className="text-xs">Tricycle Driver</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Full Name (Sign Up only) */}
-            {mode === 'signup' && (
-              <div className="space-y-1">
-                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                  Buong Pangalan
-                </label>
-                <div className="relative flex items-center">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Juan Dela Cruz"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#00346F] focus:ring-2 focus:ring-[#00346F]/15"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Email Address */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                Email Address
-              </label>
-              <div className="relative flex items-center">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@gmail.com"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#00346F] focus:ring-2 focus:ring-[#00346F]/15"
-                />
-              </div>
-            </div>
-
-            {/* Phone Number (Sign Up only) */}
-            {mode === 'signup' && (
-              <div className="space-y-1">
-                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                  Numero ng Telepono
-                </label>
-                <div className="relative flex items-center">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="0917 123 4567"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#00346F] focus:ring-2 focus:ring-[#00346F]/15"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Driver Details (Sign Up for Driver only) */}
-            {mode === 'signup' && role === 'driver' && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
-                <div className="text-[10px] font-bold text-[#00346F] dark:text-[#00C1FD] uppercase tracking-wider flex items-center gap-1.5">
-                  <Bike className="w-3.5 h-3.5" />
-                  <span>Impormasyon ng Tricycle</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block">Body Number</label>
-                    <input
+              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+                <div>
+                  <label className="sr-only" htmlFor="login-email">Email or Phone</label>
+                  <div className="relative group">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="login-email"
                       type="text"
                       required
-                      value={bodyNumber}
-                      onChange={(e) => setBodyNumber(e.target.value)}
-                      placeholder="e.g. 0142"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:border-[#00346F]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block">Plate Number</label>
-                    <input
-                      type="text"
-                      required
-                      value={plateNumber}
-                      onChange={(e) => setPlateNumber(e.target.value)}
-                      placeholder="e.g. 1234-AB"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:border-[#00346F]"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="Email or Phone Number"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block">Model ng Motor</label>
-                  <input
-                    type="text"
-                    value={tricycleModel}
-                    onChange={(e) => setTricycleModel(e.target.value)}
-                    placeholder="e.g. Honda TMX 125"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:border-[#00346F]"
-                  />
+                  <label className="sr-only" htmlFor="login-password">Password</label>
+                  <div className="relative group">
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="login-password"
+                      type={showLoginPassword ? 'text' : 'password'}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Password"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-11 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003f87] transition-colors cursor-pointer"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="flex justify-end mt-1.5">
+                    <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Paki-ugnayan ang LGU TODA Office upang i-reset ang password.'); }} className="text-xs font-semibold text-[#003f87] dark:text-[#00C1FD] hover:underline">
+                      Forgot password?
+                    </a>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Password */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                Password
-              </label>
-              <div className="relative flex items-center">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#00346F] focus:ring-2 focus:ring-[#00346F]/15"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm rounded-full shadow-md shadow-[#003f87]/25 active:scale-[0.98] transition-all flex items-center justify-center mt-2 cursor-pointer disabled:opacity-70"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#00C1FD]" />
+                      <span>Logging in...</span>
+                    </div>
+                  ) : (
+                    <span>Log In</span>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-5 text-center">
+                <p className="text-xs text-slate-500 font-medium">
+                  Don't have an account?{' '}
+                  <button 
+                    type="button"
+                    onClick={() => { setView('register'); setErrorMsg(null); }}
+                    className="text-[#003f87] dark:text-[#00C1FD] font-bold hover:underline decoration-2 underline-offset-4 transition-all cursor-pointer"
+                  >
+                    Sign up <span className="opacity-70 text-[10px] ml-0.5 uppercase tracking-wider">Mag-sign up</span>
+                  </button>
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="relative flex items-center py-4">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                <span className="flex-shrink-0 mx-3 text-[11px] font-bold text-slate-400">OR</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+              </div>
+
+              {/* Social / Direct Login Buttons */}
+              <div className="space-y-2">
+                <button 
+                  type="button"
+                  onClick={() => alert('Ang Google Sign-In ay magiging available sa susunod na update.')}
+                  className="w-full h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-[#071e27] dark:text-slate-100 font-semibold text-xs rounded-full active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-sm"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  <span>Continue with Google</span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={() => alert('Ang Facebook Sign-In ay magiging available sa susunod na update.')}
+                  className="w-full h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-[#071e27] dark:text-slate-100 font-semibold text-xs rounded-full active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-sm"
+                >
+                  <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <span>Continue with Facebook</span>
                 </button>
               </div>
             </div>
+          )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 mt-2 rounded-xl bg-gradient-to-r from-[#00346F] to-[#004A99] text-white font-black text-xs sm:text-sm shadow-[0_4px_16px_rgba(0,52,111,0.3)] hover:from-[#00234d] hover:to-[#00346F] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#00C1FD]" />
-                  <span>Nagpoproseso...</span>
-                </>
-              ) : (
-                <>
-                  <span>{mode === 'login' ? 'Pumasok (Sign In)' : 'Kumpletuhin ang Pag-rehistro'}</span>
-                  <ArrowRight className="w-4 h-4 text-[#00C1FD]" />
-                </>
-              )}
-            </button>
-          </form>
+          {/* 2. REGISTRATION VIEW */}
+          {view === 'register' && (
+            <div className="transition-all duration-300 animate-in fade-in">
+              <div className="flex items-center gap-2 mb-4">
+                <button 
+                  type="button"
+                  onClick={() => { setView('login'); setErrorMsg(null); }}
+                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-[#003f87] transition-colors cursor-pointer"
+                  title="Back to login"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h2 className="text-lg font-bold text-[#071e27] dark:text-slate-100">
+                  Create {role === 'driver' ? 'Driver' : 'Passenger'} Account
+                </h2>
+              </div>
+
+              <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                {/* Full Name */}
+                <div>
+                  <label className="sr-only" htmlFor="reg-name">Full Name</label>
+                  <div className="relative group">
+                    <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="reg-name"
+                      type="text"
+                      required
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      placeholder="Full Name"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="sr-only" htmlFor="reg-email">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="reg-email"
+                      type="email"
+                      required
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      placeholder="Email Address"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="sr-only" htmlFor="reg-phone">Phone Number</label>
+                  <div className="relative group">
+                    <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="reg-phone"
+                      type="tel"
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="Phone Number (e.g. 0917 123 4567)"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
+                    />
+                  </div>
+                </div>
+
+                {/* Driver Specific Fields */}
+                {role === 'driver' && (
+                  <div className="space-y-2.5 p-3 rounded-xl bg-sky-50/70 dark:bg-slate-800/80 border border-sky-200/60 dark:border-slate-700 animate-in fade-in">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Tricycle Plate & Body Number
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input 
+                          type="text"
+                          required
+                          value={regPlate}
+                          onChange={(e) => setRegPlate(e.target.value.toUpperCase())}
+                          placeholder="Plate No. (1234-AB)"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold uppercase focus:border-[#003f87] outline-none"
+                        />
+                        <input 
+                          type="text"
+                          required
+                          value={regBodyNumber}
+                          onChange={(e) => setRegBodyNumber(e.target.value)}
+                          placeholder="Body No. (e.g. 0142)"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold focus:border-[#003f87] outline-none"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Required for Bauang LGU driver franchise verification.
+                    </p>
+                  </div>
+                )}
+
+                {/* Password */}
+                <div>
+                  <label className="sr-only" htmlFor="reg-password">Password</label>
+                  <div className="relative group">
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] transition-colors" />
+                    <input 
+                      id="reg-password"
+                      type={showRegPassword ? 'text' : 'password'}
+                      required
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="Create Password"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-11 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003f87] transition-colors cursor-pointer"
+                    >
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm rounded-full shadow-md shadow-[#003f87]/25 active:scale-[0.98] transition-all flex items-center justify-center mt-3 cursor-pointer disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#00C1FD]" />
+                      <span>Creating Account...</span>
+                    </div>
+                  ) : (
+                    <span>Register</span>
+                  )}
+                </button>
+              </form>
+
+              <p className="text-[10px] text-center text-slate-400 mt-4 leading-normal">
+                By registering, you agree to the Bauang Municipal Transport <a href="#terms" onClick={(e) => e.preventDefault()} className="text-[#003f87] underline">Terms of Service</a> and <a href="#privacy" onClick={(e) => e.preventDefault()} className="text-[#003f87] underline">Privacy Policy</a>.
+              </p>
+            </div>
+          )}
 
           {/* Quick Demo Access Bar */}
-          <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="mt-5 pt-3 border-t border-slate-200 dark:border-slate-800">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2 flex items-center justify-center gap-1.5">
               <Sparkles className="w-3 h-3 text-[#00C1FD]" />
-              <span>Mabilis na Pag-login para sa Pagsubok:</span>
+              <span>Quick Login Shortcuts for Testing:</span>
             </div>
             
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => handleQuickFill('passenger')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
-                👤 Pasahero
+                👤 Passenger
               </button>
               
               <button
                 type="button"
                 onClick={() => handleQuickFill('driver')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
                 🛺 Driver
               </button>
@@ -383,7 +478,7 @@ export const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleQuickFill('admin')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
                 🛡️ LGU Admin
               </button>
@@ -392,10 +487,10 @@ export const AuthPage: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 text-center text-[10px] text-slate-400 font-medium">
+        <div className="mt-4 text-center text-[11px] text-slate-500 font-medium">
           Bauang Municipal Transport Licensing & Regulatory Office • Powered by Supabase
         </div>
-      </div>
+      </main>
     </div>
   );
 };
