@@ -296,57 +296,34 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
         {/* 2. Route & Tariff Summary Details */}
         <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           
-          {/* Connected 3-Step Journey Timeline */}
-          <div className="bg-slate-50/90 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
-            
-            {/* Step 1: Driver Location */}
+          {/* Simple Clean Route Summary */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
+            {/* Pickup */}
             <div className="flex items-start gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#003f87] text-[#00C1FD] flex items-center justify-center mt-0.5 shrink-0 shadow-sm">
-                <div className="w-1.5 h-1.5 bg-[#00C1FD] rounded-full"></div>
-              </div>
+              <div className="w-3 h-3 rounded-full bg-[#00A3FF] ring-4 ring-[#00A3FF]/20 shrink-0 mt-1"></div>
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase font-bold text-slate-400">
-                  Iyong Puwesto (Driver)
-                </div>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                  Kasalukuyang Lokasyon sa Bauang
-                </div>
-              </div>
-            </div>
-
-            {/* Cyan Dotted Road Segment */}
-            <div className="border-l-2 border-dashed border-[#00A3FF] ml-2 h-3"></div>
-
-            {/* Step 2: Passenger Pickup */}
-            <div className="flex items-start gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#00A3FF] flex items-center justify-center text-white mt-0.5 shrink-0 shadow-sm">
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase font-black text-[#00A3FF] tracking-wider">
-                  Sakayan (Pickup)
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                <span className="text-[10px] uppercase font-bold text-[#00A3FF] block tracking-wide">
+                  Sakayan
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate block">
                   {booking.origin_name}
-                </div>
+                </span>
               </div>
             </div>
 
-            {/* Orange Solid Road Segment */}
-            <div className="border-l-2 border-[#FF6B00] ml-2 h-3"></div>
+            {/* Connecting Line */}
+            <div className="border-l-2 border-dashed border-slate-200 dark:border-slate-700 ml-1.5 h-3"></div>
 
-            {/* Step 3: Drop-off Destination */}
+            {/* Destination */}
             <div className="flex items-start gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#FF6B00] flex items-center justify-center text-white mt-0.5 shrink-0 shadow-sm">
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
+              <div className="w-3 h-3 rounded-full bg-[#FF6B00] ring-4 ring-[#FF6B00]/20 shrink-0 mt-1"></div>
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase font-black text-[#FF6B00] tracking-wider">
-                  Babaan (Destination)
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                <span className="text-[10px] uppercase font-bold text-[#FF6B00] block tracking-wide">
+                  Babaan
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate block">
                   {booking.destination_name}
-                </div>
+                </span>
               </div>
             </div>
           </div>
@@ -369,21 +346,14 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Action CTAs */}
-          <div className="space-y-2 pt-1">
+          {/* Action CTA (No bottom isara button, top floating ✕ handles dismissal) */}
+          <div className="pt-1">
             <button
               onClick={() => onAccept(booking)}
               className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
               <span>Tanggapin ang Biyahe</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-full py-2 text-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              Isara
             </button>
           </div>
 
