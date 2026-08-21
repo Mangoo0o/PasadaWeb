@@ -242,7 +242,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   const handleStartBooking = async () => {
     setBookingError(null);
     if (!user) {
-      if (onOpenAuthModal) onOpenAuthModal();
+      signOut();
       return;
     }
 
@@ -355,7 +355,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               </button>
             ) : (
               <button
-                onClick={onOpenAuthModal}
+                onClick={signOut}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-black bg-[#00C1FD] text-[#00346F] shadow-sm hover:bg-sky-400 active:scale-95 transition-all shrink-0 cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />

@@ -76,17 +76,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
+    const handleForcedLogout = () => {
+      setUser(null);
+      setDriverProfile(null);
+      localStorage.removeItem('pasada_auth_user');
+      localStorage.removeItem('pasada_auth_driver');
+      localStorage.removeItem('pasada_admin_profile');
+    };
+
+    window.addEventListener('pasada_logout', handleForcedLogout);
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         await loadUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setDriverProfile(null);
+        localStorage.removeItem('pasada_auth_user');
+        localStorage.removeItem('pasada_auth_driver');
+        localStorage.removeItem('pasada_admin_profile');
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
+      window.removeEventListener('pasada_logout', handleForcedLogout);
     };
   }, []);
 
@@ -256,6 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setDriverProfile(null);
       localStorage.removeItem('pasada_auth_user');
       localStorage.removeItem('pasada_auth_driver');
+      localStorage.removeItem('pasada_admin_profile');
     }
   };
 

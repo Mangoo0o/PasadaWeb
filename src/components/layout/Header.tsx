@@ -84,8 +84,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuthModal, activeTab, setA
             </div>
           ) : (
             <button
-              onClick={onOpenAuthModal}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-primary text-on-primary shadow-md hover:bg-primary-container transition-all"
+              onClick={signOut}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-primary text-on-primary shadow-md hover:bg-primary-container transition-all cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>

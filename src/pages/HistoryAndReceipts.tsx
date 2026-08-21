@@ -19,9 +19,9 @@ interface HistoryAndReceiptsProps {
   onOpenAuthModal?: () => void;
 }
 
-export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ onOpenAuthModal }) => {
+export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -76,8 +76,8 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ onOpenAu
           Mag-login upang makita ang iyong mga nakaraang biyahe, resibo, at maitalang pamasahe sa Bauang.
         </p>
         <button
-          onClick={onOpenAuthModal}
-          className="px-6 py-3 bg-[#003f87] text-white font-black text-xs rounded-xl hover:bg-[#002f66] transition-colors shadow-md active:scale-95"
+          onClick={signOut}
+          className="px-6 py-3 bg-[#003f87] text-white font-black text-xs rounded-xl hover:bg-[#002f66] transition-colors shadow-md active:scale-95 cursor-pointer"
         >
           Pumasok (Sign In)
         </button>

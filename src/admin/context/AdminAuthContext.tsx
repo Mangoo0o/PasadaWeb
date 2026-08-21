@@ -188,6 +188,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       localStorage.removeItem('pasada_admin_profile');
+      localStorage.removeItem('pasada_auth_user');
+      localStorage.removeItem('pasada_auth_driver');
+      window.dispatchEvent(new Event('pasada_logout'));
     }
   };
 

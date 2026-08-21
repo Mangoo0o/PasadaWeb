@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   Star, 
   TrendingUp, 
-  ShieldCheck 
+  ShieldCheck,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/common/Card';
@@ -19,9 +20,9 @@ interface DriverDashboardProps {
   onOpenAuthModal?: () => void;
 }
 
-export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenAuthModal }) => {
+export const DriverDashboard: React.FC<DriverDashboardProps> = () => {
   const { t } = useTranslation();
-  const { user, driverProfile, toggleDriverAvailability } = useAuth();
+  const { user, driverProfile, toggleDriverAvailability, signOut } = useAuth();
 
   const isOnline = driverProfile?.is_available ?? true;
   const [openDispatches, setOpenDispatches] = useState<Booking[]>([]);
@@ -82,8 +83,8 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenAuthModa
           Mag-login bilang rehistradong tricycle driver ng Bauang upang makatanggap ng dispatch at pasahero.
         </p>
         <button
-          onClick={onOpenAuthModal}
-          className="px-6 py-3 bg-[#003f87] text-white font-black text-xs rounded-xl hover:bg-[#002f66] transition-colors shadow-md active:scale-95"
+          onClick={signOut}
+          className="px-6 py-3 bg-[#003f87] text-white font-black text-xs rounded-xl hover:bg-[#002f66] transition-colors shadow-md active:scale-95 cursor-pointer"
         >
           Mag-login Bilang Driver
         </button>
@@ -117,17 +118,27 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenAuthModa
             </p>
           </div>
 
-          <button
-            onClick={toggleDriverAvailability}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-lg transition-all active:scale-95 ${
-              isOnline
-                ? 'bg-white text-emerald-800 hover:bg-slate-50'
-                : 'bg-[#fcd400] text-[#003f87] hover:bg-[#e5be00]'
-            }`}
-          >
-            <Power className="w-4 h-4" />
-            <span>{isOnline ? 'Mag-OFFLINE' : 'Mag-ONLINE'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleDriverAvailability}
+              className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-lg transition-all active:scale-95 cursor-pointer ${
+                isOnline
+                  ? 'bg-white text-emerald-800 hover:bg-slate-50'
+                  : 'bg-[#fcd400] text-[#003f87] hover:bg-[#e5be00]'
+              }`}
+            >
+              <Power className="w-4 h-4" />
+              <span>{isOnline ? 'Mag-OFFLINE' : 'Mag-ONLINE'}</span>
+            </button>
+
+            <button
+              onClick={signOut}
+              className="p-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-colors shadow-lg active:scale-95 cursor-pointer"
+              title="Sign Out (Bumalik sa Login)"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
