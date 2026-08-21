@@ -320,12 +320,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex items-center gap-2">
           
           {/* Cancel Button */}
-          {tripState !== 'in_transit' && tripState !== 'completed' && (
+          {tripState !== 'completed' && (
             <button
               onClick={handleCancelTrip}
-              className="px-4 py-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors active:scale-95 shrink-0 cursor-pointer"
+              className="px-4 py-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
             >
-              I-cancel
+              <X className="w-3.5 h-3.5" />
+              <span>I-cancel</span>
             </button>
           )}
 

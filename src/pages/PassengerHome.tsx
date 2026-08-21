@@ -613,12 +613,20 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                   </a>
                 )}
               </div>
+
+              <button
+                onClick={handleCancelBooking}
+                className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Kanselahin ang Byahe</span>
+              </button>
             </div>
           )}
 
           {/* Driver Arrived Notification Banner */}
           {bookingState === 'arrived' && activeBooking && (
-            <div className="bg-emerald-500 text-white rounded-2xl p-4 shadow-xl space-y-2 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-emerald-500 text-white rounded-2xl p-4 shadow-xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-amber-300 animate-pulse" />
                 <h4 className="font-black text-sm">
@@ -628,12 +636,20 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               <p className="text-xs text-emerald-100">
                 Paki-abangan si Manong Driver na may <strong>Body #{activeBooking.driver?.body_number || '0142'}</strong> (Plate: {activeBooking.driver?.plate_number || '1234-AB'}).
               </p>
+
+              <button
+                onClick={handleCancelBooking}
+                className="w-full py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Kanselahin ang Byahe</span>
+              </button>
             </div>
           )}
 
           {/* In Transit Active Journey Banner */}
           {bookingState === 'in_transit' && activeBooking && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#FF6B00]/40 shadow-xl p-4 space-y-2 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#FF6B00]/40 shadow-xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
                   KASALUKUYANG BUMIBIYAHE
@@ -645,6 +661,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 Patungong: {selectedLocationFare?.location_name || destinationName}
               </div>
+
+              <button
+                onClick={handleCancelBooking}
+                className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Kanselahin ang Byahe</span>
+              </button>
             </div>
           )}
 
