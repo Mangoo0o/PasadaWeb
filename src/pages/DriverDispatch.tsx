@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches } from '../services/bookingService';
+import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 
 export const DriverDispatch: React.FC = () => {
   const { t } = useTranslation();
@@ -25,6 +26,7 @@ export const DriverDispatch: React.FC = () => {
   const [openDispatches, setOpenDispatches] = useState<Booking[]>([]);
   const [activeTrip, setActiveTrip] = useState<Booking | null>(null);
   const [tripState, setTripState] = useState<'idle' | 'assigned' | 'arrived' | 'in_transit' | 'completed'>('idle');
+  const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     const loadDispatches = async () => {
@@ -210,20 +212,27 @@ export const DriverDispatch: React.FC = () => {
                 {openDispatches.map((bk) => (
                   <div
                     key={bk.id}
-                    className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 hover:border-[#003f87]/40 transition-colors"
+                    onClick={() => setPreviewBooking(bk)}
+                    className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 hover:border-[#003f87]/50 dark:hover:border-sky-400/50 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <div className="space-y-1 text-xs min-w-0 flex-1">
-                      <div className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      <div className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-[#003f87] dark:group-hover:text-[#00C1FD] transition-colors">
                         {bk.origin_name} ➔ {bk.destination_name}
                       </div>
                       <div className="text-xs text-slate-500 flex items-center gap-2">
                         <span>Distansya: <strong>{bk.estimated_distance_km} km</strong></span>
                         <span>•</span>
                         <span className="font-black text-[#003f87] dark:text-[#00C1FD]">₱{bk.estimated_fare.toFixed(2)}</span>
+                        <span>•</span>
+                        <span className="text-[10px] text-[#003f87] dark:text-[#00C1FD] underline font-bold">I-preview ang Mapa</span>
                       </div>
                     </div>
+                    
                     <button
-                      onClick={() => handleAcceptBooking(bk)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAcceptBooking(bk);
+                      }}
                       className="px-5 py-2.5 bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
                     >
                       Tanggapin
@@ -240,6 +249,18 @@ export const DriverDispatch: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Booking Route Preview Modal */}
+      {previewBooking && (
+        <BookingPreviewModal
+          booking={previewBooking}
+          onClose={() => setPreviewBooking(null)}
+          onAccept={(bk) => {
+            setPreviewBooking(null);
+            handleAcceptBooking(bk);
+          }}
+        />
+      )}
 
     </div>
   );
