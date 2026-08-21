@@ -11,7 +11,8 @@ import {
   MapPin, 
   Sparkles,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  LocateFixed
 } from 'lucide-react';
 import { Booking } from '../types/database.types';
 import { updateBookingStatus } from '../services/bookingService';
@@ -81,8 +82,11 @@ const createDestinationIcon = () => {
   });
 };
 
-// Safe Auto-Fit Route Camera Bounds
-const AutoFitRoute: React.FC<{ points: [number, number][]; trigger: string }> = ({ points, trigger }) => {
+// Safe Auto-Fit Route Camera Bounds (Triggered on mount, phase change, or manual focus click)
+const AutoFitRoute: React.FC<{ 
+  points: [number, number][]; 
+  triggerKey: number; 
+}> = ({ points, triggerKey }) => {
   const map = useMap();
   useEffect(() => {
     let timer: any;
@@ -94,13 +98,13 @@ const AutoFitRoute: React.FC<{ points: [number, number][]; trigger: string }> = 
         if (points.length >= 2) {
           const bounds = L.latLngBounds(points);
           map.fitBounds(bounds, {
-            paddingTopLeft: [90, 40],
-            paddingBottomRight: [140, 40],
+            paddingTopLeft: [130, 40],
+            paddingBottomRight: [160, 40],
             maxZoom: 16.5,
-            animate: false,
+            animate: true,
           });
         } else if (points.length === 1) {
-          map.setView(points[0], 16, { animate: false });
+          map.setView(points[0], 16, { animate: true });
         }
       } catch {}
     }, 50);
@@ -108,7 +112,7 @@ const AutoFitRoute: React.FC<{ points: [number, number][]; trigger: string }> = 
     return () => {
       clearTimeout(timer);
     };
-  }, [map, points, trigger]);
+  }, [map, triggerKey]);
   return null;
 };
 
@@ -187,6 +191,16 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const [completedFare, setCompletedFare] = useState<number | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [focusKey, setFocusKey] = useState<number>(0);
+
+  // Trigger camera auto-focus once when phase changes
+  useEffect(() => {
+    setFocusKey((k) => k + 1);
+  }, [tripState]);
+
+  const handleRecenterMap = () => {
+    setFocusKey((k) => k + 1);
+  };
 
   // Dynamically update road polyline matching the active phase
   useEffect(() => {
@@ -339,7 +353,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <AutoFitRoute points={activeFocusPoints} trigger={tripState} />
+          <AutoFitRoute points={activeFocusPoints} triggerKey={focusKey} />
 
           {isHeadingToPickup ? (
             <>
@@ -376,6 +390,17 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </>
           )}
         </MapContainer>
+      </div>
+
+      {/* Floating Re-center / Focus Button */}
+      <div className="absolute right-3 sm:right-4 bottom-36 sm:bottom-40 z-[10000] pointer-events-auto">
+        <button
+          onClick={handleRecenterMap}
+          className="w-12 h-12 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-2xl border border-slate-200/90 dark:border-slate-800 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+          title="I-focus ang Mapa sa Kasalukuyang Ruta"
+        >
+          <LocateFixed className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+        </button>
       </div>
 
       {/* 3. BOTTOM FLOATING ACTION CONTROLS & STAGE STEPPER */}
