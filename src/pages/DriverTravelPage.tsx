@@ -221,10 +221,10 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     : [passengerPickupCoords, destinationDropCoords];
 
   return (
-    <div className="fixed inset-0 z-50 w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
       
       {/* 1. TOP MINIMAL HUD BAR */}
-      <div className="absolute top-4 left-3 right-3 max-w-lg mx-auto z-[500] pointer-events-auto">
+      <div className="absolute top-4 left-3 right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
@@ -316,7 +316,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       </div>
 
       {/* 3. BOTTOM FLOATING ACTION CONTROLS */}
-      <div className="absolute bottom-6 left-3 right-3 max-w-lg mx-auto z-[500] pointer-events-auto">
+      <div className="absolute bottom-6 left-3 right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex items-center gap-2">
           
           {/* Cancel Button */}
@@ -367,7 +367,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
       {/* 4. TRIP COMPLETED SETTLEMENT MODAL */}
       {completedFare !== null && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
             <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-8 h-8" />
