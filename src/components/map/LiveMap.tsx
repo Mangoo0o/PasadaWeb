@@ -284,7 +284,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           const isSelected = selectedLocationFare?.id === loc.id;
           return (
             <Marker
-              key={`loc-pin-${loc.id}`}
+              key={`loc-pin-${loc.id}-${loc.icon || 'pin'}-${loc.lat}-${loc.lng}-${isSelected ? 'sel' : 'unsel'}`}
               position={[loc.lat, loc.lng]}
               icon={createLocationFareIcon(loc, isSelected)}
               eventHandlers={{

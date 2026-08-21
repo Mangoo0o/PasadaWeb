@@ -17,6 +17,17 @@ export const LOCATION_ICON_OPTIONS = [
   { id: 'pin', label: 'General Pin', icon: '📍' },
 ];
 
+export const extractIconFromNotes = (notes?: string): string | null => {
+  if (!notes) return null;
+  const match = notes.match(/\[icon:([a-zA-Z0-9_\-]+)\]/);
+  return match ? match[1] : null;
+};
+
+export const stripIconFromNotes = (notes?: string): string => {
+  if (!notes) return '';
+  return notes.replace(/\[icon:[a-zA-Z0-9_\-]+\]/g, '').trim();
+};
+
 export const getLocationIconEmoji = (iconId?: string, locationName?: string): string => {
   if (iconId) {
     const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === iconId || opt.icon === iconId);
@@ -197,22 +208,29 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
       return DEFAULT_LOCATION_FARES;
     }
 
-    return (data || []).map((item: any) => ({
-      id: item.id,
-      origin_terminal_id: item.origin_terminal_id,
-      terminal_name: item.terminals?.name || 'Bauang Terminal',
-      location_name: item.location_name,
-      lat: Number(item.lat),
-      lng: Number(item.lng),
-      proximity_radius_meters: Number(item.proximity_radius_meters || 800),
-      standard_fare: Number(item.standard_fare || 20.00),
-      discounted_fare: item.discounted_fare ? Number(item.discounted_fare) : Math.round(Number(item.standard_fare || 20.00) * 0.8),
-      icon: item.icon || 'pin',
-      notes: item.notes || '',
-      is_active: item.is_active !== false,
-      created_at: item.created_at,
-      updated_at: item.updated_at
-    }));
+    return (data || []).map((item: any) => {
+      // Resolve icon from item.icon OR embedded [icon:xyz] in notes OR keyword match
+      const iconFromNotes = extractIconFromNotes(item.notes);
+      const resolvedIcon = item.icon || iconFromNotes || 'pin';
+      const cleanNotes = stripIconFromNotes(item.notes);
+
+      return {
+        id: item.id,
+        origin_terminal_id: item.origin_terminal_id,
+        terminal_name: item.terminals?.name || 'Bauang Terminal',
+        location_name: item.location_name,
+        lat: Number(item.lat),
+        lng: Number(item.lng),
+        proximity_radius_meters: Number(item.proximity_radius_meters || 800),
+        standard_fare: Number(item.standard_fare || 20.00),
+        discounted_fare: item.discounted_fare ? Number(item.discounted_fare) : Math.round(Number(item.standard_fare || 20.00) * 0.8),
+        icon: resolvedIcon,
+        notes: cleanNotes,
+        is_active: item.is_active !== false,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      };
+    });
   } catch (err: any) {
     console.warn('Exception fetching location_fares, using fallback:', err.message);
     if (originTerminalId) {
@@ -222,12 +240,17 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
   }
 };
 
-// Create or update a location fare record
+// Create or update a location fare record with robust column + notes fallback
 export const saveLocationFare = async (
-  fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number }
+  fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }
 ): Promise<{ data?: LocationFare; error?: string }> => {
+  const chosenIcon = fare.icon || 'pin';
+  const cleanNotes = stripIconFromNotes(fare.notes || 'LGU Location Tariff');
+  const notesWithEmbeddedIcon = `${cleanNotes} [icon:${chosenIcon}]`.trim();
+
+  // Try 1: Save with full payload including `icon` column and embedded note tag
   try {
-    const payload = {
+    const fullPayload = {
       origin_terminal_id: fare.origin_terminal_id,
       location_name: fare.location_name,
       lat: Number(fare.lat),
@@ -235,8 +258,8 @@ export const saveLocationFare = async (
       proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
       standard_fare: Number(fare.standard_fare),
       discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
-      icon: fare.icon || 'pin',
-      notes: fare.notes || 'LGU Location Tariff',
+      icon: chosenIcon,
+      notes: notesWithEmbeddedIcon,
       is_active: fare.is_active !== false,
       updated_at: new Date().toISOString()
     };
@@ -244,40 +267,103 @@ export const saveLocationFare = async (
     if (fare.id && !fare.id.startsWith('loc-fare-temp-')) {
       const { data, error } = await supabase
         .from('location_fares')
-        .update(payload)
+        .update(fullPayload)
         .eq('id', fare.id)
         .select()
         .single();
 
       if (error) throw error;
-      return { data: data as LocationFare };
+      return { 
+        data: {
+          ...(data as LocationFare),
+          icon: chosenIcon,
+          notes: cleanNotes
+        }
+      };
     } else {
       const { data, error } = await supabase
         .from('location_fares')
-        .insert(payload)
+        .insert(fullPayload)
         .select()
         .single();
 
       if (error) throw error;
-      return { data: data as LocationFare };
+      return { 
+        data: {
+          ...(data as LocationFare),
+          icon: chosenIcon,
+          notes: cleanNotes
+        }
+      };
     }
-  } catch (err: any) {
-    console.warn('DB save note, saving locally:', err.message);
-    const fallbackSaved: LocationFare = {
-      id: fare.id || `loc-fare-${Date.now()}`,
-      origin_terminal_id: fare.origin_terminal_id || 'term-bauang-central',
-      location_name: fare.location_name,
-      lat: Number(fare.lat),
-      lng: Number(fare.lng),
-      proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
-      standard_fare: Number(fare.standard_fare),
-      discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
-      icon: fare.icon || 'pin',
-      notes: fare.notes || 'LGU Location Tariff',
-      is_active: fare.is_active !== false,
-      updated_at: new Date().toISOString()
-    };
-    return { data: fallbackSaved };
+  } catch (primaryErr: any) {
+    console.warn('Note on primary DB save, trying fallback schema mode:', primaryErr.message);
+
+    // Try 2: If `icon` column is missing in DB schema, save with notes embedding
+    try {
+      const fallbackPayload = {
+        origin_terminal_id: fare.origin_terminal_id,
+        location_name: fare.location_name,
+        lat: Number(fare.lat),
+        lng: Number(fare.lng),
+        proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
+        standard_fare: Number(fare.standard_fare),
+        discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
+        notes: notesWithEmbeddedIcon,
+        is_active: fare.is_active !== false,
+        updated_at: new Date().toISOString()
+      };
+
+      if (fare.id && !fare.id.startsWith('loc-fare-temp-')) {
+        const { data, error } = await supabase
+          .from('location_fares')
+          .update(fallbackPayload)
+          .eq('id', fare.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { 
+          data: {
+            ...(data as LocationFare),
+            icon: chosenIcon,
+            notes: cleanNotes
+          }
+        };
+      } else {
+        const { data, error } = await supabase
+          .from('location_fares')
+          .insert(fallbackPayload)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { 
+          data: {
+            ...(data as LocationFare),
+            icon: chosenIcon,
+            notes: cleanNotes
+          }
+        };
+      }
+    } catch (fallbackErr: any) {
+      console.warn('Saving in local state fallback:', fallbackErr.message);
+      const fallbackSaved: LocationFare = {
+        id: fare.id || `loc-fare-${Date.now()}`,
+        origin_terminal_id: fare.origin_terminal_id || 'term-bauang-central',
+        location_name: fare.location_name,
+        lat: Number(fare.lat),
+        lng: Number(fare.lng),
+        proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
+        standard_fare: Number(fare.standard_fare),
+        discounted_fare: fare.discounted_fare ? Number(fare.discounted_fare) : Math.round(Number(fare.standard_fare) * 0.8),
+        icon: chosenIcon,
+        notes: cleanNotes,
+        is_active: fare.is_active !== false,
+        updated_at: new Date().toISOString()
+      };
+      return { data: fallbackSaved };
+    }
   }
 };
 

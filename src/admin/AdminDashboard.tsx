@@ -217,7 +217,7 @@ const AdminContent: React.FC = () => {
 
   // --- Actions & State Updates ---
 
-  const handleSaveLocationFare = async (fareData: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number }) => {
+  const handleSaveLocationFare = async (fareData: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => {
     const res = await saveLocationFare(fareData);
     if (res.data) {
       setLocationFares(prev => {
@@ -239,7 +239,8 @@ const AdminContent: React.FC = () => {
       details_json: { 
         location: fareData.location_name, 
         standard_fare: fareData.standard_fare, 
-        proximity_radius_meters: fareData.proximity_radius_meters 
+        proximity_radius_meters: fareData.proximity_radius_meters,
+        icon: fareData.icon || 'pin'
       },
       created_at: new Date().toISOString(),
       admin: user

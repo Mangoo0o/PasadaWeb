@@ -373,7 +373,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         weight: isMatched ? 3 : 1.5,
                       }}
                     />
-                    <Marker position={[loc.lat, loc.lng]} icon={createAdminLocPin(loc)}>
+                    <Marker 
+                      key={`admin-loc-pin-${loc.id}-${loc.icon || 'pin'}-${loc.lat}-${loc.lng}`}
+                      position={[loc.lat, loc.lng]} 
+                      icon={createAdminLocPin(loc)}
+                    >
                       <Popup>
                         <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>
                           {getLocationIconEmoji(loc.icon, loc.location_name)} {loc.location_name}<br />
