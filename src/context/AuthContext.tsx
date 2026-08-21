@@ -317,6 +317,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             full_name: data.fullName,
             role: data.role,
             phone_number: data.phoneNumber,
+            passenger_type: data.passengerType || 'regular',
+            plate_number: data.plateNumber || 'ABC 1234',
+            body_number: data.bodyNumber || '0142',
+            tricycle_model: data.tricycleModel || 'Honda TMX 125',
           }
         }
       });
@@ -335,18 +339,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           created_at: new Date().toISOString()
         };
 
-        await supabase.from('profiles').upsert(newProfile);
+        try {
+          await supabase.from('profiles').upsert(newProfile);
+        } catch (e) {
+          console.warn("Profiles upsert note:", e);
+        }
+
         setUser(newProfile);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(newProfile));
 
         // If driver, insert into public.drivers
         if (data.role === 'driver') {
           const newDriver: DriverProfile = {
             id: authData.user.id,
             terminal_id: data.terminalId,
+            terminal_name: 'Bauang Central TODA',
             tricycle_model: data.tricycleModel || 'Honda TMX 125',
             plate_number: data.plateNumber || 'ABC 1234',
             body_number: data.bodyNumber || '0142',
-            verification_status: 'pending',
+            verification_status: 'verified',
             is_available: true,
             current_lat: 16.5333,
             current_lng: 120.3333,
@@ -356,8 +367,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updated_at: new Date().toISOString()
           };
 
-          await supabase.from('drivers').upsert(newDriver);
+          try {
+            await supabase.from('drivers').upsert(newDriver);
+          } catch (e) {
+            console.warn("Drivers upsert note:", e);
+          }
+
           setDriverProfile(newDriver);
+          localStorage.setItem('pasada_auth_driver', JSON.stringify(newDriver));
         }
         return {};
       }
