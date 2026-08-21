@@ -132,28 +132,33 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   driverLng,
   onExitTravel,
 }) => {
-  const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+  // 1. Initial coordinates from props / booking data
+  const initialDriverLat = Number(driverLat) || 16.5333;
+  const initialDriverLng = Number(driverLng) || 120.3333;
+  const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
-  const rawDriverLat = driverLat || 16.5333;
-  const rawDriverLng = driverLng || 120.3333;
-  const currentDriverCoords: [number, number] = [
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333,
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333,
-  ];
-
-  const rawOriginLat = booking.origin_lat || 16.5310;
-  const rawOriginLng = booking.origin_lng || 120.3320;
   const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
+    Number(booking.origin_lat) || 16.5310,
+    Number(booking.origin_lng) || 120.3320,
   ];
 
-  const rawDestLat = booking.destination_lat || 16.5385;
-  const rawDestLng = booking.destination_lng || 120.3250;
   const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
+    Number(booking.destination_lat) || 16.5385,
+    Number(booking.destination_lng) || 120.3250,
   ];
+
+  // Try getting live GPS for driver position
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setDriverCoords([pos.coords.latitude, pos.coords.longitude]);
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
 
   const [tripState, setTripState] = useState<'assigned' | 'arrived' | 'in_transit' | 'completed'>(() => {
     if (booking.status === 'driver_arrived') return 'arrived';
@@ -161,11 +166,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     return 'assigned';
   });
 
+  // Phase 1 Route: Driver -> Passenger Pickup
   const [roadToPickup, setRoadToPickup] = useState<[number, number][]>([
-    currentDriverCoords,
+    driverCoords,
     passengerPickupCoords,
   ]);
 
+  // Phase 2 Route: Passenger Pickup -> Destination Drop-off
   const [roadToDestination, setRoadToDestination] = useState<[number, number][]>([
     passengerPickupCoords,
     destinationDropCoords,
@@ -175,23 +182,26 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Fetch OSRM Road polyline dynamically based on current phase
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetchOSRMRoute(currentDriverCoords, passengerPickupCoords),
-      fetchOSRMRoute(passengerPickupCoords, destinationDropCoords),
-    ]).then(([road1, road2]) => {
-      if (active) {
-        setRoadToPickup(road1);
-        setRoadToDestination(road2);
-      }
-    });
+    if (tripState === 'assigned' || tripState === 'arrived') {
+      // Phase 1: Only fetch driver to passenger route
+      fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
+        if (active) setRoadToPickup(road);
+      });
+    } else if (tripState === 'in_transit') {
+      // Phase 2: Only fetch passenger pickup to destination route
+      fetchOSRMRoute(passengerPickupCoords, destinationDropCoords).then((road) => {
+        if (active) setRoadToDestination(road);
+      });
+    }
 
     return () => {
       active = false;
     };
-  }, [booking.id, driverLat, driverLng]);
+  }, [tripState, booking.id, driverCoords[0], driverCoords[1]]);
 
   // Stage Action Handlers
   const handleArrivePickup = async () => {
@@ -225,7 +235,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
   const isHeadingToPickup = tripState === 'assigned' || tripState === 'arrived';
   const activeFocusPoints = isHeadingToPickup
-    ? [currentDriverCoords, passengerPickupCoords]
+    ? [driverCoords, passengerPickupCoords]
     : [passengerPickupCoords, destinationDropCoords];
 
   return (
@@ -300,7 +310,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   lineJoin: 'round',
                 }}
               />
-              <Marker position={currentDriverCoords} icon={createDriverTricycleIcon()} />
+              <Marker position={driverCoords} icon={createDriverTricycleIcon()} />
               <Marker position={passengerPickupCoords} icon={createPassengerPickupIcon()} />
             </>
           ) : (
