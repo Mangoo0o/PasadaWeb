@@ -8,6 +8,7 @@ export interface SignUpData {
   email: string;
   password?: string;
   phoneNumber?: string;
+  passengerType?: 'regular' | 'student' | 'senior' | 'pwd';
   // Driver specific
   tricycleModel?: string;
   plateNumber?: string;
@@ -206,6 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: data.role,
           full_name: data.fullName,
           phone_number: data.phoneNumber,
+          passenger_type: data.passengerType || 'regular',
           language_pref: 'fil',
           created_at: new Date().toISOString()
         };

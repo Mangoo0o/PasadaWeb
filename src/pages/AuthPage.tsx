@@ -12,7 +12,10 @@ import {
   Sparkles,
   Car,
   User,
-  ShieldCheck
+  Bike,
+  GraduationCap,
+  HeartHandshake,
+  Accessibility
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types/database.types';
@@ -22,6 +25,7 @@ export const AuthPage: React.FC = () => {
   
   const [view, setView] = useState<'login' | 'register'>('login');
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
+  const [passengerType, setPassengerType] = useState<'regular' | 'student' | 'senior' | 'pwd'>('regular');
   
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -79,8 +83,9 @@ export const AuthPage: React.FC = () => {
         password: regPassword,
         fullName: regName.trim(),
         phoneNumber: regPhone.trim(),
+        passengerType: role === 'passenger' ? passengerType : 'regular',
         plateNumber: role === 'driver' ? regPlate.trim() : undefined,
-        bodyNumber: role === 'driver' ? (regBodyNumber.trim() || regPlate.trim()) : undefined,
+        bodyNumber: role === 'driver' ? regBodyNumber.trim() : undefined,
       });
 
       if (res.error) {
@@ -101,19 +106,19 @@ export const AuthPage: React.FC = () => {
   };
 
   // Quick fill helper for testing / demonstration
-  const handleQuickFill = (targetRole: 'passenger' | 'driver' | 'admin') => {
+  const handleQuickFill = (targetRole: 'passenger' | 'driver' | 'admin' | 'student') => {
     setErrorMsg(null);
     setView('login');
     if (targetRole === 'admin') {
-      setRole('passenger');
       setLoginEmail('admin@gmail.com');
       setLoginPassword('admin123');
     } else if (targetRole === 'driver') {
-      setRole('driver');
       setLoginEmail('driver.juan@gmail.com');
       setLoginPassword('driver123');
+    } else if (targetRole === 'student') {
+      setLoginEmail('student.pedro@gmail.com');
+      setLoginPassword('pass12345');
     } else {
-      setRole('passenger');
       setLoginEmail('passenger.maria@gmail.com');
       setLoginPassword('pass12345');
     }
@@ -143,35 +148,8 @@ export const AuthPage: React.FC = () => {
         </header>
 
         {/* Main Glass Panel */}
-        <div className="bg-white/85 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-6 border border-white/60 dark:border-slate-800 relative overflow-hidden">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-6 sm:p-7 border border-white/60 dark:border-slate-800 relative overflow-hidden">
           
-          {/* Mode Toggle (Passenger / Driver) */}
-          <div className="bg-[#d5ecf8] dark:bg-slate-800 rounded-full p-1 flex mb-5 relative">
-            <div 
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#003f87] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
-                role === 'driver' ? 'left-[calc(50%+2px)]' : 'left-1'
-              }`}
-            />
-            <button 
-              type="button"
-              onClick={() => setRole('passenger')}
-              className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
-                role === 'passenger' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
-              }`}
-            >
-              Passenger
-            </button>
-            <button 
-              type="button"
-              onClick={() => setRole('driver')}
-              className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
-                role === 'driver' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
-              }`}
-            >
-              Driver
-            </button>
-          </div>
-
           {/* Feedback Alerts */}
           {errorMsg && (
             <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
@@ -187,7 +165,7 @@ export const AuthPage: React.FC = () => {
             </div>
           )}
 
-          {/* 1. LOGIN VIEW */}
+          {/* 1. LOGIN VIEW (Clean login without role toggle, without social login, without forgot password) */}
           {view === 'login' && (
             <div className="transition-all duration-300 animate-in fade-in">
               <h2 className="text-lg font-bold text-[#071e27] dark:text-slate-100 mb-4">
@@ -232,11 +210,6 @@ export const AuthPage: React.FC = () => {
                       {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <div className="flex justify-end mt-1.5">
-                    <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Paki-ugnayan ang LGU TODA Office upang i-reset ang password.'); }} className="text-xs font-semibold text-[#003f87] dark:text-[#00C1FD] hover:underline">
-                      Forgot password?
-                    </a>
-                  </div>
                 </div>
 
                 <button 
@@ -267,41 +240,6 @@ export const AuthPage: React.FC = () => {
                   </button>
                 </p>
               </div>
-
-              {/* Divider */}
-              <div className="relative flex items-center py-4">
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                <span className="flex-shrink-0 mx-3 text-[11px] font-bold text-slate-400">OR</span>
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-              </div>
-
-              {/* Social / Direct Login Buttons */}
-              <div className="space-y-2">
-                <button 
-                  type="button"
-                  onClick={() => alert('Ang Google Sign-In ay magiging available sa susunod na update.')}
-                  className="w-full h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-[#071e27] dark:text-slate-100 font-semibold text-xs rounded-full active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-sm"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                  <span>Continue with Google</span>
-                </button>
-
-                <button 
-                  type="button"
-                  onClick={() => alert('Ang Facebook Sign-In ay magiging available sa susunod na update.')}
-                  className="w-full h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-[#071e27] dark:text-slate-100 font-semibold text-xs rounded-full active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-sm"
-                >
-                  <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span>Continue with Facebook</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -318,8 +256,35 @@ export const AuthPage: React.FC = () => {
                   <ArrowLeft className="w-4 h-4" />
                 </button>
                 <h2 className="text-lg font-bold text-[#071e27] dark:text-slate-100">
-                  Create {role === 'driver' ? 'Driver' : 'Passenger'} Account
+                  Create Account
                 </h2>
+              </div>
+
+              {/* Role Selector: Passenger vs Driver */}
+              <div className="bg-[#d5ecf8] dark:bg-slate-800 rounded-full p-1 flex mb-4 relative">
+                <div 
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#003f87] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
+                    role === 'driver' ? 'left-[calc(50%+2px)]' : 'left-1'
+                  }`}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setRole('passenger')}
+                  className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
+                    role === 'passenger' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
+                  }`}
+                >
+                  Passenger
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setRole('driver')}
+                  className={`flex-1 py-2 text-xs font-bold text-center relative z-10 transition-colors duration-300 cursor-pointer ${
+                    role === 'driver' ? 'text-white' : 'text-[#424752] dark:text-slate-300'
+                  }`}
+                >
+                  Driver
+                </button>
               </div>
 
               <form onSubmit={handleRegisterSubmit} className="space-y-3">
@@ -334,11 +299,86 @@ export const AuthPage: React.FC = () => {
                       required
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
-                      placeholder="Full Name"
+                      placeholder="Full Name (e.g. Juan Dela Cruz)"
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 placeholder:text-slate-400 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12"
                     />
                   </div>
                 </div>
+
+                {/* PASSENGER ONLY: Classification / Discount Options (Regular, Student, Senior, PWD) */}
+                {role === 'passenger' && (
+                  <div className="space-y-1.5 p-3 rounded-xl bg-sky-50/70 dark:bg-slate-800/80 border border-sky-200/60 dark:border-slate-700 animate-in fade-in">
+                    <label className="text-[10px] font-extrabold text-[#003f87] dark:text-[#00C1FD] uppercase tracking-wider block">
+                      Passenger Type (Diskwento / Tariff Tier)
+                    </label>
+                    
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPassengerType('regular')}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                          passengerType === 'regular'
+                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-[#003f87]" />
+                          <span>Regular</span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 block mt-0.5">Standard Tariff</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPassengerType('student')}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                          passengerType === 'student'
+                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          <span>Student</span>
+                        </div>
+                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPassengerType('senior')}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                          passengerType === 'senior'
+                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                          <HeartHandshake className="w-3.5 h-3.5" />
+                          <span>Senior Citizen</span>
+                        </div>
+                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPassengerType('pwd')}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                          passengerType === 'pwd'
+                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                          <Accessibility className="w-3.5 h-3.5" />
+                          <span>PWD</span>
+                        </div>
+                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Email */}
                 <div>
@@ -373,34 +413,46 @@ export const AuthPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Driver Specific Fields */}
+                {/* DRIVER ONLY: Tricycle Plate & Body Number in TWO SEPARATE FULL ROWS */}
                 {role === 'driver' && (
-                  <div className="space-y-2.5 p-3 rounded-xl bg-sky-50/70 dark:bg-slate-800/80 border border-sky-200/60 dark:border-slate-700 animate-in fade-in">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                        Tricycle Plate & Body Number
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input 
-                          type="text"
-                          required
-                          value={regPlate}
-                          onChange={(e) => setRegPlate(e.target.value.toUpperCase())}
-                          placeholder="Plate No. (1234-AB)"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold uppercase focus:border-[#003f87] outline-none"
-                        />
-                        <input 
-                          type="text"
-                          required
-                          value={regBodyNumber}
-                          onChange={(e) => setRegBodyNumber(e.target.value)}
-                          placeholder="Body No. (e.g. 0142)"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold focus:border-[#003f87] outline-none"
-                        />
-                      </div>
+                  <div className="space-y-3 p-3.5 rounded-xl bg-sky-50/70 dark:bg-slate-800/80 border border-sky-200/60 dark:border-slate-700 animate-in fade-in">
+                    <div className="text-[10px] font-bold text-[#003f87] dark:text-[#00C1FD] uppercase tracking-wider flex items-center gap-1.5">
+                      <Bike className="w-3.5 h-3.5" />
+                      <span>Impormasyon ng Tricycle</span>
                     </div>
+
+                    {/* Row 1: Tricycle Plate Number */}
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                        Tricycle Plate Number
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={regPlate}
+                        onChange={(e) => setRegPlate(e.target.value.toUpperCase())}
+                        placeholder="e.g. 1234-AB / ABC-1234"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold uppercase focus:border-[#003f87] outline-none"
+                      />
+                    </div>
+
+                    {/* Row 2: Tricycle Body Number */}
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                        Tricycle Body Number
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={regBodyNumber}
+                        onChange={(e) => setRegBodyNumber(e.target.value)}
+                        placeholder="e.g. 0142 (Bauang TODA Body No.)"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold focus:border-[#003f87] outline-none"
+                      />
+                    </div>
+
                     <p className="text-[10px] text-slate-500 font-medium">
-                      Required for Bauang LGU driver franchise verification.
+                      Kinakailangan para sa verification ng Bauang LGU Transport Board.
                     </p>
                   </div>
                 )}
@@ -458,19 +510,27 @@ export const AuthPage: React.FC = () => {
               <span>Quick Login Shortcuts for Testing:</span>
             </div>
             
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-4 gap-1">
               <button
                 type="button"
                 onClick={() => handleQuickFill('passenger')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
-                👤 Passenger
+                👤 Regular
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('student')}
+                className="py-1.5 px-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold transition-colors cursor-pointer text-center border border-emerald-200 dark:border-emerald-800"
+              >
+                🎓 Student
               </button>
               
               <button
                 type="button"
                 onClick={() => handleQuickFill('driver')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
                 🛺 Driver
               </button>
@@ -478,9 +538,9 @@ export const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleQuickFill('admin')}
-                className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
               >
-                🛡️ LGU Admin
+                🛡️ Admin
               </button>
             </div>
           </div>

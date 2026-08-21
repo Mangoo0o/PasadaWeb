@@ -20,6 +20,7 @@ export interface Profile {
   full_name: string;
   phone_number?: string;
   photo_url?: string;
+  passenger_type?: 'regular' | 'student' | 'senior' | 'pwd';
   language_pref: 'en' | 'fil';
   created_at: string;
 }

@@ -68,6 +68,20 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
+  // 20% Discount for Student, Senior Citizen, or PWD
+  const isDiscountEligible = Boolean(
+    user?.passenger_type && user.passenger_type !== 'regular'
+  );
+
+  const getPassengerTypeLabel = () => {
+    switch (user?.passenger_type) {
+      case 'student': return 'Estudyante (-20%)';
+      case 'senior': return 'Senior Citizen (-20%)';
+      case 'pwd': return 'PWD (-20%)';
+      default: return 'Fixed Tariff';
+    }
+  };
+
   // Resolve Price via Location Proximity
   const resolveLocationFare = useCallback((
     targetLat: number,
@@ -82,9 +96,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
     if (match) {
       setSelectedLocationFare(match.matchedLocation);
-      setCurrentFare(match.standardFare);
+      const computedFare = isDiscountEligible 
+        ? Number(match.discountedFare || Math.round(Number(match.standardFare) * 0.8))
+        : Number(match.standardFare);
+      setCurrentFare(computedFare);
     }
-  }, []);
+  }, [isDiscountEligible]);
 
   // GPS Geolocation Auto-Detect in Background
   const handleUseCurrentGPS = useCallback(() => {
@@ -189,7 +206,11 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
     setDestinationName(loc.location_name);
     setSearchQuery(loc.location_name);
     setIsSearchFocused(false);
-    resolveLocationFare(loc.lat, loc.lng, locationFares, selectedTerminal?.id);
+    
+    const fareToCharge = isDiscountEligible
+      ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8))
+      : Number(loc.standard_fare);
+    setCurrentFare(fareToCharge);
   };
 
   // Select Destination Terminal
@@ -420,8 +441,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                     <span className="text-2xl sm:text-3xl font-black text-[#00346F] dark:text-[#00C1FD] tracking-tight">
                       ₱{currentFare}.00
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 shrink-0">
-                      Fixed
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                      isDiscountEligible
+                        ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800'
+                        : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
+                    }`}>
+                      {getPassengerTypeLabel()}
                     </span>
                   </div>
                   <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[170px] sm:max-w-xs">

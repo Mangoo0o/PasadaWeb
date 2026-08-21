@@ -25,6 +25,9 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='location_fares' and column_name='icon') then
     alter table public.location_fares add column icon text default 'pin';
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='passenger_type') then
+    alter table public.profiles add column passenger_type text default 'regular';
+  end if;
 end $$;
 
 -- 2. Grants & RLS

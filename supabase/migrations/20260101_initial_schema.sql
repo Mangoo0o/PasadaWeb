@@ -40,6 +40,7 @@ create table if not exists public.profiles (
   full_name text not null,
   phone_number text,
   photo_url text,
+  passenger_type text default 'regular',
   language_pref text default 'fil',
   created_at timestamptz default now()
 );
