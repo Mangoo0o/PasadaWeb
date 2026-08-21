@@ -24,7 +24,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Booking } from '../types/database.types';
-import { fetchOpenDispatches, updateBookingStatus } from '../services/bookingService';
+import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches } from '../services/bookingService';
 
 export const DriverDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -41,8 +41,16 @@ export const DriverDashboard: React.FC = () => {
       setOpenDispatches(dispatches);
     };
     loadDispatches();
-    const interval = setInterval(loadDispatches, 5000);
-    return () => clearInterval(interval);
+
+    const unsubscribe = subscribeToOpenDispatches(() => {
+      loadDispatches();
+    });
+
+    const interval = setInterval(loadDispatches, 2000);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleAcceptBooking = async (booking: Booking) => {

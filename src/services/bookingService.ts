@@ -14,26 +14,10 @@ export const createBookingRequest = async (params: {
   estimatedFare: number;
 }): Promise<{ data?: Booking; error?: string }> => {
   try {
-    // Valid UUID check
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    let safePassengerId = params.passengerId;
-    if (!uuidRegex.test(safePassengerId)) {
-      safePassengerId = '00000000-0000-0000-0000-000000000001';
-    }
+    const safePassengerId = uuidRegex.test(params.passengerId) ? params.passengerId : null;
 
-    // Ensure passenger profile exists in profiles table
-    try {
-      await supabase.from('profiles').upsert({
-        id: safePassengerId,
-        full_name: 'Passenger',
-        role: 'passenger',
-      }, { onConflict: 'id' });
-    } catch {
-      // ignore
-    }
-
-    const newBooking = {
-      passenger_id: safePassengerId,
+    const newBooking: any = {
       origin_name: params.originName,
       origin_lat: params.originLat,
       origin_lng: params.originLng,
@@ -48,27 +32,73 @@ export const createBookingRequest = async (params: {
       created_at: new Date().toISOString()
     };
 
+    if (safePassengerId) {
+      newBooking.passenger_id = safePassengerId;
+    }
+
     const { data, error } = await supabase
       .from('bookings')
       .insert(newBooking)
-      .select('*, driver:drivers(*, profile:profiles(*))')
+      .select('*')
       .single();
 
     if (error) {
-      console.warn('Booking insertion DB note:', error.message);
-      // If RLS blocked insert, provide local fallback booking object
+      console.warn('Booking insertion note:', error.message);
       const fallbackBooking: Booking = {
         id: `bk-${Date.now()}`,
         ...newBooking,
         created_at: new Date().toISOString()
       };
+      // Store in local storage queue for multi-tab fallback
+      try {
+        const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+        queue.unshift(fallbackBooking);
+        localStorage.setItem('pasada_open_queue', JSON.stringify(queue.slice(0, 20)));
+      } catch {}
+      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: fallbackBooking }));
       return { data: fallbackBooking };
     }
 
+    try {
+      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+      queue.unshift(data);
+      localStorage.setItem('pasada_open_queue', JSON.stringify(queue.slice(0, 20)));
+    } catch {}
+    window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: data }));
     return { data: data as Booking };
   } catch (err: any) {
     return { error: err.message || 'Failed to create booking' };
   }
+};
+
+export const subscribeToOpenDispatches = (onUpdate: () => void) => {
+  const channel = supabase
+    .channel('open-dispatches-live')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'bookings'
+      },
+      () => {
+        onUpdate();
+      }
+    )
+    .subscribe();
+
+  const handleLocal = () => {
+    onUpdate();
+  };
+
+  window.addEventListener('pasada_new_dispatch', handleLocal);
+  window.addEventListener('storage', handleLocal);
+
+  return () => {
+    supabase.removeChannel(channel);
+    window.removeEventListener('pasada_new_dispatch', handleLocal);
+    window.removeEventListener('storage', handleLocal);
+  };
 };
 
 export const subscribeToBooking = (
@@ -150,12 +180,30 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
   try {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, passenger:profiles(*)')
+      .select('*')
       .eq('status', 'searching')
       .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
-    return data as Booking[];
+    const serverBookings: Booking[] = (!error && data) ? (data as Booking[]) : [];
+    
+    // Read local queue for instant tab sync
+    let localQueue: Booking[] = [];
+    try {
+      localQueue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]')
+        .filter((b: Booking) => b.status === 'searching');
+    } catch {}
+
+    // Merge and deduplicate
+    const map = new Map<string, Booking>();
+    [...serverBookings, ...localQueue].forEach(b => {
+      if (b && b.id && !map.has(b.id)) {
+        map.set(b.id, b);
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => 
+      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    );
   } catch (err) {
     return [];
   }
