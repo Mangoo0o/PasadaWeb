@@ -56,20 +56,20 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center transition-all active:scale-95 group ${
+              className={`flex flex-col items-center justify-center transition-all active:scale-95 group min-w-0 ${
                 isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               {isActive ? (
-                <div className="bg-secondary-container text-on-secondary-container rounded-full px-5 py-1 flex items-center justify-center mb-0.5 shadow-sm transition-all">
-                  <Icon className="w-5 h-5" />
+                <div className="bg-secondary-container text-on-secondary-container rounded-full px-3.5 sm:px-5 py-1 flex items-center justify-center mb-0.5 shadow-sm transition-all">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               ) : (
-                <div className="px-5 py-1 flex items-center justify-center mb-0.5">
-                  <Icon className="w-5 h-5 text-on-surface-variant" />
+                <div className="px-3.5 sm:px-5 py-1 flex items-center justify-center mb-0.5">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-on-surface-variant" />
                 </div>
               )}
-              <span className={`text-[11px] ${isActive ? 'font-black text-primary' : 'font-medium'}`}>
+              <span className={`text-[10px] sm:text-[11px] truncate max-w-[70px] ${isActive ? 'font-black text-primary' : 'font-medium'}`}>
                 {tab.label}
               </span>
             </button>

@@ -132,34 +132,34 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       </header>
 
       {/* Driver Status Hero Banner */}
-      <section className={`rounded-3xl p-5 text-white transition-all shadow-xl ${
+      <section className={`rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 text-white transition-all shadow-xl ${
         isOnline 
           ? 'bg-gradient-to-r from-[#003f87] via-[#0056b3] to-[#0070eb] shadow-[#003f87]/20' 
           : 'bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 shadow-slate-900/20'
       }`}>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
-                Driver Body #{driverProfile?.body_number || '0142'}
+        <div className="flex items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider">
+                Body #{driverProfile?.body_number || '0142'}
               </span>
-              <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-[9px] sm:text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-medium truncate max-w-[140px]">
                 {driverProfile?.terminal_name || 'Bauang Central TODA'}
               </span>
             </div>
-            <h2 className="text-2xl font-black tracking-tight mt-1.5">
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight mt-1 sm:mt-1.5 truncate">
               Kumusta, {user.full_name.split(' ')[0]}!
             </h2>
-            <p className="text-xs text-white/90 mt-0.5">
-              {isOnline ? '🟢 Aktibo at handang tumanggap ng tawag ng pasahero.' : '⚪ Naka-offline — Pindutin ang ONLINE upang magsimula.'}
+            <p className="text-[11px] sm:text-xs text-white/90 mt-0.5">
+              {isOnline ? '🟢 Aktibo at handang tumanggap ng tawag.' : '⚪ Naka-offline — Pindutin ang ONLINE.'}
             </p>
           </div>
 
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/40 shadow-inner shrink-0 hidden sm:block">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/40 shadow-inner shrink-0 hidden sm:block">
             {user.photo_url ? (
               <img src={user.photo_url} alt={user.full_name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-white/20 flex items-center justify-center text-xl font-black">
+              <div className="w-full h-full bg-white/20 flex items-center justify-center text-lg sm:text-xl font-black">
                 {user.full_name.charAt(0)}
               </div>
             )}
@@ -168,41 +168,41 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       </section>
 
       {/* Quick Metrics Row */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-3 text-center">
+        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider truncate">
             Kita Ngayon
           </div>
-          <div className="text-lg sm:text-xl font-black text-emerald-600 mt-1">
+          <div className="text-sm sm:text-xl font-black text-emerald-600 mt-0.5 sm:mt-1 truncate">
             ₱{driverProfile?.earnings_today !== undefined ? driverProfile.earnings_today.toFixed(2) : '320.00'}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5 font-bold flex items-center justify-center gap-1">
-            <TrendingUp className="w-3 h-3 text-emerald-600" />
-            <span>Bauang TODA</span>
+          <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5 font-bold flex items-center justify-center gap-1">
+            <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600" />
+            <span className="truncate">TODA</span>
           </div>
         </div>
 
-        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider truncate">
             Rating
           </div>
-          <div className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
-            <Star className="w-4 h-4 fill-amber-400" />
+          <div className="text-sm sm:text-xl font-black text-amber-500 mt-0.5 sm:mt-1 flex items-center justify-center gap-0.5 sm:gap-1">
+            <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-amber-400" />
             <span>{driverProfile?.rating_avg ? driverProfile.rating_avg.toFixed(2) : '4.95'}</span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5 font-bold">
+          <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5 font-bold truncate">
             5-Star Driver
           </div>
         </div>
 
-        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-            Kabuuang Biyahe
+        <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider truncate">
+            Biyahe
           </div>
-          <div className="text-lg sm:text-xl font-black text-[#003f87] dark:text-[#00C1FD] mt-1">
+          <div className="text-sm sm:text-xl font-black text-[#003f87] dark:text-[#00C1FD] mt-0.5 sm:mt-1">
             {driverProfile?.total_trips ?? 24}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5 font-bold">
+          <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5 font-bold truncate">
             Naihatid
           </div>
         </div>
