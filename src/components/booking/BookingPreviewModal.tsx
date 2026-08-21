@@ -78,10 +78,26 @@ const createDestinationIcon = () => {
   });
 };
 
-// Auto focus on the complete preview trip with safe non-colliding bounds
+// Helper function to calculate distance between two coordinates in km
+const getGeoDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Auto focus specifically on the passenger trip route (Pickup & Destination)
 const FitPassengerFocusBounds: React.FC<{ 
-  points: [number, number][];
-}> = ({ points }) => {
+  pickup: [number, number];
+  dropoff: [number, number];
+}> = ({ pickup, dropoff }) => {
   const map = useMap();
   useEffect(() => {
     let timer: any;
@@ -90,24 +106,20 @@ const FitPassengerFocusBounds: React.FC<{
     timer = setTimeout(() => {
       try {
         if (!map || !(map as any)._mapPane) return;
-        if (points.length >= 2) {
-          const bounds = L.latLngBounds(points);
-          map.fitBounds(bounds, { 
-            paddingTopLeft: [60, 40],
-            paddingBottomRight: [160, 40],
-            maxZoom: 16.5,
-            animate: false
-          });
-        } else if (points.length === 1) {
-          map.setView(points[0], 16, { animate: false });
-        }
+        const bounds = L.latLngBounds([pickup, dropoff]);
+        map.fitBounds(bounds, { 
+          paddingTopLeft: [70, 30],
+          paddingBottomRight: [180, 30],
+          maxZoom: 16,
+          animate: false
+        });
       } catch {}
     }, 50);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [map, points]);
+  }, [map, pickup[0], pickup[1], dropoff[0], dropoff[1]]);
   return null;
 };
 
@@ -163,37 +175,43 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     }
   }, []);
 
-  const [driverToPassengerRoad, setDriverToPassengerRoad] = useState<[number, number][]>([
-    driverCoords,
-    passengerPickupCoords,
-  ]);
-
+  const [driverToPassengerRoad, setDriverToPassengerRoad] = useState<[number, number][]>([]);
   const [passengerToDestRoad, setPassengerToDestRoad] = useState<[number, number][]>([
     passengerPickupCoords,
     destinationDropCoords,
   ]);
 
+  const driverDistanceToPickup = getGeoDistanceKm(
+    driverCoords[0],
+    driverCoords[1],
+    passengerPickupCoords[0],
+    passengerPickupCoords[1]
+  );
+  const isDriverNearby = driverDistanceToPickup <= 5; // within 5km of Bauang pickup
+
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetchOSRMRoute(driverCoords, passengerPickupCoords),
-      fetchOSRMRoute(passengerPickupCoords, destinationDropCoords),
-    ]).then(([road1, road2]) => {
-      if (active) {
-        setDriverToPassengerRoad(road1);
-        setPassengerToDestRoad(road2);
-      }
+    // Only fetch driver leg if driver is reasonably nearby (<5km)
+    if (isDriverNearby) {
+      fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
+        if (active) setDriverToPassengerRoad(road);
+      });
+    }
+
+    // Always fetch passenger route
+    fetchOSRMRoute(passengerPickupCoords, destinationDropCoords).then((road) => {
+      if (active) setPassengerToDestRoad(road);
     });
 
     return () => {
       active = false;
     };
-  }, [booking.id, driverCoords[0], driverCoords[1]]);
+  }, [booking.id, driverCoords[0], driverCoords[1], isDriverNearby]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md h-[640px] sm:h-[700px] max-h-[92vh] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 pb-16 sm:pb-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200 font-sans">
+      <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md h-[580px] sm:h-[640px] max-h-[85vh] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
         
         {/* Floating Close Button */}
         <button
@@ -230,18 +248,21 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             />
 
             <FitPassengerFocusBounds
-              points={[driverCoords, passengerPickupCoords, destinationDropCoords]}
+              pickup={passengerPickupCoords}
+              dropoff={destinationDropCoords}
             />
 
-            {/* Marker 1: Driver Current Location */}
-            <Marker position={driverCoords} icon={createDriverTricycleIcon()}>
-              <Popup>
-                <div className="text-xs font-semibold">
-                  <span className="text-[#003f87] font-bold block">Lokasyon Mo (Driver)</span>
-                  Kasalukuyang puwesto
-                </div>
-              </Popup>
-            </Marker>
+            {/* Marker 1: Driver Current Location (if nearby in Bauang) */}
+            {isDriverNearby && (
+              <Marker position={driverCoords} icon={createDriverTricycleIcon()}>
+                <Popup>
+                  <div className="text-xs font-semibold">
+                    <span className="text-[#003f87] font-bold block">Lokasyon Mo (Driver)</span>
+                    Kasalukuyang puwesto
+                  </div>
+                </Popup>
+              </Marker>
+            )}
 
             {/* Marker 2: Passenger Pickup */}
             <Marker position={passengerPickupCoords} icon={createPassengerPickupIcon()}>
@@ -263,26 +284,30 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               </Popup>
             </Marker>
 
-            {/* ═══════════ LEG 1: Driver to Passenger Road Path (Cyan / Sky Blue) ═══════════ */}
-            <Polyline
-              positions={driverToPassengerRoad}
-              pathOptions={{
-                color: '#ffffff',
-                weight: 7,
-                opacity: 0.9,
-                lineCap: 'round',
-              }}
-            />
-            <Polyline
-              positions={driverToPassengerRoad}
-              pathOptions={{
-                color: '#00A3FF',
-                weight: 5,
-                opacity: 1,
-                dashArray: '8, 6',
-                lineCap: 'round',
-              }}
-            />
+            {/* ═══════════ LEG 1: Driver to Passenger Road Path (Cyan / Sky Blue) (If Nearby) ═══════════ */}
+            {isDriverNearby && driverToPassengerRoad.length > 0 && (
+              <>
+                <Polyline
+                  positions={driverToPassengerRoad}
+                  pathOptions={{
+                    color: '#ffffff',
+                    weight: 7,
+                    opacity: 0.9,
+                    lineCap: 'round',
+                  }}
+                />
+                <Polyline
+                  positions={driverToPassengerRoad}
+                  pathOptions={{
+                    color: '#00A3FF',
+                    weight: 5,
+                    opacity: 1,
+                    dashArray: '8, 6',
+                    lineCap: 'round',
+                  }}
+                />
+              </>
+            )}
 
             {/* ═══════════ LEG 2: Passenger to Destination Road Path (Vibrant Orange) ═══════════ */}
             <Polyline
