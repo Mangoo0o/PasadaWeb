@@ -82,7 +82,7 @@ const createDestinationIcon = () => {
   });
 };
 
-// Safe Auto-Fit Route Camera Bounds (Triggered on mount, phase change, or manual focus click)
+// Safe Auto-Fit Route Camera Bounds (Always zooms in tightly to street level on driver location)
 const AutoFitRoute: React.FC<{ 
   points: [number, number][]; 
   triggerKey: number; 
@@ -95,16 +95,8 @@ const AutoFitRoute: React.FC<{
     timer = setTimeout(() => {
       try {
         if (!map || !(map as any)._mapPane) return;
-        if (points.length >= 2) {
-          const bounds = L.latLngBounds(points);
-          map.fitBounds(bounds, {
-            paddingTopLeft: [130, 40],
-            paddingBottomRight: [160, 40],
-            maxZoom: 16.5,
-            animate: true,
-          });
-        } else if (points.length === 1) {
-          map.setView(points[0], 16, { animate: true });
+        if (points && points.length > 0) {
+          map.setView(points[0], 16.2, { animate: true });
         }
       } catch {}
     }, 50);
@@ -496,7 +488,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   className="w-full py-3.5 px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
-                  <span>Tapusin ang Byahe (₱{booking.estimated_fare.toFixed(2)})</span>
+                  <span>Tapusin ang Byahe</span>
                 </button>
               )}
             </div>
