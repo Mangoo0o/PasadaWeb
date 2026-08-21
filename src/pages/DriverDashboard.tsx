@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
-import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus } from '../services/bookingService';
+import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 
 interface DriverDashboardProps {
@@ -33,9 +33,14 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
   const isOnline = driverProfile?.is_available ?? true;
   const [openDispatches, setOpenDispatches] = useState<Booking[]>([]);
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
+  const [activeOngoingTrip, setActiveOngoingTrip] = useState<Booking | null>(null);
 
   useEffect(() => {
     const loadDispatches = async () => {
+      if (user?.id) {
+        const trip = await fetchActiveTrip(user.id, true);
+        setActiveOngoingTrip(trip);
+      }
       const dispatches = await fetchOpenDispatches();
       setOpenDispatches(dispatches);
     };
@@ -50,7 +55,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       unsubscribe();
       clearInterval(interval);
     };
-  }, []);
+  }, [user?.id]);
 
   if (!user || user.role !== 'driver') {
     return null;
@@ -59,6 +64,28 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
   return (
     <div className="w-full max-w-2xl mx-auto space-y-5 pt-3 pb-24 px-3 sm:px-4 font-sans">
       
+      {/* Active Ongoing Trip Banner */}
+      {activeOngoingTrip && (
+        <div className="bg-gradient-to-r from-[#003f87] to-[#0056b3] rounded-2xl p-4 text-white shadow-xl flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase font-black tracking-wider text-[#00C1FD] block">
+              Kasalukuyang Biyahe (Active Trip)
+            </span>
+            <div className="text-xs sm:text-sm font-bold truncate">
+              {activeOngoingTrip.origin_name} ➔ {activeOngoingTrip.destination_name}
+            </div>
+          </div>
+          {setActiveTab && (
+            <button
+              onClick={() => setActiveTab('dispatch')}
+              className="px-4 py-2 rounded-xl bg-[#00C1FD] text-[#003f87] font-black text-xs shadow-md hover:bg-sky-300 transition-all active:scale-95 shrink-0 cursor-pointer"
+            >
+              Buksan ang Mapa
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Header / Status Bar */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">

@@ -18,6 +18,7 @@ import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
+import { DriverTravelPage } from './DriverTravelPage';
 
 export const DriverDispatch: React.FC = () => {
   const { t } = useTranslation();
@@ -94,6 +95,18 @@ export const DriverDispatch: React.FC = () => {
 
   if (!user || user.role !== 'driver') {
     return null;
+  }
+
+  // When a booking is active, render dedicated Full-Screen Driver Travel Page (maps, paths, cancel/arrive/start/complete only)
+  if (activeTrip && tripState !== 'idle' && tripState !== 'completed') {
+    return (
+      <DriverTravelPage
+        booking={activeTrip}
+        driverLat={driverProfile?.current_lat}
+        driverLng={driverProfile?.current_lng}
+        onExitTravel={handleDismissCompleted}
+      />
+    );
   }
 
   return (

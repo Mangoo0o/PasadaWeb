@@ -93,6 +93,7 @@ export interface Booking {
   passenger_id: string;
   passenger_name?: string;
   passenger_phone?: string;
+  passenger?: Profile;
   driver_id?: string;
   driver?: DriverProfile;
   origin_name: string;
