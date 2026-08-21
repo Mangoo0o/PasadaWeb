@@ -1,0 +1,356 @@
+/* PasadaGuide Admin Dashboard CSS */
+:root {
+  /* Mobile App Brand Color Tokens */
+  --color-pasada-navy: #00346F;
+  --color-pasada-blue: #004A99;
+  --color-pasada-cyan: #00C1FD;
+  --color-pasada-teal: #006688;
+
+  /* Light Theme Variables */
+  --bg-primary: #f7f9fb;
+  --bg-surface: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-card: #ffffff;
+  --border-color: #e0e3e5;
+  --border-glow: rgba(0, 52, 111, 0.25);
+  
+  --text-main: #191c1e;
+  --text-muted: #424751;
+  --text-inverse: #ffffff;
+
+  --accent-primary: #00346F;
+  --accent-primary-hover: #00234d;
+  --accent-gradient: #00346F;
+  --accent-glow: rgba(0, 52, 111, 0.15);
+
+  --success: #10b981;
+  --success-bg: #e6f7f2;
+  --warning: #f59e0b;
+  --warning-bg: #fef6e7;
+  --danger: #ba1a1a;
+  --danger-bg: #fde8e8;
+  --info: #006688;
+  --info-bg: #e6f4f8;
+
+  --sidebar-width: 260px;
+  --header-height: 72px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(0, 52, 111, 0.08);
+  --shadow-lg: 0 12px 30px -6px rgba(0, 52, 111, 0.12);
+  --shadow-glow: 0 0 20px rgba(0, 193, 253, 0.25);
+}
+
+.dark {
+  --bg-primary: #08101e;
+  --bg-surface: #0f1c30;
+  --bg-glass: rgba(15, 28, 48, 0.9);
+  --bg-card: #12223a;
+  --border-color: #1f3352;
+  --border-glow: rgba(0, 193, 253, 0.35);
+
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-inverse: #08101e;
+
+  --accent-primary: #38bdf8;
+  --accent-primary-hover: #7dd3fc;
+  --accent-gradient: #0284c7;
+  --accent-glow: rgba(56, 189, 248, 0.25);
+
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.15);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.15);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.15);
+  --info: #38bdf8;
+  --info-bg: rgba(56, 189, 248, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(0, 193, 253, 0.3);
+}
+
+/* App Layout Structure */
+.admin-app-root .app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.admin-app-root .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--bg-primary);
+}
+
+.admin-app-root .page-container {
+  padding: 28px 36px;
+  flex: 1;
+  overflow-y: auto;
+  animation: adminFadeIn 0.2s ease-out;
+}
+
+@keyframes adminFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Cards */
+.admin-app-root .glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-app-root .glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-app-root .glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+}
+
+.admin-app-root .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.admin-app-root .page-title {
+  font-size: 1.65rem;
+  color: var(--color-pasada-navy);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dark .admin-app-root .page-title {
+  color: #38bdf8;
+}
+
+.admin-app-root .page-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Badges */
+.admin-app-root .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-app-root .badge-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+.admin-app-root .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+.admin-app-root .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(186, 26, 26, 0.3); }
+.admin-app-root .badge-info { background: var(--info-bg); color: var(--info); border: 1px solid rgba(0, 102, 136, 0.3); }
+
+/* Buttons */
+.admin-app-root .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.admin-app-root .btn-primary {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.admin-app-root .btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--accent-glow);
+}
+
+.admin-app-root .btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+.admin-app-root .btn-secondary:hover {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+}
+
+.admin-app-root .btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(186, 26, 26, 0.3);
+}
+
+.admin-app-root .btn-danger:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.admin-app-root .btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+/* Form Inputs */
+.admin-app-root .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.admin-app-root .form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.admin-app-root .input-field {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-app-root .input-field:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Tables */
+.admin-app-root .table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.admin-app-root .custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.admin-app-root .custom-table th {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.dark .admin-app-root .custom-table th {
+  background: #0f1c30;
+  color: #94a3b8;
+}
+
+.admin-app-root .custom-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  background: var(--bg-card);
+  transition: background 0.15s ease;
+}
+
+.admin-app-root .custom-table tr:hover td {
+  background: #f8fafc;
+}
+
+.dark .admin-app-root .custom-table tr:hover td {
+  background: #14243e;
+}
+
+.admin-app-root .custom-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Modals */
+.admin-app-root .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: adminFadeIn 0.18s ease;
+}
+
+.admin-app-root .modal-content {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-app-root .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-app-root .modal-body {
+  padding: 24px;
+}
+
+.admin-app-root .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
