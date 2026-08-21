@@ -70,25 +70,35 @@ const createDestinationIcon = () => {
   });
 };
 
-// Camera bounds auto-focuser
+// Camera bounds auto-focuser with safety guards to prevent animation collision
 const AutoFitActiveRoute: React.FC<{ 
   points: [number, number][];
   tripState: string;
 }> = ({ points, tripState }) => {
   const map = useMap();
   useEffect(() => {
-    if (points.length >= 2) {
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { 
-        padding: [40, 40],
-        maxZoom: 16.5
-      });
-      if (map.getZoom() < 15) {
-        map.setZoom(15);
-      }
-    } else if (points.length === 1) {
-      map.setView(points[0], 16);
-    }
+    let timer: any;
+    if (!map || !(map as any)._mapPane) return;
+
+    timer = setTimeout(() => {
+      try {
+        if (!map || !(map as any)._mapPane) return;
+        if (points.length >= 2) {
+          const bounds = L.latLngBounds(points);
+          map.fitBounds(bounds, { 
+            padding: [40, 40],
+            maxZoom: 16.5,
+            animate: false
+          });
+        } else if (points.length === 1) {
+          map.setView(points[0], 16, { animate: false });
+        }
+      } catch {}
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [map, points, tripState]);
   return null;
 };

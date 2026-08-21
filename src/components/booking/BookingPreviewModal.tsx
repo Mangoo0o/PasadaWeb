@@ -78,26 +78,36 @@ const createDestinationIcon = () => {
   });
 };
 
-// Auto focus tightly on the passenger's pickup and destination with locked close street zoom
+// Auto focus tightly on the passenger's pickup and destination with safe non-colliding bounds
 const FitPassengerFocusBounds: React.FC<{ 
   passengerCoords: [number, number]; 
   destinationCoords: [number, number]; 
 }> = ({ passengerCoords, destinationCoords }) => {
   const map = useMap();
   useEffect(() => {
-    if (passengerCoords && destinationCoords) {
-      const bounds = L.latLngBounds([passengerCoords, destinationCoords]);
-      map.fitBounds(bounds, { 
-        paddingTopLeft: [40, 30],
-        paddingBottomRight: [80, 30],
-        maxZoom: 16.5
-      });
-      if (map.getZoom() < 15) {
-        map.setZoom(15);
-      }
-    } else if (passengerCoords) {
-      map.setView(passengerCoords, 16);
-    }
+    let timer: any;
+    if (!map || !(map as any)._mapPane) return;
+
+    timer = setTimeout(() => {
+      try {
+        if (!map || !(map as any)._mapPane) return;
+        if (passengerCoords && destinationCoords) {
+          const bounds = L.latLngBounds([passengerCoords, destinationCoords]);
+          map.fitBounds(bounds, { 
+            paddingTopLeft: [40, 30],
+            paddingBottomRight: [80, 30],
+            maxZoom: 16.5,
+            animate: false
+          });
+        } else if (passengerCoords) {
+          map.setView(passengerCoords, 16, { animate: false });
+        }
+      } catch {}
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [map, passengerCoords, destinationCoords]);
   return null;
 };
