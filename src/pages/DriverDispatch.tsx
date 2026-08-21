@@ -11,110 +11,13 @@ import {
   Power,
   LogOut,
   Sparkles,
-  AlertCircle,
-  PhoneCall
+  AlertCircle
 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
-
-// 1. Driver Tricycle Marker
-const createDriverTricycleIcon = () => {
-  return L.divIcon({
-    className: 'custom-driver-tricycle-pin',
-    html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;">
-        <div style="position: absolute; width: 38px; height: 38px; background: rgba(0, 193, 253, 0.4); border-radius: 50%; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="background: linear-gradient(135deg, #003f87, #002244); color: #00C1FD; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,63,135,0.45); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
-          </svg>
-        </div>
-      </div>
-    `,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -16],
-  });
-};
-
-// 2. Passenger Pickup Marker
-const createPassengerPickupIcon = () => {
-  return L.divIcon({
-    className: 'custom-passenger-pickup-pin',
-    html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
-        <div style="position: absolute; width: 36px; height: 36px; background: rgba(0, 163, 255, 0.3); border-radius: 50%; animation: pulse 2s infinite;"></div>
-        <div style="background: #00A3FF; color: #ffffff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,163,255,0.4); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-        </div>
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -16],
-  });
-};
-
-// 3. Drop-off Destination Marker
-const createDestinationIcon = () => {
-  return L.divIcon({
-    className: 'custom-dest-pin',
-    html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
-        <div style="background: #FF6B00; color: #ffffff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255,107,0,0.45); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-          </svg>
-        </div>
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -16],
-  });
-};
-
-// Auto Bounds Fitter for Driver Navigation
-const FitTripBounds: React.FC<{ points: [number, number][] }> = ({ points }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (points.length >= 2) {
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { 
-        padding: [35, 35],
-        maxZoom: 16.5 
-      });
-      if (map.getZoom() < 15) {
-        map.setZoom(15);
-      }
-    } else if (points.length === 1) {
-      map.setView(points[0], 16);
-    }
-  }, [map, points]);
-  return null;
-};
-
-// Helper to fetch actual road coordinates from OSRM
-const fetchOSRMRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('OSRM error');
-    const data = await res.json();
-    if (data.routes && data.routes[0]?.geometry?.coordinates) {
-      return data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
-    }
-  } catch {
-    // fallback
-  }
-  return [start, end];
-};
+import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
 
 export const DriverDispatch: React.FC = () => {
   const { t } = useTranslation();
@@ -126,52 +29,6 @@ export const DriverDispatch: React.FC = () => {
   const [tripState, setTripState] = useState<'idle' | 'assigned' | 'arrived' | 'in_transit' | 'completed'>('idle');
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [completedFare, setCompletedFare] = useState<number | null>(null);
-
-  // Active Road Segments
-  const [roadLegToPassenger, setRoadLegToPassenger] = useState<[number, number][]>([]);
-  const [roadLegToDestination, setRoadLegToDestination] = useState<[number, number][]>([]);
-
-  // Coordinate Sanitization / Bauang Vicinity Checks
-  const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
-
-  const rawDriverLat = driverProfile?.current_lat || 16.5333;
-  const rawDriverLng = driverProfile?.current_lng || 120.3333;
-  const currentDriverCoords: [number, number] = [
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333,
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333,
-  ];
-
-  const rawOriginLat = activeTrip?.origin_lat || 16.5310;
-  const rawOriginLng = activeTrip?.origin_lng || 120.3320;
-  const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
-  ];
-
-  const rawDestLat = activeTrip?.destination_lat || 16.5385;
-  const rawDestLng = activeTrip?.destination_lng || 120.3250;
-  const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
-  ];
-
-  // Fetch actual roads when activeTrip changes
-  useEffect(() => {
-    if (!activeTrip) return;
-    let active = true;
-
-    fetchOSRMRoute(currentDriverCoords, passengerPickupCoords).then(pts => {
-      if (active) setRoadLegToPassenger(pts);
-    });
-
-    fetchOSRMRoute(passengerPickupCoords, destinationDropCoords).then(pts => {
-      if (active) setRoadLegToDestination(pts);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [activeTrip?.id, driverProfile?.current_lat, driverProfile?.current_lng]);
 
   useEffect(() => {
     const loadDispatches = async () => {
@@ -258,14 +115,14 @@ export const DriverDispatch: React.FC = () => {
           </div>
         </div>
 
-        {/* Toggle Status & Logout */}
+        {/* Driver Quick Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={toggleDriverAvailability}
-            className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer ${
               isOnline
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
             <Power className="w-3.5 h-3.5" />
@@ -285,21 +142,22 @@ export const DriverDispatch: React.FC = () => {
       {/* Dispatch Section */}
       <section className="space-y-4">
         {activeTrip && tripState !== 'completed' && tripState !== 'idle' ? (
-          /* Active Ongoing Trip Card with Live Road Navigation Map */
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 border-2 border-[#003f87]/40 shadow-lg space-y-4 animate-in fade-in">
+          /* Active Ongoing Trip Card */
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl p-4 sm:p-5 border-2 border-[#003f87]/30 shadow-xl space-y-4 animate-in fade-in">
             <div className="flex items-center justify-between">
               <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
                 tripState === 'in_transit'
                   ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
-                  : 'bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-300'
+                  : 'bg-sky-100 text-[#003f87] dark:bg-sky-950 dark:text-[#00C1FD]'
               }`}>
-                <Sparkles className="w-3.5 h-3.5" />
+                <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
                 <span>
-                  {tripState === 'assigned' && '1. PAPUNTA SA SAKAYAN'}
-                  {tripState === 'arrived' && '2. NASA SAKAYAN NA'}
-                  {tripState === 'in_transit' && '3. BUMIBIYAHE SA DESTINASYON'}
+                  {tripState === 'assigned' && 'PAPUNTA SA SAKAYAN'}
+                  {tripState === 'arrived' && 'NASA SAKAYAN NA'}
+                  {tripState === 'in_transit' && 'KASALUKUYANG BUMIBIYAHE'}
                 </span>
               </span>
+
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Regulated Fare</span>
                 <div className="text-xl font-black text-[#003f87] dark:text-[#00C1FD]">
@@ -308,109 +166,31 @@ export const DriverDispatch: React.FC = () => {
               </div>
             </div>
 
-            {/* LIVE ROAD MAP FOR DRIVER */}
-            <div className="w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700 relative">
-              <MapContainer
-                center={tripState === 'in_transit' ? destinationDropCoords : passengerPickupCoords}
-                zoom={15}
-                className="w-full h-full"
-                zoomControl={false}
-              >
-                <TileLayer
-                  attribution='&copy; OpenStreetMap'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+            {/* 1. Interactive Live Road Map */}
+            <DriverActiveTripMap
+              booking={activeTrip}
+              driverLat={driverProfile?.current_lat}
+              driverLng={driverProfile?.current_lng}
+              tripState={tripState}
+            />
 
-                {/* Auto Bounds for current trip segment */}
-                <FitTripBounds
-                  points={
-                    tripState === 'in_transit'
-                      ? [passengerPickupCoords, destinationDropCoords]
-                      : [currentDriverCoords, passengerPickupCoords]
-                  }
-                />
-
-                {/* STAGE 1 & 2: Show road from Driver to Passenger Pickup */}
-                {(tripState === 'assigned' || tripState === 'arrived') && (
-                  <>
-                    <Polyline
-                      positions={roadLegToPassenger.length > 0 ? roadLegToPassenger : [currentDriverCoords, passengerPickupCoords]}
-                      color="#00A3FF"
-                      weight={6}
-                      opacity={0.9}
-                      dashArray="8, 8"
-                    />
-
-                    <Marker position={currentDriverCoords} icon={createDriverTricycleIcon()}>
-                      <Popup>
-                        <div className="text-xs font-bold text-[#003f87]">Iyong Lokasyon (Driver)</div>
-                      </Popup>
-                    </Marker>
-
-                    <Marker position={passengerPickupCoords} icon={createPassengerPickupIcon()}>
-                      <Popup>
-                        <div className="text-xs font-bold text-[#00A3FF]">Sakayan ng Pasahero: {activeTrip.origin_name}</div>
-                      </Popup>
-                    </Marker>
-                  </>
-                )}
-
-                {/* STAGE 3: Show road from Passenger Pickup to Destination */}
-                {tripState === 'in_transit' && (
-                  <>
-                    <Polyline
-                      positions={roadLegToDestination.length > 0 ? roadLegToDestination : [passengerPickupCoords, destinationDropCoords]}
-                      color="#FF6B00"
-                      weight={6}
-                      opacity={0.95}
-                    />
-
-                    <Marker position={passengerPickupCoords} icon={createDriverTricycleIcon()}>
-                      <Popup>
-                        <div className="text-xs font-bold text-[#003f87]">Kasalukuyang Biyahe</div>
-                      </Popup>
-                    </Marker>
-
-                    <Marker position={destinationDropCoords} icon={createDestinationIcon()}>
-                      <Popup>
-                        <div className="text-xs font-bold text-[#FF6B00]">Babaan: {activeTrip.destination_name}</div>
-                      </Popup>
-                    </Marker>
-                  </>
-                )}
-              </MapContainer>
-
-              {/* Map Floating Stage Mini Legend */}
-              <div className="absolute top-2.5 left-2.5 z-[500] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-full px-3 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-200 shadow-md border border-slate-200/60 dark:border-slate-700 flex items-center gap-2">
-                {tripState === 'in_transit' ? (
-                  <div className="flex items-center gap-1.5 text-[#FF6B00]">
-                    <span className="w-2.5 h-1 bg-[#FF6B00] rounded-full"></span>
-                    <span>Ruta sa Destinasyon ({activeTrip.destination_name})</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-[#00A3FF]">
-                    <span className="w-2.5 h-1 border-t-2 border-dashed border-[#00A3FF]"></span>
-                    <span>Ruta Papunta sa Sakayan ({activeTrip.origin_name})</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Trip Route Details */}
-            <div className="bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-xl text-xs space-y-2.5 border border-slate-200 dark:border-slate-700">
+            {/* 2. Trip Route Details */}
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl text-xs space-y-3 border border-slate-200/80 dark:border-slate-700">
               <div className="flex items-start gap-2.5">
-                <div className="w-3 h-3 rounded-full bg-[#00A3FF] mt-1 shrink-0"></div>
-                <div>
+                <div className="w-3.5 h-3.5 rounded-full bg-[#00A3FF] mt-0.5 shrink-0 border-2 border-white shadow-sm"></div>
+                <div className="min-w-0">
                   <div className="text-[10px] uppercase font-black text-slate-400">Sakayan (Pickup)</div>
-                  <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{activeTrip.origin_name}</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white truncate">{activeTrip.origin_name}</div>
                 </div>
               </div>
+
               <div className="border-l-2 border-dashed border-slate-300 dark:border-slate-600 ml-1.5 h-3"></div>
+
               <div className="flex items-start gap-2.5">
-                <div className="w-3 h-3 rounded-full bg-[#FF6B00] mt-1 shrink-0"></div>
-                <div>
+                <div className="w-3.5 h-3.5 rounded-full bg-[#FF6B00] mt-0.5 shrink-0 border-2 border-white shadow-sm"></div>
+                <div className="min-w-0">
                   <div className="text-[10px] uppercase font-black text-slate-400">Babaan (Destination)</div>
-                  <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{activeTrip.destination_name}</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white truncate">{activeTrip.destination_name}</div>
                 </div>
               </div>
             </div>
@@ -433,7 +213,7 @@ export const DriverDispatch: React.FC = () => {
                   className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <Bike className="w-4 h-4 text-white" />
-                  <span>Simulan ang Byahe (Start Trip to Destination)</span>
+                  <span>Simulan ang Byahe (Start Trip)</span>
                 </button>
               )}
 
