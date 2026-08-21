@@ -254,31 +254,31 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
       
       {/* 1. TOP DUAL-LOCATION HUD BAR */}
-      <div className="absolute top-4 left-3 right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl p-3.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+      <div className="absolute top-3 sm:top-4 left-2.5 sm:left-3 right-2.5 sm:right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Header Row: Active Phase Badge + Phone Action + Fare */}
-          <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5 sm:pb-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`w-2.5 h-2.5 rounded-full ${isHeadingToPickup ? 'bg-[#00A3FF]' : 'bg-[#FF6B00]'} animate-pulse shrink-0`}></span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
+              <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${isHeadingToPickup ? 'bg-[#00A3FF]' : 'bg-[#FF6B00]'} animate-pulse shrink-0`}></span>
+              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
                 {isHeadingToPickup ? '1. Pupunta sa Sakayan' : '2. Patungo sa Babaan'}
               </span>
               {booking.passenger?.full_name && (
-                <span className="text-[10px] text-slate-400 font-medium truncate hidden sm:inline">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate hidden sm:inline">
                   • {booking.passenger.full_name}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {booking.passenger?.phone_number && (
                 <a
                   href={`tel:${booking.passenger.phone_number}`}
-                  className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95"
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95"
                   title="Tawagan ang Pasahero"
                 >
-                  <PhoneCall className="w-3.5 h-3.5" />
+                  <PhoneCall className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </a>
               )}
               <div className="text-right">
@@ -290,17 +290,17 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
           </div>
 
           {/* Location Stack Matching User Design */}
-          <div className="space-y-1 px-0.5">
+          <div className="space-y-0.5 sm:space-y-1 px-0.5">
             {/* SAKAYAN */}
-            <div className="flex items-start gap-2.5">
-              <div className={`w-3 h-3 rounded-full bg-[#00A3FF] shrink-0 mt-0.5 ${
-                isHeadingToPickup ? 'ring-4 ring-[#00A3FF]/25 shadow-sm' : 'opacity-70'
+            <div className="flex items-start gap-2 sm:gap-2.5">
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#00A3FF] shrink-0 mt-0.5 ${
+                isHeadingToPickup ? 'ring-2 sm:ring-4 ring-[#00A3FF]/25 shadow-sm' : 'opacity-70'
               }`}></div>
               <div className="min-w-0 flex-1">
-                <span className="text-[10px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
+                <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
                   SAKAYAN
                 </span>
-                <span className={`text-xs truncate block mt-0.5 ${
+                <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
                   {booking.origin_name}
@@ -309,18 +309,18 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </div>
 
             {/* Connecting Vertical Line */}
-            <div className="border-l border-dashed border-slate-300 dark:border-slate-600 ml-1.5 h-2.5"></div>
+            <div className="border-l border-dashed border-slate-300 dark:border-slate-600 ml-1 sm:ml-1.5 h-2 sm:h-2.5"></div>
 
             {/* BABAAN */}
-            <div className="flex items-start gap-2.5">
-              <div className={`w-3 h-3 rounded-full bg-[#FF6B00] shrink-0 mt-0.5 ${
-                !isHeadingToPickup ? 'ring-4 ring-[#FF6B00]/25 shadow-sm' : 'opacity-70'
+            <div className="flex items-start gap-2 sm:gap-2.5">
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#FF6B00] shrink-0 mt-0.5 ${
+                !isHeadingToPickup ? 'ring-2 sm:ring-4 ring-[#FF6B00]/25 shadow-sm' : 'opacity-70'
               }`}></div>
               <div className="min-w-0 flex-1">
-                <span className="text-[10px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
+                <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
                   BABAAN
                 </span>
-                <span className={`text-xs truncate block mt-0.5 ${
+                <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   !isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
                   {booking.destination_name}
@@ -385,32 +385,32 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       </div>
 
       {/* Floating Re-center / Focus Button */}
-      <div className="absolute right-3 sm:right-4 bottom-36 sm:bottom-40 z-[10000] pointer-events-auto">
+      <div className="absolute right-3 sm:right-4 bottom-28 sm:bottom-36 z-[10000] pointer-events-auto">
         <button
           onClick={handleRecenterMap}
-          className="w-12 h-12 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-2xl border border-slate-200/90 dark:border-slate-800 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-2xl border border-slate-200/90 dark:border-slate-800 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
           title="I-focus ang Mapa sa Kasalukuyang Ruta"
         >
-          <LocateFixed className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+          <LocateFixed className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-45 transition-transform" />
         </button>
       </div>
 
       {/* 3. BOTTOM FLOATING ACTION CONTROLS & STAGE STEPPER */}
-      <div className="absolute bottom-6 left-3 right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+      <div className="absolute bottom-4 sm:bottom-6 left-2.5 sm:left-3 right-2.5 sm:right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Stage Progression Stepper with Checkmarks */}
-          <div className="flex items-center justify-between px-1 py-0.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+          <div className="flex items-center justify-between px-1 py-0.5 border-b border-slate-100 dark:border-slate-800/80 pb-1.5 sm:pb-2">
             {/* Stage 1: Sunduin sa Sakayan */}
-            <div className={`flex items-center gap-1.5 font-black text-[11px] ${
+            <div className={`flex items-center gap-1 sm:gap-1.5 font-black text-[9px] sm:text-[11px] ${
               tripState === 'assigned'
                 ? 'text-[#00A3FF]'
                 : 'text-emerald-600 dark:text-emerald-400'
             }`}>
               {tripState === 'arrived' || tripState === 'in_transit' || tripState === 'completed' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               ) : (
-                <span className="w-4 h-4 rounded-full border-2 border-[#00A3FF] bg-[#00A3FF]/10 flex items-center justify-center text-[10px] text-[#00A3FF] shrink-0 animate-pulse">
+                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-[#00A3FF] bg-[#00A3FF]/10 flex items-center justify-center text-[9px] sm:text-[10px] text-[#00A3FF] shrink-0 animate-pulse">
                   1
                 </span>
               )}
@@ -418,14 +418,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </div>
 
             {/* Connecting Line */}
-            <div className={`flex-1 h-0.5 mx-2 rounded-full ${
+            <div className={`flex-1 h-0.5 mx-1.5 sm:mx-2 rounded-full ${
               tripState === 'in_transit' || tripState === 'completed'
                 ? 'bg-emerald-500'
                 : 'bg-slate-200 dark:bg-slate-700'
             }`} />
 
             {/* Stage 2: Ihatid sa Destinasyon */}
-            <div className={`flex items-center gap-1.5 font-black text-[11px] ${
+            <div className={`flex items-center gap-1 sm:gap-1.5 font-black text-[9px] sm:text-[11px] ${
               tripState === 'in_transit'
                 ? 'text-[#FF6B00]'
                 : tripState === 'completed'
@@ -433,13 +433,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 : 'text-slate-400'
             }`}>
               {tripState === 'completed' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               ) : tripState === 'in_transit' ? (
-                <span className="w-4 h-4 rounded-full border-2 border-[#FF6B00] bg-[#FF6B00]/10 flex items-center justify-center text-[10px] text-[#FF6B00] shrink-0 animate-pulse">
+                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-[#FF6B00] bg-[#FF6B00]/10 flex items-center justify-center text-[9px] sm:text-[10px] text-[#FF6B00] shrink-0 animate-pulse">
                   2
                 </span>
               ) : (
-                <span className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-[10px] text-slate-400 shrink-0">
+                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-[9px] sm:text-[10px] text-slate-400 shrink-0">
                   2
                 </span>
               )}
@@ -453,9 +453,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             {tripState !== 'completed' && (
               <button
                 onClick={handleOpenCancelModal}
-                className="px-4 py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
+                className="px-3 py-2.5 sm:px-4 sm:py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] sm:text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>I-cancel</span>
               </button>
             )}
@@ -465,9 +465,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               {tripState === 'assigned' && (
                 <button
                   onClick={handleArrivePickup}
-                  className="w-full py-3.5 px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <Navigation className="w-4 h-4 text-[#00C1FD]" />
+                  <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
                   <span>Nasa Sakayan Na</span>
                 </button>
               )}
@@ -475,9 +475,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               {tripState === 'arrived' && (
                 <button
                   onClick={handleStartTrip}
-                  className="w-full py-3.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <Bike className="w-4 h-4 text-white" />
+                  <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   <span>Simulan ang Byahe</span>
                 </button>
               )}
@@ -485,9 +485,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               {tripState === 'in_transit' && (
                 <button
                   onClick={handleCompleteTrip}
-                  className="w-full py-3.5 px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
                   <span>Tapusin ang Byahe</span>
                 </button>
               )}

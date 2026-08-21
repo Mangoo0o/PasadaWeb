@@ -223,18 +223,18 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
         </button>
 
         {/* Top Floating Mini Legend */}
-        <div className="absolute top-4 left-4 z-[500] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-full px-3 py-1.5 text-[10px] font-bold text-slate-700 dark:text-slate-200 shadow-md border border-slate-200/60 dark:border-slate-700 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[#00A3FF]">
-            <span className="w-2.5 h-1 border-t-2 border-dashed border-[#00A3FF]"></span>
-            <span>Papunta sa Sakayan</span>
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-[500] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-full px-2.5 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-bold text-slate-700 dark:text-slate-200 shadow-md border border-slate-200/60 dark:border-slate-700 flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[#00A3FF]">
+            <span className="w-2 sm:w-2.5 h-1 border-t-2 border-dashed border-[#00A3FF]"></span>
+            <span>Pupunta sa Sakayan</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[#FF6B00]">
-            <span className="w-2.5 h-1 bg-[#FF6B00] rounded-full"></span>
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[#FF6B00]">
+            <span className="w-2 sm:w-2.5 h-1 bg-[#FF6B00] rounded-full"></span>
             <span>Ruta ng Pasahero</span>
           </div>
         </div>
 
-        {/* 1. FULL-MODAL BLEED MAP (Auto centered on Passenger) */}
+        {/* 1. FULL-MODAL BLEED MAP */}
         <div className="absolute inset-0 w-full h-full z-0 bg-slate-100 dark:bg-slate-800">
           <MapContainer
             center={passengerPickupCoords}
@@ -331,35 +331,35 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
           </MapContainer>
         </div>
 
-        {/* 2. SMOOTH GRADIENT OVERLAY (Fades smoothly to transparent upward so map is visible) */}
-        <div className="absolute bottom-0 left-0 right-0 z-[400] pt-16 pb-5 px-5 bg-gradient-to-t from-white via-white/95 via-70% to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:via-70% dark:to-transparent flex flex-col space-y-3.5 pointer-events-auto">
+        {/* 2. SMOOTH GRADIENT OVERLAY */}
+        <div className="absolute bottom-0 left-0 right-0 z-[400] pt-10 sm:pt-14 pb-3.5 sm:pb-5 px-3.5 sm:px-5 bg-gradient-to-t from-white via-white/95 via-70% to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:via-70% dark:to-transparent flex flex-col space-y-2 sm:space-y-3.5 pointer-events-auto">
           
           {/* Simple Clean Route Summary Directly on Gradient */}
-          <div className="space-y-2 px-1">
+          <div className="space-y-1 sm:space-y-1.5 px-0.5">
             {/* Pickup */}
-            <div className="flex items-start gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#00A3FF] ring-4 ring-[#00A3FF]/20 shrink-0 mt-1"></div>
+            <div className="flex items-start gap-2 sm:gap-2.5">
+              <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#00A3FF] ring-2 sm:ring-4 ring-[#00A3FF]/20 shrink-0 mt-0.5"></div>
               <div className="min-w-0 flex-1">
-                <span className="text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider">
+                <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
                   Sakayan
                 </span>
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 truncate block mt-0.5">
                   {booking.origin_name}
                 </span>
               </div>
             </div>
 
             {/* Connecting Line */}
-            <div className="border-l-2 border-dashed border-slate-300 dark:border-slate-700 ml-1 h-2"></div>
+            <div className="border-l border-dashed border-slate-300 dark:border-slate-700 ml-1 h-1.5 sm:h-2"></div>
 
             {/* Destination */}
-            <div className="flex items-start gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#FF6B00] ring-4 ring-[#FF6B00]/20 shrink-0 mt-1"></div>
+            <div className="flex items-start gap-2 sm:gap-2.5">
+              <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF6B00] ring-2 sm:ring-4 ring-[#FF6B00]/20 shrink-0 mt-0.5"></div>
               <div className="min-w-0 flex-1">
-                <span className="text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider">
+                <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
                   Babaan
                 </span>
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 truncate block mt-0.5">
                   {booking.destination_name}
                 </span>
               </div>
@@ -367,18 +367,18 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
           </div>
 
           {/* Fare & Trip Metrics Bar */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-0.5">
             <div>
-              <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">
+              <div className="text-[9px] sm:text-[10px] uppercase font-black text-slate-400 tracking-wider">
                 Regulated Fare (Taripa)
               </div>
-              <div className="text-xs text-slate-500 font-medium">
+              <div className="text-[10px] sm:text-xs text-slate-500 font-medium">
                 {booking.estimated_distance_km} km • ~{booking.estimated_duration_min} min biyahe
               </div>
             </div>
 
             <div className="text-right">
-              <div className="text-2xl font-black text-[#003f87] dark:text-[#00C1FD]">
+              <div className="text-xl sm:text-2xl font-black text-[#003f87] dark:text-[#00C1FD]">
                 ₱{booking.estimated_fare.toFixed(2)}
               </div>
             </div>
@@ -388,9 +388,9 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
           <div>
             <button
               onClick={() => onAccept(booking)}
-              className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-xl shadow-[#003f87]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+              className="w-full py-2.5 sm:py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#003f87]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
               <span>Tanggapin ang Biyahe</span>
             </button>
           </div>
