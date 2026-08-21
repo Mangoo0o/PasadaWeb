@@ -5,7 +5,7 @@ interface AppShellProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  onOpenAuthModal: () => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({

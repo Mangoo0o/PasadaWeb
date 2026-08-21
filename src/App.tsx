@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { AppShell } from './components/layout/AppShell';
-import { AuthModal } from './components/auth/AuthModal';
+import { AuthPage } from './pages/AuthPage';
 import { PassengerHome } from './pages/PassengerHome';
 import { DriverDashboard } from './pages/DriverDashboard';
 import { AdminPortal } from './pages/AdminPortal';
@@ -9,33 +9,54 @@ import { TouristGuide } from './pages/TouristGuide';
 import { HistoryAndReceipts } from './pages/HistoryAndReceipts';
 
 export const App: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Sync default tab if role changes
+  // Sync default active tab based on user's Supabase role upon login
   useEffect(() => {
     if (user?.role === 'driver') {
       setActiveTab('driver');
     } else if (user?.role === 'admin') {
       setActiveTab('admin');
+    } else if (user?.role === 'passenger') {
+      setActiveTab('home');
     }
   }, [user?.role]);
 
+  // Loading state while verifying Supabase session on startup
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full bg-[#001D40] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-white">
+          <div className="w-10 h-10 border-3 border-[#00C1FD] border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs font-bold text-sky-200 tracking-wider">
+            Kinakarga ang PasadaGuide...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // 1. Root Gateway: If not logged in, render the Login & Signup Page directly connected to Supabase
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  // 2. Authenticated App Experience
   const renderActiveView = () => {
     switch (activeTab) {
       case 'home':
-        return <PassengerHome onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
+        return <PassengerHome />;
       case 'driver':
-        return <DriverDashboard onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
+        return <DriverDashboard />;
       case 'admin':
         return <AdminPortal />;
       case 'tourist':
         return <TouristGuide />;
       case 'history':
-        return <HistoryAndReceipts onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
+        return <HistoryAndReceipts />;
       default:
-        return <PassengerHome onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
+        return <PassengerHome />;
     }
   };
 
@@ -43,15 +64,8 @@ export const App: React.FC = () => {
     <AppShell
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      onOpenAuthModal={() => setIsAuthModalOpen(true)}
     >
       {renderActiveView()}
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialRole={user?.role || 'passenger'}
-      />
     </AppShell>
   );
 };
