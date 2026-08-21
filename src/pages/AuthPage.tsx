@@ -15,7 +15,8 @@ import {
   Bike,
   GraduationCap,
   HeartHandshake,
-  Accessibility
+  Accessibility,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types/database.types';
@@ -305,78 +306,34 @@ export const AuthPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* PASSENGER ONLY: Classification / Discount Options (Regular, Student, Senior, PWD) */}
+                {/* PASSENGER ONLY: Classification Dropdown (Regular, Student, Senior, PWD) */}
                 {role === 'passenger' && (
-                  <div className="space-y-1.5 p-3 rounded-xl bg-sky-50/70 dark:bg-slate-800/80 border border-sky-200/60 dark:border-slate-700 animate-in fade-in">
-                    <label className="text-[10px] font-extrabold text-[#003f87] dark:text-[#00C1FD] uppercase tracking-wider block">
-                      Passenger Type (Diskwento / Tariff Tier)
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                      Passenger Type (Diskwento / Classification)
                     </label>
-                    
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPassengerType('regular')}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                          passengerType === 'regular'
-                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
-                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
-                        }`}
+                    <div className="relative group">
+                      <GraduationCap className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003f87] pointer-events-none transition-colors" />
+                      <select
+                        id="reg-passenger-type"
+                        value={passengerType}
+                        onChange={(e) => setPassengerType(e.target.value as any)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-11 pr-9 text-xs sm:text-sm font-semibold text-[#071e27] dark:text-slate-100 focus:border-[#003f87] focus:ring-1 focus:ring-[#003f87] transition-all outline-none h-12 cursor-pointer appearance-none"
                       >
-                        <div className="text-xs font-bold flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-[#003f87]" />
-                          <span>Regular</span>
-                        </div>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Standard Tariff</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPassengerType('student')}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                          passengerType === 'student'
-                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
-                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
-                        }`}
-                      >
-                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                          <GraduationCap className="w-3.5 h-3.5" />
-                          <span>Student</span>
-                        </div>
-                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPassengerType('senior')}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                          passengerType === 'senior'
-                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
-                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
-                        }`}
-                      >
-                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                          <HeartHandshake className="w-3.5 h-3.5" />
-                          <span>Senior Citizen</span>
-                        </div>
-                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPassengerType('pwd')}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                          passengerType === 'pwd'
-                            ? 'border-[#003f87] bg-white dark:bg-slate-900 shadow-sm'
-                            : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-slate-600'
-                        }`}
-                      >
-                        <div className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                          <Accessibility className="w-3.5 h-3.5" />
-                          <span>PWD</span>
-                        </div>
-                        <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">20% Off</span>
-                      </button>
+                        <option value="regular">Regular Passenger (Standard Tariff)</option>
+                        <option value="student">Student / Estudyante (20% Discount)</option>
+                        <option value="senior">Senior Citizen (20% Discount)</option>
+                        <option value="pwd">Person with Disability / PWD (20% Discount)</option>
+                      </select>
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
                     </div>
+                    {passengerType !== 'regular' && (
+                      <p className="text-[10px] text-emerald-600 font-bold mt-1 ml-1 flex items-center gap-1 animate-in fade-in">
+                        <span>✓ 20% discount will automatically apply to all your trips.</span>
+                      </p>
+                    )}
                   </div>
                 )}
 
