@@ -57,7 +57,7 @@ export const TouristGuide: React.FC = () => {
   const featuredSpot = filteredSpots.length > 0 ? filteredSpots[0] : null;
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-5 pt-4 pb-24 px-4 sm:px-6">
+    <div className="w-full space-y-4 pt-1 pb-4 font-sans">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>

@@ -219,10 +219,20 @@ export const DriverActiveTripMap: React.FC<DriverActiveTripMapProps> = ({
             <Polyline
               positions={roadToPickup}
               pathOptions={{
-                color: '#00A3FF',
-                weight: 6,
+                color: '#ffffff',
+                weight: 8,
                 opacity: 0.9,
-                dashArray: '8, 8',
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            <Polyline
+              positions={roadToPickup}
+              pathOptions={{
+                color: '#00A3FF',
+                weight: 5.5,
+                opacity: 1,
+                dashArray: '10, 8',
                 lineCap: 'round',
                 lineJoin: 'round',
               }}
@@ -240,9 +250,19 @@ export const DriverActiveTripMap: React.FC<DriverActiveTripMapProps> = ({
             <Polyline
               positions={roadToDestination}
               pathOptions={{
+                color: '#ffffff',
+                weight: 8,
+                opacity: 0.9,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            <Polyline
+              positions={roadToDestination}
+              pathOptions={{
                 color: '#FF6B00',
-                weight: 6,
-                opacity: 0.95,
+                weight: 5.5,
+                opacity: 1,
                 lineCap: 'round',
                 lineJoin: 'round',
               }}

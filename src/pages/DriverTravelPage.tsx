@@ -82,7 +82,10 @@ const createDestinationIcon = () => {
   });
 };
 
-// Safe Auto-Fit Route Camera Bounds (Always zooms in tightly to street level on driver location)
+// Helper to check if coordinate is in Bauang vicinity
+const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+
+// Safe Auto-Fit Route Camera Bounds (Fits both driver and destination/pickup in view)
 const AutoFitRoute: React.FC<{ 
   points: [number, number][]; 
   triggerKey: number; 
@@ -95,16 +98,24 @@ const AutoFitRoute: React.FC<{
     timer = setTimeout(() => {
       try {
         if (!map || !(map as any)._mapPane) return;
-        if (points && points.length > 0) {
-          map.setView(points[0], 16.2, { animate: true });
+        if (points && points.length >= 2) {
+          const bounds = L.latLngBounds(points);
+          map.fitBounds(bounds, {
+            paddingTopLeft: [100, 40],
+            paddingBottomRight: [160, 40],
+            maxZoom: 16,
+            animate: true,
+          });
+        } else if (points && points.length === 1) {
+          map.setView(points[0], 15.5, { animate: true });
         }
       } catch {}
-    }, 50);
+    }, 60);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [map, triggerKey]);
+  }, [map, triggerKey, points[0]?.[0], points[0]?.[1], points[1]?.[0], points[1]?.[1]]);
   return null;
 };
 
@@ -128,28 +139,38 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   driverLng,
   onExitTravel,
 }) => {
-  // 1. Initial coordinates from props / booking data
-  const initialDriverLat = Number(driverLat) || 16.5333;
-  const initialDriverLng = Number(driverLng) || 120.3333;
+  // 1. Initial coordinates with Bauang vicinity safety fallback
+  const rawDriverLat = Number(driverLat) || 16.5333;
+  const rawDriverLng = Number(driverLng) || 120.3333;
+  const initialDriverLat = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
+  const initialDriverLng = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
   const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
+  const rawOriginLat = Number(booking.origin_lat) || 16.5310;
+  const rawOriginLng = Number(booking.origin_lng) || 120.3320;
   const passengerPickupCoords: [number, number] = [
-    Number(booking.origin_lat) || 16.5310,
-    Number(booking.origin_lng) || 120.3320,
+    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
+    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
+  const rawDestLat = Number(booking.destination_lat) || 16.5385;
+  const rawDestLng = Number(booking.destination_lng) || 120.3250;
   const destinationDropCoords: [number, number] = [
-    Number(booking.destination_lat) || 16.5385,
-    Number(booking.destination_lng) || 120.3250,
+    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
+    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
 
-  // Real-time live GPS tracking for driver movement
+  // Real-time live GPS tracking for driver movement (with Bauang check)
   useEffect(() => {
     let watchId: number | null = null;
     if ('geolocation' in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          setDriverCoords([pos.coords.latitude, pos.coords.longitude]);
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          if (isBauangVicinity(lat, lng)) {
+            setDriverCoords([lat, lng]);
+          }
         },
         () => {},
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
@@ -254,7 +275,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
       
       {/* 1. TOP DUAL-LOCATION HUD BAR */}
-      <div className="absolute top-3 sm:top-4 left-2.5 sm:left-3 right-2.5 sm:right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
+      <div className="absolute top-3 sm:top-4 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-[10000] pointer-events-auto">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Header Row: Active Phase Badge + Phone Action + Fare */}
@@ -349,14 +370,24 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
           {isHeadingToPickup ? (
             <>
-              {/* Path 1: Driver to Passenger Pickup (Cyan Dashed) */}
+              {/* Path 1: Driver to Passenger Pickup (High-contrast Cyan Dashed) */}
+              <Polyline
+                positions={roadToPickup}
+                pathOptions={{
+                  color: '#ffffff',
+                  weight: 8,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
               <Polyline
                 positions={roadToPickup}
                 pathOptions={{
                   color: '#00A3FF',
-                  weight: 7,
-                  opacity: 0.95,
-                  dashArray: '10, 10',
+                  weight: 5.5,
+                  opacity: 1,
+                  dashArray: '10, 8',
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
@@ -366,13 +397,23 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </>
           ) : (
             <>
-              {/* Path 2: Driver to Drop-off Destination (Orange Solid) */}
+              {/* Path 2: Driver to Drop-off Destination (High-contrast Orange Solid) */}
+              <Polyline
+                positions={roadToDestination}
+                pathOptions={{
+                  color: '#ffffff',
+                  weight: 8,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
               <Polyline
                 positions={roadToDestination}
                 pathOptions={{
                   color: '#FF6B00',
-                  weight: 7,
-                  opacity: 0.95,
+                  weight: 5.5,
+                  opacity: 1,
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
@@ -396,7 +437,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       </div>
 
       {/* 3. BOTTOM FLOATING ACTION CONTROLS & STAGE STEPPER */}
-      <div className="absolute bottom-4 sm:bottom-6 left-2.5 sm:left-3 right-2.5 sm:right-3 max-w-lg mx-auto z-[10000] pointer-events-auto">
+      <div className="absolute bottom-4 sm:bottom-6 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-[10000] pointer-events-auto">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Stage Progression Stepper with Checkmarks */}
@@ -500,7 +541,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       {/* 4. TRIP COMPLETED SETTLEMENT MODAL */}
       {completedFare !== null && (
         <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
             <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -536,7 +577,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       {/* 5. CANCEL CONFIRMATION MODAL */}
       {showCancelModal && (
         <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
             <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
               <AlertTriangle className="w-8 h-8" />
             </div>

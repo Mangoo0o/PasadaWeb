@@ -47,7 +47,7 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
 
   return (
     <nav className="fixed bottom-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.1)] rounded-t-3xl px-2 py-1.5 border-t border-outline-variant/10">
-      <div className="max-w-md mx-auto flex justify-around items-center h-[64px]">
+      <div className="max-w-xl mx-auto flex justify-around items-center h-[64px]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

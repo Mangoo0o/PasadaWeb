@@ -397,30 +397,35 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
           onSelectLocationFare={handleSelectLocationFare}
           onRouteDistanceCalculated={setEstimatedDistance}
           activeDrivers={activeDrivers}
+          assignedDriver={activeBooking?.driver}
+          bookingStatus={bookingState}
         />
       </div>
 
-      {/* 2. TOP FLOATING SEARCH BAR & CONTROLS */}
-      <div className="absolute top-3 sm:top-4 left-3 right-3 max-w-xl mx-auto z-40">
-        <div className="rounded-xl shadow-[0_4px_20px_rgba(0,52,111,0.15)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3">
-          <div className="flex items-center gap-2">
+      {/* 2. TOP FLOATING SEARCH BAR & UNIFIED DROPDOWN MODAL */}
+      <div className="absolute top-3 sm:top-4 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 font-sans">
+        <div className={`bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.12)] transition-all duration-150 overflow-hidden ${
+          isSearchFocused ? 'rounded-2xl ring-1 ring-[#00346F]/15 dark:ring-[#00C1FD]/20' : 'rounded-xl'
+        }`}>
+          {/* Top Search Input Row */}
+          <div className="p-2 sm:p-2.5 flex items-center gap-2">
             {/* Destination Search Input */}
-            <div className="flex-1 bg-slate-100 dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center px-3 h-[40px] focus-within:border-[#00346F] focus-within:ring-2 focus-within:ring-[#00346F]/15 transition-all relative">
-              <Search className="w-4 h-4 text-[#00346F] dark:text-[#00C1FD] mr-2 shrink-0" />
+            <div className="flex-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700 flex items-center px-2.5 h-[38px] focus-within:border-[#00346F] focus-within:bg-white dark:focus-within:bg-slate-800 transition-all relative">
+              <Search className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD] mr-2 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Maghanap ng Destinasyon o TODA..."
-                className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-semibold placeholder:text-slate-400 p-0"
+                className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-xs font-medium placeholder:text-slate-400 p-0"
               />
               {searchQuery && (
                 <button
                   onClick={handleClearDestination}
                   className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1 cursor-pointer"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -428,94 +433,119 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 h-[38px] rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
               title="Switch Language"
             >
               <Globe className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD]" />
-              <span className="text-[11px]">{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
+              <span className="text-[10px]">{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
             </button>
 
             {/* Login / Profile */}
             {user ? (
               <button
                 onClick={signOut}
-                className="p-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold transition-all shrink-0 cursor-pointer"
+                className="h-[38px] px-2.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center justify-center"
                 title="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold bg-[#00346F] text-white hover:bg-[#00234d] transition-all shadow-sm shrink-0 cursor-pointer"
+                className="flex items-center gap-1 px-3 h-[38px] rounded-lg text-xs font-bold bg-[#00346F] text-white hover:bg-[#00234d] transition-all shadow-xs shrink-0 cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#00C1FD]" />
                 <span className="text-[11px]">Login</span>
               </button>
             )}
           </div>
+
+          {/* Seamlessly Connected Dropdown Section */}
+          {isSearchFocused && (
+            <div className="border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-150">
+              
+              {/* Minimal Header */}
+              <div className="px-3.5 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 flex items-center justify-between border-b border-slate-100/60 dark:border-slate-800/50">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <MapPin className="w-3 h-3 text-[#00346F] dark:text-[#00C1FD]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {searchQuery ? `Resulta para sa "${searchQuery}"` : 'Mga Destinasyon sa Bauang'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsSearchFocused(false)}
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700"
+                >
+                  Isara
+                </button>
+              </div>
+
+              {/* Compact Destination Rows */}
+              <div className="overflow-y-auto max-h-[300px] sm:max-h-[360px] divide-y divide-slate-100/80 dark:divide-slate-800/50">
+                {locationFares
+                  .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
+                  .map((loc) => {
+                    const price = isDiscountEligible 
+                      ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)) 
+                      : Number(loc.standard_fare);
+
+                    return (
+                      <button
+                        key={loc.id}
+                        onClick={() => handleSelectLocationFare(loc)}
+                        className="w-full px-3.5 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <div className="w-6 h-6 rounded-md bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#00346F] group-hover:text-white dark:group-hover:bg-[#00C1FD] dark:group-hover:text-slate-950 transition-colors text-slate-500 dark:text-slate-400">
+                            <MapPin className="w-3 h-3" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#00346F] dark:group-hover:text-[#00C1FD] transition-colors">
+                              {loc.location_name}
+                            </div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                              {loc.notes || 'Taripa-regulated zone'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="text-xs font-bold text-[#00346F] dark:text-[#00C1FD]">
+                            ₱{price.toFixed(2)}
+                          </div>
+                          {isDiscountEligible ? (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block leading-tight">
+                              -20%
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 block leading-tight">
+                              Taripa
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                {locationFares.filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
+                  <div className="p-4 text-center text-xs text-slate-400 space-y-1">
+                    <p className="font-semibold text-slate-600 dark:text-slate-300 text-xs">
+                      Walang nahanap na tugmang destinasyon
+                    </p>
+                    <p className="text-[10px]">
+                      Maaari ka ring mag-tap kahit saan sa mapa upang maglagay ng Custom Pin.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 3. SEARCH AUTOCOMPLETE DROPDOWN */}
-      {isSearchFocused && (
-        <div className="absolute top-[72px] sm:top-[76px] left-3 right-3 max-w-xl mx-auto z-40 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[60vh] flex flex-col animate-in fade-in slide-in-from-top-2">
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Mga Destinasyon sa Bauang
-            </span>
-            <button
-              onClick={() => setIsSearchFocused(false)}
-              className="text-xs font-bold text-[#00346F] dark:text-[#00C1FD] hover:underline cursor-pointer"
-            >
-              Isara
-            </button>
-          </div>
-
-          <div className="overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1">
-            {locationFares
-                .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
-                .map((loc) => {
-              const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
-              const price = isDiscountEligible ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)) : Number(loc.standard_fare);
-
-              return (
-                <button
-                  key={loc.id}
-                  onClick={() => handleSelectLocationFare(loc)}
-                  className="w-full p-3 text-left hover:bg-sky-50 dark:hover:bg-slate-800/80 rounded-xl transition-all flex items-center justify-between group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-xl shrink-0 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-white dark:group-hover:bg-slate-700 shadow-sm transition-colors">
-                      {emoji}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-[#00346F] dark:group-hover:text-[#00C1FD]">
-                        {loc.location_name}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0 pl-2">
-                    <span className="text-xs sm:text-sm font-black text-[#00346F] dark:text-[#00C1FD] block">
-                      ₱{price.toFixed(2)}
-                    </span>
-                    {isDiscountEligible && (
-                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block">
-                        20% OFF
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* 4. BOTTOM FLOATING ACTION BAR & DISPATCH TRACKER */}
       {hasSelectedDestination && (
-        <div className="absolute bottom-20 sm:bottom-22 left-3 right-3 max-w-xl mx-auto z-40 space-y-2">
+        <div className="absolute bottom-20 sm:bottom-22 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 space-y-2">
           
           {/* Booking Error Notice */}
           {bookingError && (
@@ -690,7 +720,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       {/* 5. PASSENGER E-RECEIPT & 5-STAR REVIEW RATING MODAL */}
       {showRatingModal && activeBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
             
             {hasRated ? (
               <div className="py-8 space-y-2 animate-in zoom-in">
@@ -786,7 +816,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       {/* 6. PASSENGER CANCEL CONFIRMATION MODAL */}
       {showPassengerCancelModal && (
         <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
             <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
               <AlertTriangle className="w-8 h-8" />
             </div>

@@ -44,7 +44,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       <main className={`flex-1 w-full relative ${
         isMapCentric 
           ? 'overflow-hidden' 
-          : 'overflow-y-auto pb-[90px] px-4 md:px-8 pt-4 max-w-4xl mx-auto'
+          : 'overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto'
       }`}>
         {children}
       </main>

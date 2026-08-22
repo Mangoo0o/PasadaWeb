@@ -154,25 +154,6 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // Quick fill helper for testing / demonstration
-  const handleQuickFill = (targetRole: 'passenger' | 'driver' | 'admin' | 'student') => {
-    setErrorMsg(null);
-    setView('login');
-    if (targetRole === 'admin') {
-      setLoginEmail('admin@gmail.com');
-      setLoginPassword('admin123');
-    } else if (targetRole === 'driver') {
-      setLoginEmail('driver.juan@gmail.com');
-      setLoginPassword('driver123');
-    } else if (targetRole === 'student') {
-      setLoginEmail('student.pedro@gmail.com');
-      setLoginPassword('pass12345');
-    } else {
-      setLoginEmail('passenger.maria@gmail.com');
-      setLoginPassword('pass12345');
-    }
-  };
-
   return (
     <div className="bg-[#f4faff] min-h-screen min-h-[100dvh] w-full text-[#071e27] antialiased relative overflow-x-hidden overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 py-8 sm:py-12 selection:bg-[#0056b3] selection:text-white font-sans">
       
@@ -570,48 +551,6 @@ export const AuthPage: React.FC = () => {
               </p>
             </div>
           )}
-
-          {/* Quick Demo Access Bar */}
-          <div className="mt-5 pt-3 border-t border-slate-200 dark:border-slate-800">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2 flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#00C1FD]" />
-              <span>Quick Login Shortcuts for Testing:</span>
-            </div>
-            
-            <div className="grid grid-cols-4 gap-1">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('passenger')}
-                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
-              >
-                👤 Regular
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('student')}
-                className="py-1.5 px-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold transition-colors cursor-pointer text-center border border-emerald-200 dark:border-emerald-800"
-              >
-                🎓 Student
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => handleQuickFill('driver')}
-                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
-              >
-                🛺 Driver
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin')}
-                className="py-1.5 px-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-colors cursor-pointer text-center"
-              >
-                🛡️ Admin
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

@@ -93,11 +93,15 @@ const getGeoDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number
   return R * c;
 };
 
-// Auto focus specifically on the passenger trip route (Pickup & Destination)
-const FitPassengerFocusBounds: React.FC<{ 
+// Check if coordinates fall in Bauang vicinity
+const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+
+// Auto focus specifically on the trip bounds (Driver, Pickup & Destination)
+const FitPreviewBounds: React.FC<{ 
+  driver: [number, number];
   pickup: [number, number];
   dropoff: [number, number];
-}> = ({ pickup, dropoff }) => {
+}> = ({ driver, pickup, dropoff }) => {
   const map = useMap();
   useEffect(() => {
     let timer: any;
@@ -106,7 +110,7 @@ const FitPassengerFocusBounds: React.FC<{
     timer = setTimeout(() => {
       try {
         if (!map || !(map as any)._mapPane) return;
-        const bounds = L.latLngBounds([pickup, dropoff]);
+        const bounds = L.latLngBounds([driver, pickup, dropoff]);
         map.fitBounds(bounds, { 
           paddingTopLeft: [70, 30],
           paddingBottomRight: [180, 30],
@@ -119,7 +123,7 @@ const FitPassengerFocusBounds: React.FC<{
     return () => {
       clearTimeout(timer);
     };
-  }, [map, pickup[0], pickup[1], dropoff[0], dropoff[1]]);
+  }, [map, driver[0], driver[1], pickup[0], pickup[1], dropoff[0], dropoff[1]]);
   return null;
 };
 
@@ -148,18 +152,24 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 }) => {
   if (!booking) return null;
 
-  const initialDriverLat = Number(driverLat) || 16.5333;
-  const initialDriverLng = Number(driverLng) || 120.3333;
+  const rawDriverLat = Number(driverLat) || 16.5333;
+  const rawDriverLng = Number(driverLng) || 120.3333;
+  const initialDriverLat = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
+  const initialDriverLng = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
   const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
+  const rawOriginLat = Number(booking.origin_lat) || 16.5310;
+  const rawOriginLng = Number(booking.origin_lng) || 120.3320;
   const passengerPickupCoords: [number, number] = [
-    Number(booking.origin_lat) || 16.5310,
-    Number(booking.origin_lng) || 120.3320,
+    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
+    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
+  const rawDestLat = Number(booking.destination_lat) || 16.5385;
+  const rawDestLng = Number(booking.destination_lng) || 120.3250;
   const destinationDropCoords: [number, number] = [
-    Number(booking.destination_lat) || 16.5385,
-    Number(booking.destination_lng) || 120.3250,
+    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
+    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
 
   // Try live GPS for driver
@@ -167,7 +177,11 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setDriverCoords([pos.coords.latitude, pos.coords.longitude]);
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          if (isBauangVicinity(lat, lng)) {
+            setDriverCoords([lat, lng]);
+          }
         },
         () => {},
         { enableHighAccuracy: true, timeout: 5000 }
@@ -175,7 +189,10 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     }
   }, []);
 
-  const [driverToPassengerRoad, setDriverToPassengerRoad] = useState<[number, number][]>([]);
+  const [driverToPassengerRoad, setDriverToPassengerRoad] = useState<[number, number][]>([
+    driverCoords,
+    passengerPickupCoords,
+  ]);
   const [passengerToDestRoad, setPassengerToDestRoad] = useState<[number, number][]>([
     passengerPickupCoords,
     destinationDropCoords,
@@ -187,17 +204,15 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     passengerPickupCoords[0],
     passengerPickupCoords[1]
   );
-  const isDriverNearby = driverDistanceToPickup <= 5; // within 5km of Bauang pickup
+  const isDriverNearby = driverDistanceToPickup <= 15; // within Bauang service area
 
   useEffect(() => {
     let active = true;
 
-    // Only fetch driver leg if driver is reasonably nearby (<5km)
-    if (isDriverNearby) {
-      fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
-        if (active) setDriverToPassengerRoad(road);
-      });
-    }
+    // Fetch driver to passenger route
+    fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
+      if (active) setDriverToPassengerRoad(road);
+    });
 
     // Always fetch passenger route
     fetchOSRMRoute(passengerPickupCoords, destinationDropCoords).then((road) => {
@@ -211,7 +226,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 pb-16 sm:pb-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200 font-sans">
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md h-[580px] sm:h-[640px] max-h-[85vh] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
+      <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md h-[580px] sm:h-[640px] max-h-[85vh] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col relative">
         
         {/* Floating Close Button */}
         <button
@@ -247,7 +262,8 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            <FitPassengerFocusBounds
+            <FitPreviewBounds
+              driver={driverCoords}
               pickup={passengerPickupCoords}
               dropoff={destinationDropCoords}
             />

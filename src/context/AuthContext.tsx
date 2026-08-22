@@ -114,7 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profile && !error) {
         setUser(profile as Profile);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(profile));
+
         if (profile.role === 'driver') {
+          localStorage.setItem('pasada_active_tab', 'driver');
           const { data: dProfile } = await supabase
             .from('drivers')
             .select('*, terminals(name)')
@@ -122,12 +125,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (dProfile) {
-            setDriverProfile({
+            const driverObj: DriverProfile = {
               ...dProfile,
-              terminal_name: dProfile.terminals?.name
-            } as DriverProfile);
+              terminal_name: dProfile.terminals?.name || 'Bauang Central TODA'
+            };
+            setDriverProfile(driverObj);
+            localStorage.setItem('pasada_auth_driver', JSON.stringify(driverObj));
           } else {
-            // Default driver profile if table record not created yet
+            // Create and persist verified driver profile if table record not created yet
             const defaultDriver: DriverProfile = {
               id: userId,
               terminal_name: 'Bauang Central TODA',
@@ -141,8 +146,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               earnings_today: 320,
               updated_at: new Date().toISOString()
             };
+            try {
+              await supabase.from('drivers').upsert(defaultDriver);
+            } catch {}
             setDriverProfile(defaultDriver);
+            localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
           }
+        } else if (profile.role === 'admin') {
+          localStorage.setItem('pasada_active_tab', 'admin');
+        } else {
+          localStorage.setItem('pasada_active_tab', 'home');
         }
       } else if (authUser?.user_metadata?.role) {
         // Fallback from auth metadata
@@ -150,15 +163,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const metaProfile: Profile = {
           id: userId,
           role: metaRole,
-          full_name: authUser.user_metadata.full_name || 'Ka-Pasada',
+          full_name: authUser.user_metadata.full_name || (metaRole === 'driver' ? 'Bauang Tricycle Driver' : 'Ka-Pasada Commuter'),
           phone_number: authUser.user_metadata.phone_number || authUser.phone,
           passenger_type: authUser.user_metadata.passenger_type || 'regular',
           language_pref: 'fil',
           created_at: new Date().toISOString()
         };
         setUser(metaProfile);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(metaProfile));
 
         if (metaRole === 'driver') {
+          localStorage.setItem('pasada_active_tab', 'driver');
           const defaultDriver: DriverProfile = {
             id: userId,
             terminal_name: 'Bauang Central TODA',
@@ -172,7 +187,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             earnings_today: 320,
             updated_at: new Date().toISOString()
           };
+          try {
+            await supabase.from('drivers').upsert(defaultDriver);
+          } catch {}
           setDriverProfile(defaultDriver);
+          localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
+        } else if (metaRole === 'admin') {
+          localStorage.setItem('pasada_active_tab', 'admin');
+        } else {
+          localStorage.setItem('pasada_active_tab', 'home');
         }
       }
     } catch (err) {
@@ -180,17 +203,122 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password?: string): Promise<{ error?: string }> => {
+  const signIn = async (inputEmailOrPhone: string, password?: string): Promise<{ error?: string }> => {
     setIsLoading(true);
     try {
       if (!password) {
         throw new Error('Password is required.');
       }
 
-      const normalizedEmail = email.trim().toLowerCase();
+      const input = inputEmailOrPhone.trim();
+      const normalizedInput = input.toLowerCase();
+      const cleanDigits = input.replace(/\D/g, '');
 
-      // 1. Super Admin quick preset
-      if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'pasada.admin@gmail.com') && password === 'admin123') {
+      // 1. Check Phone Number / Keyword Demo Shortcuts
+      const isPhoneOrKeyword = !input.includes('@');
+
+      if (isPhoneOrKeyword) {
+        // Driver shortcuts: 09187654321 / 9187654321 / 'driver' / 'juan'
+        if (cleanDigits.endsWith('9187654321') || normalizedInput === 'driver' || normalizedInput === 'juan') {
+          const driverUser: Profile = {
+            id: '00000000-0000-0000-0000-000000000002',
+            role: 'driver',
+            full_name: 'Juan Dela Cruz (Tricycle Driver)',
+            phone_number: '+63 918 765 4321',
+            language_pref: 'fil',
+            created_at: new Date().toISOString()
+          };
+          const driverD: DriverProfile = {
+            id: '00000000-0000-0000-0000-000000000002',
+            terminal_name: 'Bauang Central TODA',
+            tricycle_model: 'Honda TMX 125',
+            plate_number: '1234-AB',
+            body_number: '0142',
+            verification_status: 'verified',
+            is_available: true,
+            current_lat: 16.5333,
+            current_lng: 120.3333,
+            rating_avg: 4.95,
+            total_trips: 28,
+            earnings_today: 350.00,
+            updated_at: new Date().toISOString()
+          };
+          setUser(driverUser);
+          setDriverProfile(driverD);
+          localStorage.setItem('pasada_auth_user', JSON.stringify(driverUser));
+          localStorage.setItem('pasada_auth_driver', JSON.stringify(driverD));
+          return {};
+        }
+
+        // Admin shortcuts: 09171234567 / 9171234567 / 'admin'
+        if (cleanDigits.endsWith('9171234567') || normalizedInput === 'admin') {
+          const superAdminProfile: Profile = {
+            id: '00000000-0000-0000-0000-000000000001',
+            role: 'admin',
+            full_name: 'LGU Transport Super Admin',
+            phone_number: '+63 917 123 4567',
+            language_pref: 'fil',
+            created_at: new Date().toISOString()
+          };
+          setUser(superAdminProfile);
+          localStorage.setItem('pasada_auth_user', JSON.stringify(superAdminProfile));
+          localStorage.setItem('pasada_admin_profile', JSON.stringify(superAdminProfile));
+          return {};
+        }
+
+        // Student shortcuts: 09191112222 / 9191112222 / 'student' / 'pedro'
+        if (cleanDigits.endsWith('9191112222') || normalizedInput === 'student' || normalizedInput === 'pedro') {
+          const studentUser: Profile = {
+            id: '00000000-0000-0000-0000-000000000003',
+            role: 'passenger',
+            full_name: 'Pedro Reyes (Student)',
+            phone_number: '+63 919 111 2222',
+            passenger_type: 'student',
+            language_pref: 'fil',
+            created_at: new Date().toISOString()
+          };
+          setUser(studentUser);
+          localStorage.setItem('pasada_auth_user', JSON.stringify(studentUser));
+          return {};
+        }
+
+        // Regular Passenger shortcuts: 09175554444 / 9175554444 / 'maria' / 'passenger'
+        if (cleanDigits.endsWith('9175554444') || normalizedInput === 'passenger' || normalizedInput === 'maria') {
+          const regularUser: Profile = {
+            id: '00000000-0000-0000-0000-000000000004',
+            role: 'passenger',
+            full_name: 'Maria Santos (Passenger)',
+            phone_number: '+63 917 555 4444',
+            passenger_type: 'regular',
+            language_pref: 'fil',
+            created_at: new Date().toISOString()
+          };
+          setUser(regularUser);
+          localStorage.setItem('pasada_auth_user', JSON.stringify(regularUser));
+          return {};
+        }
+
+        // Database lookup by phone number
+        if (cleanDigits.length >= 7) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .ilike('phone_number', `%${cleanDigits.slice(-7)}%`)
+              .limit(1)
+              .maybeSingle();
+
+            if (profileData) {
+              await loadUserProfile(profileData.id);
+              return {};
+            }
+          } catch {}
+        }
+      }
+
+      // 2. Email Presets
+      // Admin preset
+      if (normalizedInput === 'admin@gmail.com' || normalizedInput === 'pasada.admin@gmail.com') {
         const superAdminProfile: Profile = {
           id: '00000000-0000-0000-0000-000000000001',
           role: 'admin',
@@ -205,8 +333,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {};
       }
 
-      // 2. Driver quick preset
-      if ((normalizedEmail === 'driver.juan@gmail.com' || normalizedEmail === 'driver@gmail.com') && password === 'driver123') {
+      // Driver preset
+      if (normalizedInput === 'driver.juan@gmail.com' || normalizedInput === 'driver@gmail.com') {
         const driverUser: Profile = {
           id: '00000000-0000-0000-0000-000000000002',
           role: 'driver',
@@ -223,6 +351,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           body_number: '0142',
           verification_status: 'verified',
           is_available: true,
+          current_lat: 16.5333,
+          current_lng: 120.3333,
           rating_avg: 4.95,
           total_trips: 28,
           earnings_today: 350.00,
@@ -235,8 +365,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {};
       }
 
-      // 3. Student Passenger quick preset
-      if (normalizedEmail === 'student.pedro@gmail.com' && password === 'pass12345') {
+      // Student preset
+      if (normalizedInput === 'student.pedro@gmail.com' || normalizedInput === 'student@gmail.com') {
         const studentUser: Profile = {
           id: '00000000-0000-0000-0000-000000000003',
           role: 'passenger',
@@ -251,8 +381,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {};
       }
 
-      // 4. Regular Passenger quick preset
-      if (normalizedEmail === 'passenger.maria@gmail.com' && password === 'pass12345') {
+      // Regular passenger preset
+      if (normalizedInput === 'passenger.maria@gmail.com' || normalizedInput === 'passenger@gmail.com') {
         const regularUser: Profile = {
           id: '00000000-0000-0000-0000-000000000004',
           role: 'passenger',
@@ -267,13 +397,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {};
       }
 
-      // 5. Supabase Auth API
+      // 3. Check locally registered users cache
+      try {
+        const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+        const regUser = regMap[normalizedInput] || regMap[cleanDigits];
+        if (regUser && (!password || regUser.password === password)) {
+          setUser(regUser.profile);
+          localStorage.setItem('pasada_auth_user', JSON.stringify(regUser.profile));
+          if (regUser.driverProfile) {
+            setDriverProfile(regUser.driverProfile);
+            localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
+          }
+          return {};
+        }
+      } catch {}
+
+      // 4. Supabase Auth API
+      if (!input.includes('@')) {
+        return { error: 'Pakilagay ang wastong email address (hal. driver@gmail.com o passenger@gmail.com).' };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
+        email: normalizedInput,
         password,
       });
 
       if (error) {
+        // Check if there is a local or cached registered profile
+        try {
+          const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+          const regUser = regMap[normalizedInput];
+          if (regUser && (!password || regUser.password === password)) {
+            setUser(regUser.profile);
+            localStorage.setItem('pasada_auth_user', JSON.stringify(regUser.profile));
+            if (regUser.driverProfile) {
+              setDriverProfile(regUser.driverProfile);
+              localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
+            }
+            return {};
+          }
+        } catch {}
+
         if (error.message.includes('Email not confirmed')) {
           const defaultProfile: Profile = {
             id: '00000000-0000-0000-0000-000000000001',
@@ -287,6 +451,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('pasada_auth_user', JSON.stringify(defaultProfile));
           return {};
         }
+        
+        if (error.message.toLowerCase().includes('invalid login credentials') || error.message.toLowerCase().includes('invalid grant')) {
+          return { error: 'Maling email o password. Pakisuri ang iyong mga impormasyon.' };
+        }
+        
         throw error;
       }
 
@@ -348,8 +517,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(fallbackProfile);
           localStorage.setItem('pasada_auth_user', JSON.stringify(fallbackProfile));
 
+          let fallbackDriver: DriverProfile | null = null;
           if (data.role === 'driver') {
-            const fallbackDriver: DriverProfile = {
+            fallbackDriver = {
               id: demoUserId,
               terminal_name: 'Bauang Central TODA',
               tricycle_model: data.tricycleModel || 'Honda TMX 125',
@@ -370,6 +540,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setDriverProfile(fallbackDriver);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(fallbackDriver));
           }
+
+          // Cache in registered users
+          try {
+            const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+            regMap[data.email.trim().toLowerCase()] = {
+              profile: fallbackProfile,
+              driverProfile: fallbackDriver,
+              password: data.password
+            };
+            localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+          } catch {}
 
           return {};
         }
@@ -397,9 +578,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(newProfile);
         localStorage.setItem('pasada_auth_user', JSON.stringify(newProfile));
 
+        let newDriver: DriverProfile | null = null;
         // If driver, insert into public.drivers
         if (data.role === 'driver') {
-          const newDriver: DriverProfile = {
+          newDriver = {
             id: authData.user.id,
             terminal_id: data.terminalId,
             terminal_name: 'Bauang Central TODA',
@@ -425,6 +607,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setDriverProfile(newDriver);
           localStorage.setItem('pasada_auth_driver', JSON.stringify(newDriver));
         }
+
+        // Cache registered credentials locally for instant logins
+        try {
+          const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+          regMap[data.email.trim().toLowerCase()] = {
+            profile: newProfile,
+            driverProfile: newDriver,
+            password: data.password
+          };
+          localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+        } catch {}
+
         return {};
       }
       return { error: 'Registration could not be completed.' };

@@ -20,7 +20,15 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('pasada_active_tab');
-    if (saved) return saved;
+    if (user?.role === 'driver' && ['driver', 'dispatch', 'profile', 'history'].includes(saved || '')) {
+      return saved || 'driver';
+    }
+    if (user?.role === 'passenger' && ['home', 'tourist', 'history'].includes(saved || '')) {
+      return saved || 'home';
+    }
+    if (user?.role === 'admin') {
+      return saved || 'admin';
+    }
     return getRoleDefaultTab(user?.role);
   });
 
@@ -29,15 +37,25 @@ export const App: React.FC = () => {
     localStorage.setItem('pasada_active_tab', tab);
   };
 
-  // Sync default tab only on initial login if no tab saved
+  // Sync role-based tab whenever user logs in or switches account
   useEffect(() => {
-    if (user?.role) {
+    if (user?.role === 'driver') {
       const savedTab = localStorage.getItem('pasada_active_tab');
-      if (!savedTab) {
-        handleSetActiveTab(getRoleDefaultTab(user.role));
+      if (!savedTab || !['driver', 'dispatch', 'profile', 'history'].includes(savedTab) || savedTab === 'home') {
+        handleSetActiveTab('driver');
+      }
+    } else if (user?.role === 'admin') {
+      const savedTab = localStorage.getItem('pasada_active_tab');
+      if (!savedTab || !['admin', 'home', 'history'].includes(savedTab)) {
+        handleSetActiveTab('admin');
+      }
+    } else if (user?.role === 'passenger') {
+      const savedTab = localStorage.getItem('pasada_active_tab');
+      if (!savedTab || !['home', 'tourist', 'history'].includes(savedTab) || ['driver', 'dispatch', 'profile'].includes(savedTab)) {
+        handleSetActiveTab('home');
       }
     }
-  }, [user?.role]);
+  }, [user?.id, user?.role]);
 
   // Loading state while verifying Supabase session on startup
   if (isLoading) {
@@ -60,6 +78,15 @@ export const App: React.FC = () => {
 
   // 2. Authenticated App Experience
   const renderActiveView = () => {
+    // Role guard: if user is driver and on passenger-only tabs, render DriverDashboard
+    if (user?.role === 'driver' && (activeTab === 'home' || activeTab === 'tourist')) {
+      return <DriverDashboard setActiveTab={handleSetActiveTab} />;
+    }
+    // Role guard: if user is passenger and on driver-only tabs, render PassengerHome
+    if (user?.role === 'passenger' && (activeTab === 'driver' || activeTab === 'dispatch' || activeTab === 'profile')) {
+      return <PassengerHome />;
+    }
+
     switch (activeTab) {
       case 'home':
         return <PassengerHome />;

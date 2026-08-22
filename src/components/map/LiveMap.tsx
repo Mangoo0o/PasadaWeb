@@ -92,6 +92,62 @@ const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
   });
 };
 
+// Helper to check if coordinate is in Bauang vicinity
+const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+
+const createAssignedDriverIcon = (bodyNumber?: string) => {
+  return L.divIcon({
+    className: 'custom-assigned-driver-pin',
+    html: `
+      <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #00A3FF; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="width: 38px; height: 38px; border-radius: 9999px; background-color: #00346F; border: 3px solid #ffffff; box-shadow: 0 4px 14px rgba(0,52,111,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00C1FD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/>
+            <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+          </svg>
+        </div>
+        ${bodyNumber ? `<span style="position: absolute; bottom: -8px; background: #00346F; color: #00C1FD; font-size: 9px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: 1px solid #ffffff; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">#${bodyNumber}</span>` : ''}
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
+  });
+};
+
+// Safe Auto-Fit Route Camera Bounds for Passenger View (Fits both driver and pickup)
+const AutoFitPassengerBounds: React.FC<{ 
+  points: [number, number][]; 
+  triggerKey: string | number; 
+}> = ({ points, triggerKey }) => {
+  const map = useMap();
+  useEffect(() => {
+    let timer: any;
+    if (!map || !(map as any)._mapPane) return;
+
+    timer = setTimeout(() => {
+      try {
+        if (!map || !(map as any)._mapPane) return;
+        if (points && points.length >= 2) {
+          const bounds = L.latLngBounds(points);
+          map.fitBounds(bounds, {
+            paddingTopLeft: [70, 40],
+            paddingBottomRight: [180, 40],
+            maxZoom: 16,
+            animate: true,
+          });
+        }
+      } catch {}
+    }, 60);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [map, triggerKey, points[0]?.[0], points[0]?.[1], points[1]?.[0], points[1]?.[1]]);
+  return null;
+};
+
 interface LiveMapProps {
   originLat: number;
   originLng: number;
@@ -105,6 +161,15 @@ interface LiveMapProps {
   onSelectLocationFare?: (loc: LocationFare) => void;
   onRouteDistanceCalculated?: (distanceKm: number) => void;
   activeDrivers?: Array<{ id: string; lat: number; lng: number; bodyNumber?: string }>;
+  assignedDriver?: {
+    id?: string;
+    current_lat?: number;
+    current_lng?: number;
+    body_number?: string;
+    plate_number?: string;
+    profile?: { full_name?: string; phone_number?: string };
+  } | null;
+  bookingStatus?: string;
 }
 
 const MapClickHandler: React.FC<{ onSelect: (lat: number, lng: number) => void }> = ({ onSelect }) => {
@@ -119,13 +184,14 @@ const MapClickHandler: React.FC<{ onSelect: (lat: number, lng: number) => void }
 const MapFocusDestination: React.FC<{
   destLat?: number;
   destLng?: number;
-}> = ({ destLat, destLng }) => {
+  disabled?: boolean;
+}> = ({ destLat, destLng, disabled }) => {
   const map = useMap();
   useEffect(() => {
-    if (destLat && destLng) {
+    if (destLat && destLng && !disabled) {
       map.flyTo([destLat, destLng], 14, { duration: 1.2 });
     }
-  }, [destLat, destLng, map]);
+  }, [destLat, destLng, disabled, map]);
   return null;
 };
 
@@ -142,11 +208,24 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   onSelectLocationFare,
   onRouteDistanceCalculated,
   activeDrivers = [],
+  assignedDriver,
+  bookingStatus = 'idle',
 }) => {
   const defaultCenter: [number, number] = [destLat || originLat || 16.5333, destLng || originLng || 120.3333];
   const [roadRouteCoords, setRoadRouteCoords] = useState<[number, number][]>([]);
+  const [driverToPickupRoute, setDriverToPickupRoute] = useState<[number, number][]>([]);
 
-  // Fetch actual road network coordinates from OSRM
+  // Assigned driver coordinates
+  const rawAssignedLat = Number(assignedDriver?.current_lat) || 16.5333;
+  const rawAssignedLng = Number(assignedDriver?.current_lng) || 120.3333;
+  const assignedDriverCoords: [number, number] = [
+    isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLat : 16.5333,
+    isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLng : 120.3333,
+  ];
+
+  const hasAssignedDriver = !!assignedDriver && (bookingStatus === 'assigned' || bookingStatus === 'arrived' || bookingStatus === 'in_transit');
+
+  // Fetch actual passenger route (Pickup -> Drop-off)
   useEffect(() => {
     if (!originLat || !originLng || !destLat || !destLng) {
       setRoadRouteCoords([]);
@@ -190,6 +269,51 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     };
   }, [originLat, originLng, destLat, destLng, onRouteDistanceCalculated]);
 
+  // Fetch Driver -> Client Pickup Route when driver is assigned
+  useEffect(() => {
+    if (!hasAssignedDriver || !originLat || !originLng) {
+      setDriverToPickupRoute([]);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchDriverRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${assignedDriverCoords[1]},${assignedDriverCoords[0]};${originLng},${originLat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Driver route fetch failed');
+        const data = await res.json();
+
+        if (data.routes && data.routes.length > 0 && !isCancelled) {
+          const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
+            (c: [number, number]) => [c[1], c[0]]
+          );
+          setDriverToPickupRoute(coords);
+        }
+      } catch {
+        if (!isCancelled) {
+          setDriverToPickupRoute([
+            assignedDriverCoords,
+            [originLat, originLng]
+          ]);
+        }
+      }
+    };
+
+    fetchDriverRoute();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [hasAssignedDriver, assignedDriverCoords[0], assignedDriverCoords[1], originLat, originLng, bookingStatus]);
+
+  const passengerFocusPoints: [number, number][] = hasAssignedDriver
+    ? [assignedDriverCoords, [originLat, originLng]]
+    : destLat && destLng
+    ? [[originLat, originLng], [destLat, destLng]]
+    : [[originLat, originLng]];
+
   return (
     <div className="relative w-full h-full min-h-[280px] rounded-2xl overflow-hidden shadow-inner border border-outline-variant/30">
       <MapContainer
@@ -206,7 +330,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         />
 
         {onSelectMapLocation && <MapClickHandler onSelect={onSelectMapLocation} />}
-        <MapFocusDestination destLat={destLat} destLng={destLng} />
+        <MapFocusDestination destLat={destLat} destLng={destLng} disabled={hasAssignedDriver} />
+        <AutoFitPassengerBounds points={passengerFocusPoints} triggerKey={`${bookingStatus}-${hasAssignedDriver}`} />
 
         {/* Current Location / Pickup Marker */}
         <Marker position={[originLat, originLng]} icon={createPickupIcon()}>
@@ -217,6 +342,24 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             </div>
           </Popup>
         </Marker>
+
+        {/* Assigned Driver Marker (When Trip Active) */}
+        {hasAssignedDriver && (
+          <Marker position={assignedDriverCoords} icon={createAssignedDriverIcon(assignedDriver?.body_number)}>
+            <Popup>
+              <div className="text-xs font-bold text-[#00346F] p-1 text-center space-y-0.5">
+                <div className="flex items-center justify-center gap-1 text-[#00A3FF]">
+                  <span className="w-2 h-2 rounded-full bg-[#00A3FF] animate-ping"></span>
+                  <span className="font-extrabold">Papunta na si Manong Driver!</span>
+                </div>
+                <div className="text-slate-800 font-bold">{assignedDriver?.profile?.full_name || 'Juan Dela Cruz'}</div>
+                <div className="text-[10px] text-slate-500">
+                  Body #{assignedDriver?.body_number || '0142'} • Plate: {assignedDriver?.plate_number || '1234-AB'}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         {/* Destination Pin (Red Target) */}
         {destLat && destLng && (
@@ -232,7 +375,34 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Road-accurate Polyline */}
+        {/* ═══════════ LEG 1: Driver to Client Pickup Road Path (Cyan Dashed) ═══════════ */}
+        {hasAssignedDriver && driverToPickupRoute.length > 0 && (
+          <>
+            <Polyline
+              positions={driverToPickupRoute}
+              pathOptions={{
+                color: '#ffffff',
+                weight: 8,
+                opacity: 0.9,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            <Polyline
+              positions={driverToPickupRoute}
+              pathOptions={{
+                color: '#00A3FF',
+                weight: 5.5,
+                opacity: 1,
+                dashArray: '10, 8',
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </>
+        )}
+
+        {/* ═══════════ LEG 2: Passenger Pickup to Destination Route (Navy / Orange) ═══════════ */}
         {roadRouteCoords.length > 0 && (
           <>
             <Polyline
@@ -240,7 +410,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               pathOptions={{
                 color: '#00346F',
                 weight: 6,
-                opacity: 0.9,
+                opacity: hasAssignedDriver ? 0.6 : 0.9,
                 lineJoin: 'round',
                 lineCap: 'round',
               }}
@@ -248,7 +418,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             <Polyline
               positions={roadRouteCoords}
               pathOptions={{
-                color: '#00C1FD',
+                color: hasAssignedDriver ? '#FF6B00' : '#00C1FD',
                 weight: 2.5,
                 opacity: 0.85,
                 lineJoin: 'round',

@@ -46,7 +46,7 @@ export const DriverProfile: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-5 pt-3 pb-24 px-3 sm:px-4 font-sans">
+    <div className="w-full space-y-4 pt-1 pb-4 font-sans">
       
       {/* Header */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2 sm:gap-3">

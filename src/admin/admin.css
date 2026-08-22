@@ -323,7 +323,7 @@
 .admin-app-root .modal-content {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: 12px;
   width: 100%;
   max-width: 580px;
   max-height: 90vh;
