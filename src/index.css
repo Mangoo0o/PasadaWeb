@@ -19,7 +19,8 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background-color: #001D40 !important;
+    background-color: transparent !important;
+    background: transparent !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #071e27;
     -webkit-font-smoothing: antialiased;
