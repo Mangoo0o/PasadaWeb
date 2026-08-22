@@ -39,12 +39,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   }
 
   return (
-    <div className="h-screen-dvh w-screen overflow-hidden bg-surface text-on-background flex flex-col antialiased relative">
+    <div className="fixed inset-0 w-full h-full overflow-hidden text-on-background flex flex-col antialiased">
       {/* Main Viewport */}
-      <main className={`flex-1 w-full relative ${
+      <main className={`w-full ${
         isMapCentric 
-          ? 'overflow-hidden' 
-          : 'overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto'
+          ? 'absolute inset-0 w-full h-full overflow-hidden z-0' 
+          : 'flex-1 overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto z-0'
       }`}>
         {children}
       </main>
