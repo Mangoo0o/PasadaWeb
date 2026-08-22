@@ -148,6 +148,25 @@ const AutoFitPassengerBounds: React.FC<{
   return null;
 };
 
+const MapInvalidator: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 400);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [map]);
+  return null;
+};
+
 interface LiveMapProps {
   originLat: number;
   originLng: number;
@@ -329,6 +348,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapInvalidator />
         {onSelectMapLocation && <MapClickHandler onSelect={onSelectMapLocation} />}
         <MapFocusDestination destLat={destLat} destLng={destLng} disabled={hasAssignedDriver} />
         <AutoFitPassengerBounds points={passengerFocusPoints} triggerKey={`${bookingStatus}-${hasAssignedDriver}`} />

@@ -381,9 +381,33 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
+    <div 
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}
+    >
       {/* 1. Full Screen Interactive Map */}
-      <div className="absolute inset-0 z-0 w-full h-full">
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0
+        }}
+      >
         <LiveMap
           originLat={originLat}
           originLng={originLng}
@@ -403,7 +427,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       </div>
 
       {/* 2. TOP FLOATING SEARCH BAR & UNIFIED DROPDOWN MODAL */}
-      <div className="absolute top-[max(2.5rem,calc(env(safe-area-inset-top,0px)+16px))] sm:top-8 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 font-sans">
+      <div 
+        style={{
+          position: 'absolute',
+          top: 'max(56px, calc(env(safe-area-inset-top, 0px) + 16px))',
+          left: '10px',
+          right: '10px',
+          zIndex: 40
+        }}
+        className="max-w-2xl mx-auto font-sans sm:!top-6 sm:!left-4 sm:!right-4"
+      >
         <div className={`bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.12)] transition-all duration-150 overflow-hidden ${
           isSearchFocused ? 'rounded-2xl ring-1 ring-[#00346F]/15 dark:ring-[#00C1FD]/20' : 'rounded-xl'
         }`}>

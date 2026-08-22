@@ -39,13 +39,38 @@ export const AppShell: React.FC<AppShellProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden text-on-background flex flex-col antialiased">
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}
+      className="text-on-background flex flex-col antialiased"
+    >
       {/* Main Viewport */}
-      <main className={`w-full ${
-        isMapCentric 
-          ? 'absolute inset-0 w-full h-full overflow-hidden z-0' 
-          : 'flex-1 overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto z-0'
-      }`}>
+      <main 
+        style={isMapCentric ? {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+          margin: 0,
+          padding: 0,
+          overflow: 'hidden',
+          zIndex: 0
+        } : undefined}
+        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto z-0'}
+      >
         {children}
       </main>
 

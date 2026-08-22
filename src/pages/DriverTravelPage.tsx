@@ -275,7 +275,16 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
       
       {/* 1. TOP DUAL-LOCATION HUD BAR */}
-      <div className="absolute top-[max(1.75rem,env(safe-area-inset-top,1.75rem))] sm:top-8 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-[10000] pointer-events-auto">
+      <div 
+        style={{
+          position: 'absolute',
+          top: 'max(56px, calc(env(safe-area-inset-top, 0px) + 16px))',
+          left: '10px',
+          right: '10px',
+          zIndex: 10000
+        }}
+        className="max-w-2xl mx-auto pointer-events-auto sm:!top-6 sm:!left-4 sm:!right-4"
+      >
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Header Row: Active Phase Badge + Phone Action + Fare */}
