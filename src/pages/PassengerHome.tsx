@@ -381,7 +381,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full">
+    <div className="absolute inset-0 w-full h-full overflow-hidden">
       {/* 1. Full Screen Interactive Map */}
       <div className="absolute inset-0 w-full h-full z-0">
         <LiveMap
@@ -402,11 +402,25 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
         />
       </div>
 
+      {/* Top Status Bar Gradient Scrim (Like Google Maps) */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)',
+          pointerEvents: 'none',
+          zIndex: 10
+        }}
+      />
+
       {/* 2. TOP FLOATING SEARCH BAR & UNIFIED DROPDOWN MODAL */}
       <div 
         style={{
           position: 'absolute',
-          top: 'max(16px, calc(env(safe-area-inset-top, 0px) + 8px))',
+          top: 'max(46px, calc(env(safe-area-inset-top, 0px) + 8px))',
           left: '12px',
           right: '12px',
           zIndex: 40

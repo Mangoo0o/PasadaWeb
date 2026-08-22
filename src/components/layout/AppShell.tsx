@@ -73,7 +73,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           background: 'transparent',
           zIndex: 0
         } : undefined}
-        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-24 px-3 sm:px-5 md:px-8 pt-3 w-full max-w-4xl mx-auto z-0'}
+        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-24 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'}
       >
         {children}
       </main>
