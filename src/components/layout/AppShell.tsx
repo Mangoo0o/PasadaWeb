@@ -46,8 +46,10 @@ export const AppShell: React.FC<AppShellProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        maxHeight: '100%',
         margin: 0,
         padding: 0,
         overflow: 'hidden'
@@ -69,7 +71,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           overflow: 'hidden',
           zIndex: 0
         } : undefined}
-        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-20 px-2.5 sm:px-5 md:px-8 pt-3 max-w-4xl mx-auto z-0'}
+        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-24 px-3 sm:px-5 md:px-8 pt-3 w-full max-w-4xl mx-auto z-0'}
       >
         {children}
       </main>
