@@ -381,33 +381,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   };
 
   return (
-    <div 
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100%',
-        height: '100%',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden'
-      }}
-    >
+    <div className="absolute inset-0 w-full h-full">
       {/* 1. Full Screen Interactive Map */}
-      <div 
-        style={{
-          position: 'absolute',
-          top: '-70px',
-          left: 0,
-          right: 0,
-          bottom: '-70px',
-          width: '100%',
-          height: 'calc(100% + 140px)',
-          zIndex: 0
-        }}
-      >
+      <div className="absolute inset-0 w-full h-full z-0">
         <LiveMap
           originLat={originLat}
           originLng={originLng}

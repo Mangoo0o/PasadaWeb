@@ -334,19 +334,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     : [[originLat, originLng]];
 
   return (
-    <div 
-      style={{
-        position: 'absolute',
-        top: '-70px',
-        left: 0,
-        right: 0,
-        bottom: '-70px',
-        width: '100%',
-        height: 'calc(100% + 140px)',
-        overflow: 'hidden',
-        zIndex: 0
-      }}
-    >
+    <div className="absolute inset-0 w-full h-full">
       <MapContainer
         center={defaultCenter}
         zoom={14}
