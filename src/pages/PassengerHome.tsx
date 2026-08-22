@@ -430,20 +430,20 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       <div 
         style={{
           position: 'absolute',
-          top: 'max(56px, calc(env(safe-area-inset-top, 0px) + 16px))',
-          left: '10px',
-          right: '10px',
+          top: 'max(60px, calc(env(safe-area-inset-top, 0px) + 20px))',
+          left: '12px',
+          right: '12px',
           zIndex: 40
         }}
-        className="max-w-2xl mx-auto font-sans sm:!top-6 sm:!left-4 sm:!right-4"
+        className="max-w-xl mx-auto font-sans sm:!top-6 sm:!left-4 sm:!right-4"
       >
-        <div className={`bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.12)] transition-all duration-150 overflow-hidden ${
-          isSearchFocused ? 'rounded-2xl ring-1 ring-[#00346F]/15 dark:ring-[#00C1FD]/20' : 'rounded-xl'
+        <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-lg transition-all duration-150 overflow-hidden ${
+          isSearchFocused ? 'rounded-2xl ring-2 ring-[#00346F]/10 dark:ring-[#00C1FD]/20' : 'rounded-xl'
         }`}>
           {/* Top Search Input Row */}
-          <div className="p-2 sm:p-2.5 flex items-center gap-2">
+          <div className="p-1.5 flex items-center gap-1.5">
             {/* Destination Search Input */}
-            <div className="flex-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700 flex items-center px-2.5 h-[38px] focus-within:border-[#00346F] focus-within:bg-white dark:focus-within:bg-slate-800 transition-all relative">
+            <div className="flex-1 flex items-center px-2.5 h-[38px] rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 focus-within:border-[#00346F] focus-within:bg-white dark:focus-within:bg-slate-800 transition-all relative">
               <Search className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD] mr-2 shrink-0" />
               <input
                 type="text"
@@ -466,11 +466,11 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2.5 py-1.5 h-[38px] rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200/80 dark:border-slate-700 cursor-pointer"
               title="Switch Language"
             >
               <Globe className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD]" />
-              <span className="text-[10px]">{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
+              <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
             </button>
 
             {/* Login / Profile */}
