@@ -315,7 +315,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     : [[originLat, originLng]];
 
   return (
-    <div className="relative w-full h-full min-h-[280px] rounded-2xl overflow-hidden shadow-inner border border-outline-variant/30">
+    <div className="relative w-full h-full min-h-[280px] overflow-hidden">
       <MapContainer
         center={defaultCenter}
         zoom={14}
