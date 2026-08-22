@@ -278,12 +278,12 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       <div 
         style={{
           position: 'absolute',
-          top: 'max(56px, calc(env(safe-area-inset-top, 0px) + 16px))',
+          top: 'max(16px, calc(env(safe-area-inset-top, 0px) + 8px))',
           left: '10px',
           right: '10px',
           zIndex: 10000
         }}
-        className="max-w-2xl mx-auto pointer-events-auto sm:!top-6 sm:!left-4 sm:!right-4"
+        className="max-w-2xl mx-auto pointer-events-auto sm:!top-4 sm:!left-4 sm:!right-4"
       >
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           

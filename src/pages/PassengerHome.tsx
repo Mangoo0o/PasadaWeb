@@ -430,12 +430,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       <div 
         style={{
           position: 'absolute',
-          top: 'max(60px, calc(env(safe-area-inset-top, 0px) + 20px))',
+          top: 'max(16px, calc(env(safe-area-inset-top, 0px) + 8px))',
           left: '12px',
           right: '12px',
           zIndex: 40
         }}
-        className="max-w-xl mx-auto font-sans sm:!top-6 sm:!left-4 sm:!right-4"
+        className="max-w-xl mx-auto font-sans sm:!top-4 sm:!left-4 sm:!right-4"
       >
         <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-lg transition-all duration-150 overflow-hidden ${
           isSearchFocused ? 'rounded-2xl ring-2 ring-[#00346F]/10 dark:ring-[#00C1FD]/20' : 'rounded-xl'
