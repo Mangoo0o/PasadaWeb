@@ -46,7 +46,21 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
   const tabs = getTabs();
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.1)] rounded-t-3xl px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+6px)] border-t border-outline-variant/10">
+    <nav 
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        background: 'rgba(255,255,255,0.93)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(0,0,0,0.06)',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.08)'
+      }}
+    >
       <div className="max-w-xl mx-auto flex justify-around items-center h-[58px]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
