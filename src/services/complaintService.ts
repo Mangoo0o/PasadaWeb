@@ -7,42 +7,119 @@ export const submitComplaint = async (params: {
   bookingId?: string;
   category: any;
   description: string;
-}): Promise<{ success: boolean; error?: string }> => {
+}): Promise<{ success: boolean; error?: string; data?: any }> => {
   try {
-    const { error } = await supabase
+    if (!params.passengerId || !params.description.trim()) {
+      return { success: false, error: 'Kailangan ng impormasyon para sa reklamo.' };
+    }
+
+    // 1. Ensure passenger profile exists in public.profiles so foreign key constraint never fails
+    try {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', params.passengerId)
+        .maybeSingle();
+
+      if (!prof) {
+        await supabase.from('profiles').upsert({
+          id: params.passengerId,
+          role: 'passenger',
+          full_name: 'Ka-Pasada Commuter',
+          language_pref: 'fil',
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      console.warn("Passenger profile check note:", e);
+    }
+
+    // 2. Validate driver_id against public.drivers (set to null if not found)
+    let validDriverId: string | null = null;
+    if (params.driverId) {
+      try {
+        const { data: dRow } = await supabase
+          .from('drivers')
+          .select('id')
+          .eq('id', params.driverId)
+          .maybeSingle();
+        if (dRow) {
+          validDriverId = dRow.id;
+        }
+      } catch (e) {
+        console.warn("Driver check note:", e);
+      }
+    }
+
+    // 3. Validate booking_id against public.bookings (set to null if not found)
+    let validBookingId: string | null = null;
+    if (params.bookingId) {
+      try {
+        const { data: bRow } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('id', params.bookingId)
+          .maybeSingle();
+        if (bRow) {
+          validBookingId = bRow.id;
+        }
+      } catch (e) {
+        console.warn("Booking check note:", e);
+      }
+    }
+
+    const { data, error } = await supabase
       .from('complaints')
       .insert({
         passenger_id: params.passengerId,
-        driver_id: params.driverId,
-        booking_id: params.bookingId,
-        category: params.category,
-        description: params.description,
+        driver_id: validDriverId,
+        booking_id: validBookingId,
+        category: params.category || 'overcharging',
+        description: params.description.trim(),
         status: 'open',
         created_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
 
     if (error) throw error;
-    return { success: true };
+    return { success: true, data };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("submitComplaint error:", err);
+    return { success: false, error: err.message || 'Hindi naisumite ang reklamo.' };
   }
 };
 
 export const fetchAllComplaints = async (): Promise<Complaint[]> => {
   try {
-    const { data, error } = await supabase
-      .from('complaints')
-      .select('*, passenger:profiles!passenger_id(full_name), driver:drivers!driver_id(*, profile:profiles(*))')
-      .order('created_at', { ascending: false });
+    const [resComplaints, resProfiles, resDrivers] = await Promise.all([
+      supabase.from('complaints').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('*'),
+      supabase.from('drivers').select('*, profile:profiles(*)')
+    ]);
 
-    if (error || !data) return [];
-    return data.map((item: any) => ({
-      ...item,
-      passenger_name: item.passenger?.full_name || 'Anonymous Commuter',
-      driver_name: item.driver?.profile?.full_name || 'Kuya Driver',
-      driver_body_number: item.driver?.body_number || '0142'
-    })) as Complaint[];
+    if (resComplaints.error || !resComplaints.data) return [];
+
+    const profileMap = new Map<string, any>();
+    (resProfiles.data || []).forEach((p: any) => profileMap.set(p.id, p));
+
+    const driverMap = new Map<string, any>();
+    (resDrivers.data || []).forEach((d: any) => driverMap.set(d.id, d));
+
+    return resComplaints.data.map((c: any) => {
+      const passenger = profileMap.get(c.passenger_id);
+      const driver = c.driver_id ? driverMap.get(c.driver_id) : undefined;
+      return {
+        ...c,
+        passenger_name: passenger?.full_name || 'Ka-Pasada Commuter',
+        driver_name: driver?.profile?.full_name || 'Kuya Driver',
+        driver_body_number: driver?.body_number || '0142',
+        passenger,
+        driver
+      };
+    }) as Complaint[];
   } catch (err) {
+    console.error("fetchAllComplaints error:", err);
     return [];
   }
 };

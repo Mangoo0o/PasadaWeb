@@ -34,6 +34,8 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = () => {
   const [complaintModalBooking, setComplaintModalBooking] = useState<Booking | null>(null);
   const [complaintCategory, setComplaintCategory] = useState('overcharging');
   const [complaintText, setComplaintText] = useState('');
+  const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
+  const [complaintError, setComplaintError] = useState<string | null>(null);
   const [isSuccessComplaint, setIsSuccessComplaint] = useState(false);
 
   useEffect(() => {
@@ -52,20 +54,35 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = () => {
 
   const handleFileComplaint = async () => {
     if (!user) return;
-    setIsSuccessComplaint(true);
-    await submitComplaint({
+    if (!complaintText.trim()) {
+      setComplaintError('Pakilagay ang detalye ng iyong reklamo.');
+      return;
+    }
+
+    setComplaintError(null);
+    setIsSubmittingComplaint(true);
+
+    const res = await submitComplaint({
       passengerId: user.id,
-      driverId: complaintModalBooking?.driver_id,
+      driverId: complaintModalBooking?.driver_id || complaintModalBooking?.driver?.id,
       bookingId: complaintModalBooking?.id,
       category: complaintCategory,
-      description: complaintText,
+      description: complaintText.trim(),
     });
 
-    setTimeout(() => {
-      setIsSuccessComplaint(false);
-      setComplaintModalBooking(null);
-      setComplaintText('');
-    }, 1200);
+    setIsSubmittingComplaint(false);
+
+    if (res.success) {
+      setIsSuccessComplaint(true);
+      setTimeout(() => {
+        setIsSuccessComplaint(false);
+        setComplaintModalBooking(null);
+        setComplaintText('');
+        setComplaintError(null);
+      }, 1500);
+    } else {
+      setComplaintError(res.error || 'Hindi naisumite ang reklamo. Pakisubukang muli.');
+    }
   };
 
   if (!user) {
@@ -314,6 +331,12 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = () => {
             </div>
           ) : (
             <>
+              {complaintError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+                  {complaintError}
+                </div>
+              )}
+
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Kategorya ng Reklamo
@@ -346,9 +369,10 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = () => {
 
               <button
                 onClick={handleFileComplaint}
-                className="w-full py-2.5 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs shadow-sm transition-all active:scale-98 cursor-pointer"
+                disabled={isSubmittingComplaint}
+                className="w-full py-2.5 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs shadow-sm transition-all active:scale-98 cursor-pointer disabled:opacity-60"
               >
-                Isumite sa TODA Office
+                {isSubmittingComplaint ? 'Isinusumite...' : 'Isumite sa TODA Office'}
               </button>
             </>
           )}

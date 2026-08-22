@@ -43,22 +43,20 @@ const AdminContent: React.FC = () => {
       const [
         resTerminals,
         resDrivers,
-        resDriverProfiles,
+        resAllProfiles,
         resFareMatrix,
         resBookings,
         resComplaints,
         resTouristSpots,
-        resPassengerProfiles,
         resLocationFares
       ] = await Promise.all([
         supabase.from('terminals').select('*'),
         supabase.from('drivers').select('*, profile:profiles(*), terminals(*)'),
-        supabase.from('profiles').select('*').eq('role', 'driver'),
+        supabase.from('profiles').select('*'),
         supabase.from('fare_matrix').select('*, terminals(*)'),
         supabase.from('bookings').select('*, passenger:profiles(*), driver:drivers(*, profile:profiles(*))'),
         supabase.from('complaints').select('*').order('created_at', { ascending: false }),
         supabase.from('tourist_spots').select('*'),
-        supabase.from('profiles').select('*').eq('role', 'passenger'),
         fetchLocationFares()
       ]);
 
@@ -81,8 +79,12 @@ const AdminContent: React.FC = () => {
       }
       
       const rawDrivers = (resDrivers.data as any[]) || [];
-      const driverProfiles = (resDriverProfiles.data as Profile[]) || [];
-      const passengerProfiles = (resPassengerProfiles.data as Profile[]) || [];
+      const allProfiles = (resAllProfiles.data as Profile[]) || [];
+      const driverProfiles = allProfiles.filter(p => p.role === 'driver');
+      const passengerProfiles = allProfiles.filter(p => p.role === 'passenger');
+
+      const profileMap = new Map<string, Profile>();
+      allProfiles.forEach(p => profileMap.set(p.id, p));
 
       // Create map of drivers
       const driverMap = new Map<string, Driver>();
@@ -148,13 +150,16 @@ const AdminContent: React.FC = () => {
         setBookings(resBookings.data as Booking[]);
       }
 
-      // Map complaints cleanly
+      // Map complaints cleanly with names & body numbers
       const rawComplaints = (resComplaints.data as any[]) || [];
       const mappedComplaints: Complaint[] = rawComplaints.map(c => {
-        const pass = passengerProfiles.find(p => p.id === c.passenger_id);
-        const drv = c.driver_id ? driverMap.get(c.driver_id) : undefined;
+        const pass = profileMap.get(c.passenger_id);
+        const drv = c.driver_id ? (driverMap.get(c.driver_id) || Array.from(driverMap.values()).find(d => d.id === c.driver_id)) : undefined;
         return {
           ...c,
+          passenger_name: pass?.full_name || c.passenger_name || 'Ka-Pasada Commuter',
+          driver_name: drv?.profile?.full_name || c.driver_name || 'Reported Driver',
+          driver_body_number: drv?.body_number || drv?.plate_number || c.driver_body_number || '0142',
           passenger: c.passenger || pass || undefined,
           driver: c.driver || drv || undefined
         };
