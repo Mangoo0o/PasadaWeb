@@ -381,17 +381,15 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* 1. Full Screen Interactive Map — extended above viewport into status bar via env(safe-area-inset-top) */}
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+      {/* 1. Full Screen Interactive Map — position:fixed anchors to physical screen edge, behind status bar */}
       <div 
         style={{
-          position: 'absolute',
-          top: 'calc(-1 * env(safe-area-inset-top, 50px))',
+          position: 'fixed',
+          top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          width: '100%',
-          height: 'calc(100% + env(safe-area-inset-top, 50px))',
           zIndex: 0
         }}
       >
@@ -413,15 +411,15 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
         />
       </div>
 
-      {/* Top Status Bar Gradient Scrim (Like Google Maps) */}
+      {/* Top Status Bar Gradient Scrim */}
       <div 
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
-          height: '80px',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)',
+          height: '90px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.05) 60%, transparent 100%)',
           pointerEvents: 'none',
           zIndex: 10
         }}
@@ -430,8 +428,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       {/* 2. TOP FLOATING SEARCH BAR & UNIFIED DROPDOWN MODAL */}
       <div 
         style={{
-          position: 'absolute',
-          top: 'max(54px, calc(env(safe-area-inset-top, 0px) + 12px))',
+          position: 'fixed',
+          top: 'max(54px, calc(env(safe-area-inset-top, 44px) + 12px))',
           left: '12px',
           right: '12px',
           zIndex: 40
