@@ -403,7 +403,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       </div>
 
       {/* 2. TOP FLOATING SEARCH BAR & UNIFIED DROPDOWN MODAL */}
-      <div className="absolute top-[max(1.75rem,env(safe-area-inset-top,1.75rem))] sm:top-8 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 font-sans">
+      <div className="absolute top-[max(2.25rem,calc(env(safe-area-inset-top,0px)+12px))] sm:top-7 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 font-sans">
         <div className={`bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.12)] transition-all duration-150 overflow-hidden ${
           isSearchFocused ? 'rounded-2xl ring-1 ring-[#00346F]/15 dark:ring-[#00C1FD]/20' : 'rounded-xl'
         }`}>
