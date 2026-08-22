@@ -42,16 +42,15 @@ export const AppShell: React.FC<AppShellProps> = ({
     <div 
       style={{
         position: 'fixed',
-        top: '-100px',
+        top: 0,
         left: 0,
         right: 0,
         bottom: 0,
         width: '100%',
-        height: 'calc(100% + 100px)',
+        height: '100%',
         maxWidth: '100%',
         margin: 0,
         padding: 0,
-        paddingTop: '100px',
         overflow: 'hidden',
         background: 'transparent'
       }}
@@ -72,9 +71,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           overflow: 'hidden',
           background: 'transparent',
           zIndex: 0
-        } : {
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 4px)'
-        }}
+        } : undefined}
         className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-24 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'}
       >
         {children}

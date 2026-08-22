@@ -382,8 +382,19 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* 1. Full Screen Interactive Map */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      {/* 1. Full Screen Interactive Map — extended above viewport into status bar via env(safe-area-inset-top) */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 'calc(-1 * env(safe-area-inset-top, 50px))',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: 'calc(100% + env(safe-area-inset-top, 50px))',
+          zIndex: 0
+        }}
+      >
         <LiveMap
           originLat={originLat}
           originLng={originLng}
@@ -420,12 +431,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       <div 
         style={{
           position: 'absolute',
-          top: 'max(46px, calc(env(safe-area-inset-top, 0px) + 8px))',
+          top: 'max(54px, calc(env(safe-area-inset-top, 0px) + 12px))',
           left: '12px',
           right: '12px',
           zIndex: 40
         }}
-        className="max-w-xl mx-auto font-sans sm:!top-4 sm:!left-4 sm:!right-4"
+        className="max-w-xl mx-auto font-sans"
       >
         <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-lg transition-all duration-150 overflow-hidden ${
           isSearchFocused ? 'rounded-2xl ring-2 ring-[#00346F]/10 dark:ring-[#00C1FD]/20' : 'rounded-xl'

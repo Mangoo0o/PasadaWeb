@@ -19,8 +19,8 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background-color: transparent !important;
-    background: transparent !important;
+    background-color: #f2efe9 !important;
+    background: #f2efe9 !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #071e27;
     -webkit-font-smoothing: antialiased;
@@ -47,6 +47,8 @@
   height: 6px;
 }
 
+
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -69,7 +71,7 @@
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  background: #f1eee8 !important;
+  background: #f2efe9 !important;
   z-index: 1;
   touch-action: none !important;
   -webkit-user-select: none;
