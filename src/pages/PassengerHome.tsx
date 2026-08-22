@@ -399,12 +399,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       <div 
         style={{
           position: 'absolute',
-          top: 0,
+          top: '-70px',
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: '-70px',
           width: '100%',
-          height: '100%',
+          height: 'calc(100% + 140px)',
           zIndex: 0
         }}
       >

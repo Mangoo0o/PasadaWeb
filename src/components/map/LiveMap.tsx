@@ -334,13 +334,34 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     : [[originLat, originLng]];
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
+    <div 
+      style={{
+        position: 'absolute',
+        top: '-70px',
+        left: 0,
+        right: 0,
+        bottom: '-70px',
+        width: '100%',
+        height: 'calc(100% + 140px)',
+        overflow: 'hidden',
+        zIndex: 0
+      }}
+    >
       <MapContainer
         center={defaultCenter}
         zoom={14}
         zoomControl={false}
         scrollWheelZoom={true}
         className="w-full h-full"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%'
+        }}
       >
         {/* OpenStreetMap Base Tile Layer */}
         <TileLayer
