@@ -452,7 +452,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Maghanap ng Destinasyon o TODA..."
-                className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-xs font-medium placeholder:text-slate-400 p-0"
+                className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-[16px] font-medium placeholder:text-slate-400 placeholder:text-xs p-0"
               />
               {searchQuery && (
                 <button

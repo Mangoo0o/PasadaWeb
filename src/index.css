@@ -25,7 +25,14 @@
     color: #071e27;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     touch-action: manipulation;
+  }
+
+  /* Prevent iOS Safari 300% automatic page zoom on focus */
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
 
