@@ -461,17 +461,58 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
       {/* Add / Edit Location Fare Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px', width: '95%' }}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+        <div
+          onClick={() => setIsModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15,23,42,0.55)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              width: '95%',
+              maxWidth: 700,
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+            }}
+          >
+            {/* Header — fixed */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '18px 24px',
+              borderBottom: '1px solid var(--border-color)',
+              flexShrink: 0,
+            }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
                 {selectedFare ? 'Edit Location Tariff & Proximity' : 'Add New Location Tariff'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, color: 'var(--text-muted)' }}>×</button>
             </div>
 
-            <form onSubmit={handleSave} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div className="modal-body">
+            {/* Form — fills remaining space */}
+            <form
+              onSubmit={handleSave}
+              style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            >
+              {/* Scrollable body */}
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 24px' }}>
+
                 {/* Location Name */}
                 <div className="form-group">
                   <label className="form-label">Destination Location Name</label>
@@ -506,7 +547,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                             fontSize: '0.72rem',
                             border: isSelected ? '2px solid #00C1FD' : '1px solid var(--border-color)',
                             gap: 3,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                           }}
                         >
                           <span style={{ fontSize: '1.3rem' }}>{opt.icon}</span>
@@ -519,6 +560,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </div>
                 </div>
 
+                {/* Fares */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div className="form-group">
                     <label className="form-label">Standard Regulated Fare (₱)</label>
@@ -535,7 +577,6 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       className="input-field"
                     />
                   </div>
-
                   <div className="form-group">
                     <label className="form-label">20% Discounted Rate (₱)</label>
                     <input
@@ -549,6 +590,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </div>
                 </div>
 
+                {/* Radius Slider */}
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <label className="form-label">Proximity Geofence Radius</label>
@@ -570,17 +612,28 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </div>
                 </div>
 
-                {/* Map Pin Coordinates Picker inside Modal */}
+                {/* Map Picker */}
                 <div className="form-group">
                   <label className="form-label">
                     Pin Location Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
                   </label>
-                  <div style={{ height: '220px', minHeight: '220px', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)', marginTop: 4, flexShrink: 0 }}>
+                  {/* Rigid map container — Leaflet cannot escape this */}
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 220,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-color)',
+                    marginTop: 6,
+                    flexShrink: 0,
+                  }}>
                     <MapContainer
                       center={[lat, lng]}
                       zoom={14}
                       zoomControl={false}
-                      style={{ width: '100%', height: '100%' }}
+                      scrollWheelZoom={false}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                     >
                       <TileLayer
                         attribution='&copy; OpenStreetMap'
@@ -598,9 +651,10 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       />
                     </MapContainer>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
                     Click or drag the marker on the map to set the exact destination coordinates
                   </span>
+
                   {/* Manual Lat/Lng inputs */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                     <div>
@@ -628,6 +682,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </div>
                 </div>
 
+                {/* Origin TODA Hub */}
                 <div className="form-group">
                   <label className="form-label">Origin TODA Hub</label>
                   <select
@@ -641,6 +696,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </select>
                 </div>
 
+                {/* Notes */}
                 <div className="form-group">
                   <label className="form-label">Legal Ordinance Reference / Notes</label>
                   <input
@@ -651,9 +707,22 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     className="input-field"
                   />
                 </div>
+
               </div>
 
-              <div className="modal-footer">
+              {/* Footer — fixed at bottom */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 12,
+                padding: '14px 24px',
+                borderTop: '1px solid var(--border-color)',
+                background: 'var(--bg-primary)',
+                flexShrink: 0,
+                borderBottomLeftRadius: 14,
+                borderBottomRightRadius: 14,
+              }}>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">Cancel</button>
                 <button type="submit" className="btn btn-primary">
                   <Check size={16} /> Save & Enforce Location Rate
