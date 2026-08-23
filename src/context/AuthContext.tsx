@@ -439,17 +439,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {}
 
         if (error.message.includes('Email not confirmed')) {
-          const defaultProfile: Profile = {
-            id: '00000000-0000-0000-0000-000000000001',
-            role: 'passenger',
-            full_name: 'Bauang Ka-Pasada',
-            phone_number: '+63 917 123 4567',
-            language_pref: 'fil',
-            created_at: new Date().toISOString()
-          };
-          setUser(defaultProfile);
-          localStorage.setItem('pasada_auth_user', JSON.stringify(defaultProfile));
-          return {};
+          // Auto-confirm trigger is now active on Supabase, so this branch
+          // is a safety net. Look up cached registered user profile first.
+          try {
+            const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+            const cachedUser = regMap[normalizedInput];
+            if (cachedUser) {
+              setUser(cachedUser.profile);
+              localStorage.setItem('pasada_auth_user', JSON.stringify(cachedUser.profile));
+              if (cachedUser.driverProfile) {
+                setDriverProfile(cachedUser.driverProfile);
+                localStorage.setItem('pasada_auth_driver', JSON.stringify(cachedUser.driverProfile));
+              }
+              return {};
+            }
+          } catch {}
+          return { error: 'Kailangan pang i-confirm ang iyong email. Pakitingnan ang iyong inbox at i-click ang confirmation link.' };
         }
         
         if (error.message.toLowerCase().includes('invalid login credentials') || error.message.toLowerCase().includes('invalid grant')) {
