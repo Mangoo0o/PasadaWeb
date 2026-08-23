@@ -462,7 +462,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
       {/* Add / Edit Location Fare Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px', width: '95%' }}>
             <div className="modal-header">
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
                 {selectedFare ? 'Edit Location Tariff & Proximity' : 'Add New Location Tariff'}
@@ -470,8 +470,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
             </div>
 
-            <form onSubmit={handleSave}>
-              <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <form onSubmit={handleSave} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div className="modal-body">
                 {/* Location Name */}
                 <div className="form-group">
                   <label className="form-label">Destination Location Name</label>
@@ -575,7 +575,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <label className="form-label">
                     Pin Location Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
                   </label>
-                  <div style={{ height: '200px', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)', marginTop: 4 }}>
+                  <div style={{ height: '220px', minHeight: '220px', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)', marginTop: 4, flexShrink: 0 }}>
                     <MapContainer
                       center={[lat, lng]}
                       zoom={14}
@@ -601,6 +601,31 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     Click or drag the marker on the map to set the exact destination coordinates
                   </span>
+                  {/* Manual Lat/Lng inputs */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.78rem' }}>Latitude</label>
+                      <input
+                        type="number"
+                        step="0.00001"
+                        value={lat}
+                        onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
+                        className="input-field"
+                        style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.78rem' }}>Longitude</label>
+                      <input
+                        type="number"
+                        step="0.00001"
+                        value={lng}
+                        onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
+                        className="input-field"
+                        style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="form-group">
