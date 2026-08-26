@@ -126,7 +126,7 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
             <button
               onClick={() => setActiveTab('profile')}
               className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
-              title="Bumalik sa Profile"
+              title={t('receipt.backToProfile')}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -134,10 +134,10 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
 
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-black text-[#191c1e] dark:text-white truncate">
-              Kasaysayan ng Biyahe & Reklamo
+              {t('receipt.title')}
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">
-              Opisyal na talaan ng mga biyahe sa Bauang
+              {t('receipt.subtitle')}
             </p>
           </div>
         </div>
@@ -147,7 +147,7 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
             onClick={() => setActiveTab('profile')}
             className="px-2.5 py-1 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 text-[10px] font-extrabold hover:bg-[#0052d1]/20 transition-colors cursor-pointer shrink-0"
           >
-            Profile Hub
+            {t('receipt.backToProfile')}
           </button>
         )}
       </div>
@@ -164,7 +164,7 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            {status === 'all' ? 'Lahat' : status === 'completed' ? 'Tapos Na' : 'Kanselado'}
+            {status === 'all' ? t('receipt.all') : status === 'completed' ? t('receipt.completed') : t('receipt.cancelled')}
           </button>
         ))}
       </div>

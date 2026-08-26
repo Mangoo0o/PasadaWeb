@@ -28,8 +28,8 @@ interface PassengerProfileProps {
 }
 
 export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab }) => {
-  const { i18n } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, signOut, setLanguage } = useAuth();
   
   // Local state for commuter discount simulation & preferences
   const [discountType, setDiscountType] = useState<string>(() => {
@@ -64,7 +64,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
-    i18n.changeLanguage(nextLang);
+    setLanguage(nextLang);
   };
 
   if (!user) {
@@ -85,30 +85,30 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           <div className="min-w-0">
             <div className="flex items-center gap-1 text-[10px] font-bold text-[#0052d1] uppercase tracking-wider">
               <Sparkles className="w-3 h-3 text-[#fcd400]" />
-              <span>Bauang Smart Commuter</span>
+              <span>{t('profile.subtitle')}</span>
             </div>
             <h1 className="text-xs sm:text-sm font-black text-[#191c1e] dark:text-white truncate">
-              Aking Profile
+              {t('profile.title')}
             </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Language Switch */}
+          {/* Functional Language Switch with Account Sync */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
-            title="Switch Language"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-[#0052d1]/10 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 hover:bg-[#0052d1]/20 transition-all cursor-pointer border border-[#0052d1]/20 dark:border-slate-700 active:scale-95"
+            title="Switch Language / Magpalit ng Wika"
           >
-            <Globe className="w-3 h-3 text-[#0052d1]" />
+            <Globe className="w-3.5 h-3.5 text-[#0052d1]" />
             <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
           </button>
 
           {/* Sign Out */}
           <button
             onClick={signOut}
-            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs cursor-pointer"
-            title="Sign Out"
+            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs cursor-pointer active:scale-95"
+            title={t('auth.logoutConfirm')}
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
@@ -133,12 +133,12 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         <div className="flex-1 space-y-0.5 z-10 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              Verified Commuter
+              {t('profile.verifiedCommuter')}
             </span>
             {isDiscountEligible && (
               <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-0.5">
                 <Percent className="w-2.5 h-2.5" />
-                20% Discount
+                {t('profile.discountBadge')}
               </span>
             )}
           </div>
@@ -149,6 +149,9 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           <p className="text-[11px] text-slate-500 truncate">
             {user.phone_number ? `📱 ${user.phone_number}` : 'Registered Bauang Commuter'}
           </p>
+          <p className="text-[10px] text-slate-400 font-semibold">
+            {t('profile.memberSince')}: {new Date(user.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+          </p>
         </div>
       </section>
 
@@ -158,7 +161,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           <div className="flex items-center gap-1.5">
             <History className="w-4 h-4 text-[#0052d1]" />
             <h3 className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-white">
-              Mga Nakaraang Byahe (History)
+              {t('profile.recentTrips')}
             </h3>
           </div>
 
@@ -167,7 +170,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
               onClick={() => setActiveTab('history')}
               className="text-[#0052d1] hover:underline font-bold text-[11px] flex items-center gap-0.5 cursor-pointer"
             >
-              <span>Tingnan Lahat</span>
+              <span>{t('profile.seeAll')}</span>
               <ChevronRight className="w-3 h-3" />
             </button>
           )}
@@ -184,14 +187,14 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           <div className="text-center py-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-1">
             <Clock className="w-5 h-5 text-slate-400 mx-auto" />
             <p className="text-[11px] text-slate-500 font-medium">
-              Wala pang naitatalang biyahe kamakailan.
+              {t('profile.noTripsYet')}
             </p>
           </div>
         ) : (
           <div className="space-y-1.5">
             {recentBookings.map((b) => {
               const fare = Number(b.final_fare || b.estimated_fare || 20).toFixed(2);
-              const dateStr = new Date(b.created_at).toLocaleDateString('fil-PH', {
+              const dateStr = new Date(b.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fil-PH', {
                 month: 'short',
                 day: 'numeric'
               });
@@ -221,7 +224,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
                       ₱{fare}
                     </span>
                     <span className={`text-[9px] font-bold uppercase ${b.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                      {b.status === 'completed' ? 'Tapos Na' : b.status}
+                      {b.status === 'completed' ? (i18n.language === 'en' ? 'Completed' : 'Tapos Na') : b.status}
                     </span>
                   </div>
                 </div>
@@ -237,7 +240,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 border border-rose-200/80 dark:border-rose-800 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <MessageSquareWarning className="w-3.5 h-3.5" />
-            <span>May problema sa biyahe? Magsumite ng Reklamo / Report</span>
+            <span>{t('profile.complaintProblem')}</span>
           </button>
         )}
       </section>
@@ -249,17 +252,17 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             <Percent className="w-4 h-4 text-emerald-600" />
             <div>
               <h3 className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-white">
-                Diskwento sa Pamasahe (20% Off)
+                {t('profile.discountsTitle')}
               </h3>
               <p className="text-[10px] text-slate-500">
-                Ayon sa Ordinansa ng Bayan ng Bauang
+                {t('profile.discountsSub')}
               </p>
             </div>
           </div>
 
           {isDiscountEligible && (
             <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold">
-              Aktibo
+              {t('profile.active')}
             </span>
           )}
         </div>
@@ -267,10 +270,10 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         {/* Discount Selector Pills */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
           {[
-            { id: 'regular', label: 'Regular', desc: 'Taripa' },
-            { id: 'student', label: 'Estudyante', desc: '20% Off' },
-            { id: 'senior', label: 'Senior', desc: '20% Off' },
-            { id: 'pwd', label: 'PWD', desc: '20% Off' }
+            { id: 'regular', label: t('profile.regular'), desc: 'Taripa' },
+            { id: 'student', label: t('profile.student'), desc: '20% Off' },
+            { id: 'senior', label: t('profile.senior'), desc: '20% Off' },
+            { id: 'pwd', label: t('profile.pwd'), desc: '20% Off' }
           ].map((type) => {
             const isSelected = discountType === type.id;
             return (
@@ -301,7 +304,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         <div className="flex items-center gap-1.5">
           <AlertTriangle className="w-4 h-4 text-rose-600" />
           <h3 className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-white">
-            Emergency & Kaligtasan sa Bauang
+            {t('profile.emergencyTitle')}
           </h3>
         </div>
 
@@ -312,7 +315,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors"
           >
             <div className="min-w-0 pr-1">
-              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">Bauang PNP</div>
+              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{t('profile.pnp')}</div>
               <div className="text-[9px] text-slate-500 font-mono">(072) 705-1234</div>
             </div>
             <div className="w-7 h-7 rounded-full bg-[#0052d1] text-white flex items-center justify-center shrink-0">
@@ -326,7 +329,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
           >
             <div className="min-w-0 pr-1">
-              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">MDRRMO Rescue</div>
+              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{t('profile.rescue')}</div>
               <div className="text-[9px] text-slate-500 font-mono">(072) 705-5555</div>
             </div>
             <div className="w-7 h-7 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
@@ -345,7 +348,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           >
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
               <Compass className="w-3.5 h-3.5 text-[#0052d1]" />
-              <span>Explore Bauang Tourist Spots</span>
+              <span>{t('profile.exploreSpots')}</span>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           </button>
@@ -356,7 +359,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           >
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
               <Bike className="w-3.5 h-3.5 text-[#0052d1]" />
-              <span>Pasada Live Booking & Map</span>
+              <span>{t('profile.liveBooking')}</span>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           </button>
@@ -370,7 +373,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           className="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Mag-sign out sa Account</span>
+          <span>{t('profile.signOut')}</span>
         </button>
       </div>
 

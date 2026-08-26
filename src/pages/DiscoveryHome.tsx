@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Search, 
   Mic, 
@@ -11,10 +12,12 @@ import {
   Bike, 
   Sparkles, 
   Clock,
-  ArrowRight
+  ArrowRight,
+  Globe
 } from 'lucide-react';
 import { TouristSpot } from '../types/database.types';
 import { fetchTouristSpots } from '../services/touristService';
+import { useAuth } from '../hooks/useAuth';
 
 interface DiscoveryHomeProps {
   setActiveTab: (tab: string) => void;
@@ -25,6 +28,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   setActiveTab,
   onSelectDestination 
 }) => {
+  const { t, i18n } = useTranslation();
+  const { setLanguage } = useAuth();
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
+    setLanguage(nextLang);
+  };
+
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -148,20 +159,32 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[#0052d1] uppercase tracking-wider truncate">
               <Sparkles className="w-3.5 h-3.5 text-[#fcd400] shrink-0" />
-              <span className="truncate">Bauang Smart Transit & Discovery</span>
+              <span className="truncate">{t('discovery.headerBadge')}</span>
             </div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#191c1e] tracking-tight leading-tight truncate mt-0.5">
-              Explore Bauang, LU
+              {t('discovery.title')}
             </h1>
           </div>
 
-          <button
-            onClick={() => setActiveTab('pasada')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white text-[11px] sm:text-xs font-extrabold shadow-md shadow-[#0052d1]/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-          >
-            <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
-            <span>Sakay Na</span>
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Functional Language Toggle */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-white/90 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 hover:bg-white transition-all shadow-xs border border-white/80 dark:border-slate-700 cursor-pointer active:scale-95"
+              title="Switch Language / Magpalit ng Wika"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#0052d1]" />
+              <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('pasada')}
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white text-[11px] sm:text-xs font-extrabold shadow-md shadow-[#0052d1]/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
+              <span>{t('discovery.rideNow')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar with Mic from Stitch */}
@@ -171,7 +194,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by vibe, place, tag..."
+            placeholder={t('discovery.searchPlaceholder')}
             className="bg-transparent border-none outline-none w-full text-xs sm:text-sm placeholder:text-slate-400 focus:ring-0 p-0 text-[#191c1e] font-medium"
           />
           <button 

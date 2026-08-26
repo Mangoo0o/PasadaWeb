@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Profile, DriverProfile, UserRole } from '../types/database.types';
 import { supabase } from '../api/supabaseClient';
+import { setAppLanguage } from '../i18n/config';
 
 export interface SignUpData {
   role: UserRole;
@@ -25,6 +26,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   toggleDriverAvailability: () => Promise<void>;
   updateUserProfile: (updates: Partial<Profile>) => Promise<void>;
+  setLanguage: (lang: 'en' | 'fil') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -115,6 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile && !error) {
         setUser(profile as Profile);
         localStorage.setItem('pasada_auth_user', JSON.stringify(profile));
+
+        if (profile.language_pref) {
+          setAppLanguage(profile.language_pref as 'en' | 'fil');
+        }
 
         if (profile.role === 'driver') {
           localStorage.setItem('pasada_active_tab', 'driver');
@@ -683,6 +689,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const setLanguage = async (lang: 'en' | 'fil') => {
+    setAppLanguage(lang);
+    if (user) {
+      setUser(prev => prev ? { ...prev, language_pref: lang } : null);
+      try {
+        await supabase
+          .from('profiles')
+          .update({ language_pref: lang })
+          .eq('id', user.id);
+      } catch (err) {
+        console.warn("Language sync note:", err);
+      }
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -693,7 +714,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         toggleDriverAvailability,
-        updateUserProfile
+        updateUserProfile,
+        setLanguage
       }}
     >
       {children}

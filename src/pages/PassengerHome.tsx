@@ -44,8 +44,13 @@ interface PassengerHomeProps {
 }
 
 export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, preselectedSpot }) => {
-  const { i18n } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, signOut, setLanguage } = useAuth();
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
+    setLanguage(nextLang);
+  };
 
   const [terminals, setTerminals] = useState<Terminal[]>([]);
   const [locationFares, setLocationFares] = useState<LocationFare[]>([]);
@@ -262,10 +267,6 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     };
   }, [activeBooking?.id]);
 
-  const toggleLanguage = () => {
-    const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
-    setAppLanguage(nextLang);
-  };
 
   // Select Destination from Preset Location Fare
   const handleSelectLocationFare = (loc: LocationFare) => {

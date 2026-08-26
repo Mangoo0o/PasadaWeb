@@ -5,10 +5,12 @@
     "subtagline": "Fair fares, verified drivers, and real-time routes for commuters & tourists."
   },
   "nav": {
-    "bookRide": "Sakay / Ride",
+    "explore": "Explore",
+    "pasada": "Pasada",
+    "bookRide": "Ride",
     "driverPortal": "Driver Queue",
     "touristGuide": "Tourist Spots",
-    "history": "History & Receipts",
+    "history": "History",
     "admin": "Admin Portal",
     "profile": "Profile",
     "signIn": "Sign In",
@@ -46,6 +48,46 @@
     "demoDriver": "Kuya Ben (Driver #104)",
     "demoAdmin": "Officer Cruz (Admin)",
     "logoutConfirm": "Are you sure you want to sign out?"
+  },
+  "discovery": {
+    "headerBadge": "Bauang Smart Transit & Discovery",
+    "title": "Explore Bauang, LU",
+    "searchPlaceholder": "Search by vibe, place, tag...",
+    "mustSeeToday": "Must-See Today",
+    "curatedRoute": "Curated Route",
+    "viewAll": "See All",
+    "rideNow": "Ride",
+    "audio": "Audio",
+    "bookTricycle": "Book Tricycle",
+    "listenAudio": "Listen",
+    "stopAudio": "Stop Audio",
+    "attraction": "Attraction",
+    "openHours": "Hours",
+    "audioTour": "Audio Tour Guide"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Bauang Smart Commuter",
+    "verifiedCommuter": "Verified Commuter",
+    "discountBadge": "20% Taripa Discount",
+    "memberSince": "Member since",
+    "discountsTitle": "Fare Discount (20% Off)",
+    "discountsSub": "Per Bauang Municipal Ordinance",
+    "active": "Active",
+    "regular": "Regular",
+    "student": "Student",
+    "senior": "Senior Citizen",
+    "pwd": "PWD",
+    "recentTrips": "Recent Trips (History)",
+    "seeAll": "See All",
+    "noTripsYet": "No recent trips recorded.",
+    "complaintProblem": "Having issues with a ride? File a Complaint / Report",
+    "emergencyTitle": "Emergency & Safety in Bauang",
+    "pnp": "Bauang PNP",
+    "rescue": "MDRRMO Rescue",
+    "exploreSpots": "Explore Bauang Tourist Spots",
+    "liveBooking": "Pasada Live Booking & Map",
+    "signOut": "Sign Out of Account"
   },
   "passenger": {
     "whereTo": "Where are you heading?",
@@ -111,13 +153,16 @@
     "fromTerminal": "from"
   },
   "receipt": {
-    "title": "Trip History & Digital Receipts",
-    "tripId": "Trip Ref",
-    "baseFare": "Base Fare (First 1 km)",
+    "title": "Trip History & Receipts",
+    "subtitle": "Official record of your rides in Bauang",
+    "all": "All",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "noTrips": "No trips found",
+    "baseFare": "Base Taripa Fare (First 2.0 km)",
     "distanceCharge": "Distance Rate",
-    "nightDiff": "Night Surcharge",
     "totalPaid": "Total Fare Paid",
-    "rateDriver": "Rate Driver",
-    "fileComplaint": "Report Issue / Overcharging"
+    "reportComplaint": "Report / File Complaint with LGU MTFRB",
+    "backToProfile": "Back to Profile"
   }
 }
