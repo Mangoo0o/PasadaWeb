@@ -583,7 +583,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                   </div>
                 )}
 
-                {/* Regulated Fare Rate Display Card */}
+                {/* Simple Regulated Fare Rate Display */}
                 {(() => {
                   const fareNum = Number(selectedSpotModal.est_tricycle_fare || 25);
                   const discountedNum = Math.round(fareNum * 0.8);
@@ -595,53 +595,28 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
 
                   return (
                     <div className="space-y-3">
-                      {/* Fare Rate Highlights Box */}
-                      <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-slate-800 dark:to-slate-800/90 border border-[#0052d1]/20 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-[#0052d1] text-white flex items-center justify-center font-black text-sm shadow-md shadow-[#0052d1]/25">
-                            ₱
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-extrabold text-[#0052d1] dark:text-sky-400 uppercase tracking-wider block">
-                              {i18n.language === 'en' ? 'Regulated Tariff Fare' : 'Opisyal na Pamasahe'}
-                            </span>
-                            <span className="text-base sm:text-lg font-black text-[#131b2e] dark:text-white leading-tight block">
-                              ₱{fareNum.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right pl-2 border-l border-slate-200 dark:border-slate-700">
-                          <span className="text-[9px] font-bold text-slate-500 block">
-                            {i18n.language === 'en' ? '20% Discount Rate' : '20% Diskwento'}
+                      {/* Simple Fare Row */}
+                      <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                          {i18n.language === 'en' ? 'Tariff Fare Rate' : 'Opisyal na Pamasahe'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-black text-[#0052d1] dark:text-sky-400">
+                            ₱{fareNum.toFixed(2)}
                           </span>
-                          <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
-                            ₱{discountedNum}.00
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                            ₱{discountedNum}.00 (-20%)
                           </span>
                         </div>
                       </div>
 
                       {/* Clean Description */}
-                      <p className="leading-relaxed font-medium text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                      <p className="leading-relaxed font-normal text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                         {cleanDesc}
                       </p>
                     </div>
                   );
                 })()}
-
-                {/* Visiting Hours & Coordinates */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {selectedSpotModal.opening_hours && (
-                    <div className="flex items-center gap-2 font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl">
-                      <Clock className="w-4 h-4 text-[#0052d1]" />
-                      <span>{i18n.language === 'en' ? 'Hours' : 'Oras'}: {selectedSpotModal.opening_hours}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl">
-                    <MapPin className="w-4 h-4 text-[#0052d1]" />
-                    <span>Bauang, La Union ({selectedSpotModal.lat.toFixed(3)}, {selectedSpotModal.lng.toFixed(3)})</span>
-                  </div>
-                </div>
 
                 {/* Video Tour Player if Available */}
                 {selectedSpotModal.video_url && (
