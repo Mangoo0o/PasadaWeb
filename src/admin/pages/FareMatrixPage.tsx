@@ -15,7 +15,10 @@ import {
   UploadCloud,
   X,
   Play,
-  Star
+  Star,
+  ArrowRight,
+  ArrowLeft,
+  MapPin
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -142,6 +145,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 }) => {
   const [selectedFare, setSelectedFare] = useState<LocationFare | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
   // Form State
   const [locationName, setLocationName] = useState('');
@@ -175,6 +179,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
   const handleOpenAdd = () => {
     setSelectedFare(null);
+    setCurrentStep(1);
     setLocationName('');
     setDescription('');
     setImages([]);
@@ -194,6 +199,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
   const handleOpenEdit = (fare: LocationFare) => {
     setSelectedFare(fare);
+    setCurrentStep(1);
     setLocationName(fare.location_name);
     setDescription(fare.description || '');
     const loadedImages = fare.images && fare.images.length > 0 
@@ -541,7 +547,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
         </div>
       </div>
 
-      {/* Add / Edit Location Fare Modal with 2 Columns and Multi-Media */}
+      {/* Add / Edit Location Fare Modal with Wide 2-Step Stepper (Scroll-Free) */}
       {isModalOpen && (
         <div
           onClick={() => setIsModalOpen(false)}
@@ -563,13 +569,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               borderRadius: 16,
-              width: '95%',
-              maxWidth: 980,
-              maxHeight: '92vh',
+              width: '96%',
+              maxWidth: 1100,
+              maxHeight: '94vh',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.32)',
             }}
           >
             {/* Header — fixed */}
@@ -577,7 +583,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '16px 24px',
+              padding: '14px 24px',
               borderBottom: '1px solid var(--border-color)',
               flexShrink: 0,
               background: 'var(--bg-surface)',
@@ -606,412 +612,306 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               </button>
             </div>
 
-            {/* Form — fills remaining space */}
+            {/* Stepper Tabs Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 24px',
+              borderBottom: '1px solid var(--border-color)',
+              background: 'var(--bg-primary)',
+              flexShrink: 0,
+            }}>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 14px',
+                  borderRadius: 20,
+                  background: currentStep === 1 ? '#0052d1' : 'transparent',
+                  color: currentStep === 1 ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  border: currentStep === 1 ? 'none' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: currentStep === 1 ? '#ffffff' : 'var(--border-color)',
+                  color: currentStep === 1 ? '#0052d1' : 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.72rem',
+                  fontWeight: 900
+                }}>
+                  1
+                </span>
+                <span>Step 1: Set Location & Fare Rates</span>
+              </button>
+
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>→</span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!locationName) {
+                    alert('Please enter a location name first.');
+                    return;
+                  }
+                  setCurrentStep(2);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 14px',
+                  borderRadius: 20,
+                  background: currentStep === 2 ? '#0052d1' : 'transparent',
+                  color: currentStep === 2 ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  border: currentStep === 2 ? 'none' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: currentStep === 2 ? '#ffffff' : 'var(--border-color)',
+                  color: currentStep === 2 ? '#0052d1' : 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.72rem',
+                  fontWeight: 900
+                }}>
+                  2
+                </span>
+                <span>Step 2: Add Files (Pictures, Video & Audio)</span>
+                {images.length > 0 && (
+                  <span style={{
+                    background: currentStep === 2 ? '#fcd400' : '#0052d1',
+                    color: currentStep === 2 ? '#131b2e' : '#fff',
+                    borderRadius: 10,
+                    padding: '1px 6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 900
+                  }}>
+                    {images.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Form Body */}
             <form
               onSubmit={handleSave}
               style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             >
-              {/* Scrollable 2-Column Body */}
-              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 24px' }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-                  gap: 24,
-                  alignItems: 'start',
-                }}>
-                  
-                  {/* Left Column: Destination Details & Multi-Media Uploads */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    
-                    {/* Location Name */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>Destination Location Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={locationName}
-                        onChange={(e) => setLocationName(e.target.value)}
-                        placeholder="e.g. Lomboy Grape Farms, Bauang Beach, Central West"
-                        className="input-field"
-                      />
-                    </div>
-
-                    {/* Location Icon Selector */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>Location Icon / Category Pin</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                        {LOCATION_ICON_OPTIONS.map((opt) => {
-                          const isSelected = icon === opt.id || icon === opt.icon;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() => setIcon(opt.id)}
-                              className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '6px 2px',
-                                fontSize: '0.68rem',
-                                border: isSelected ? '2px solid #0052d1' : '1px solid var(--border-color)',
-                                gap: 2,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
-                                {opt.label.split('/')[0]}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Fares */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ flex: 1, minHeight: 0, padding: '18px 24px', overflowY: 'auto' }}>
+                
+                {/* STEP 1: Location & Fare Rate (2 Columns, fits without scroll) */}
+                {currentStep === 1 && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 24,
+                    alignItems: 'start',
+                  }}>
+                    {/* Step 1 Left Column: Names, Icons, Fares & Hub */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {/* Destination Name */}
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800 }}>Standard Regulated Fare (₱)</label>
-                        <input
-                          type="number"
-                          step="1.00"
-                          required
-                          value={standardFare}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setStandardFare(val);
-                            setDiscountedFare(Math.round(val * 0.8));
-                          }}
-                          className="input-field"
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800 }}>20% Discounted Rate (₱)</label>
-                        <input
-                          type="number"
-                          step="1.00"
-                          required
-                          value={discountedFare}
-                          onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
-                          className="input-field"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Explore Description */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>
-                        Explore Description & Highlights
-                      </label>
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Key highlights, attractions, visiting hours, and stories shown to commuters on the Explore feed..."
-                        rows={2}
-                        className="input-field"
-                        style={{ resize: 'vertical' }}
-                      />
-                    </div>
-
-                    {/* Multi-Photo / Picture Upload Section */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <label className="form-label" style={{ fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <ImageIcon size={16} style={{ color: '#0052d1' }} />
-                          Explore Photos ({images.length} uploaded)
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
+                          Destination Location Name *
                         </label>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Multiple photos supported</span>
+                        <input
+                          type="text"
+                          required
+                          value={locationName}
+                          onChange={(e) => setLocationName(e.target.value)}
+                          placeholder="e.g. Lomboy Grape Farms, Bauang Beach, Central West"
+                          className="input-field"
+                          style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                        />
                       </div>
 
-                      {/* Upload Button */}
-                      <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        padding: '10px 14px',
-                        border: '2px dashed var(--border-color)',
-                        borderRadius: 10,
-                        cursor: 'pointer',
-                        background: 'var(--bg-primary)',
-                        transition: 'all 0.2s',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        color: 'var(--text-main)',
-                      }}>
-                        <UploadCloud size={18} style={{ color: '#0052d1' }} />
-                        <span>Click or Drag to Upload Pictures</span>
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-
-                      {/* Thumbnail Preview Grid */}
-                      {images.length > 0 && (
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
-                          gap: 8,
-                          marginTop: 10,
-                        }}>
-                          {images.map((imgUrl, idx) => {
-                            const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
+                      {/* Location Icon Category Pins */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
+                          Category Pin Icon
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+                          {LOCATION_ICON_OPTIONS.map((opt) => {
+                            const isSelected = icon === opt.id || icon === opt.icon;
                             return (
-                              <div
-                                key={idx}
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => setIcon(opt.id)}
+                                className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
                                 style={{
-                                  position: 'relative',
-                                  height: 64,
-                                  borderRadius: 8,
-                                  overflow: 'hidden',
-                                  border: isCover ? '2px solid #0052d1' : '1px solid var(--border-color)',
-                                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '5px 2px',
+                                  fontSize: '0.65rem',
+                                  border: isSelected ? '2px solid #0052d1' : '1px solid var(--border-color)',
+                                  gap: 2,
+                                  cursor: 'pointer',
                                 }}
                               >
-                                <img
-                                  src={imgUrl}
-                                  alt={`Upload ${idx + 1}`}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                                {isCover && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    background: 'rgba(0,82,209,0.88)',
-                                    color: '#fff',
-                                    fontSize: '0.55rem',
-                                    fontWeight: 900,
-                                    textAlign: 'center',
-                                    padding: '1px 0',
-                                    textTransform: 'uppercase',
-                                  }}>
-                                    Cover
-                                  </div>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveImage(idx)}
-                                  style={{
-                                    position: 'absolute',
-                                    top: 2,
-                                    right: 2,
-                                    width: 18,
-                                    height: 18,
-                                    borderRadius: '50%',
-                                    background: 'rgba(220,38,38,0.9)',
-                                    color: '#fff',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.65rem',
-                                    fontWeight: 900,
-                                  }}
-                                  title="Remove image"
-                                >
-                                  ×
-                                </button>
-                              </div>
+                                <span style={{ fontSize: '1.1rem' }}>{opt.icon}</span>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
+                                  {opt.label.split('/')[0]}
+                                </span>
+                              </button>
                             );
                           })}
                         </div>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Audio Tour Guide Upload */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Music size={16} style={{ color: '#0052d1' }} />
-                        Audio Tour Guide Narration
-                      </label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <label style={{
-                          padding: '7px 12px',
-                          borderRadius: 8,
-                          background: 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          flexShrink: 0,
-                        }}>
-                          <UploadCloud size={14} />
-                          Upload Audio (MP3/WAV)
+                      {/* Fares */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Standard Fare (₱)</label>
                           <input
-                            type="file"
-                            accept="audio/*"
-                            onChange={handleAudioUpload}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-                        <input
-                          type="text"
-                          value={audioUrl}
-                          onChange={(e) => setAudioUrl(e.target.value)}
-                          placeholder="Or paste audio URL..."
-                          className="input-field"
-                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
-                        />
-                        {audioUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setAudioUrl('')}
-                            className="btn btn-secondary"
-                            style={{ padding: '6px 10px', color: 'var(--danger)' }}
-                            title="Clear Audio"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                      {audioUrl && (
-                        <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
-                          <audio controls src={audioUrl} style={{ width: '100%', height: 32 }} />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Video Guide / Reel Upload */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Video size={16} style={{ color: '#0052d1' }} />
-                        Video Showcase / Reel (MP4/WebM)
-                      </label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <label style={{
-                          padding: '7px 12px',
-                          borderRadius: 8,
-                          background: 'var(--bg-primary)',
-                          border: '1px solid var(--border-color)',
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          flexShrink: 0,
-                        }}>
-                          <UploadCloud size={14} />
-                          Upload Video (MP4)
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={handleVideoUpload}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-                        <input
-                          type="text"
-                          value={videoUrl}
-                          onChange={(e) => setVideoUrl(e.target.value)}
-                          placeholder="Or paste video MP4 URL..."
-                          className="input-field"
-                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
-                        />
-                        {videoUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setVideoUrl('')}
-                            className="btn btn-secondary"
-                            style={{ padding: '6px 10px', color: 'var(--danger)' }}
-                            title="Clear Video"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                      {videoUrl && (
-                        <div style={{ marginTop: 6, borderRadius: 8, overflow: 'hidden', maxHeight: 150, background: '#000' }}>
-                          <video controls src={videoUrl} style={{ width: '100%', maxHeight: 150, objectFit: 'contain' }} />
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-
-                  {/* Right Column: Proximity Geofence, Map Picker & Ordinance Reference */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    
-                    {/* Radius Slider */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label className="form-label" style={{ fontWeight: 800, margin: 0 }}>Proximity Geofence Radius</label>
-                        <span style={{ fontWeight: 900, color: '#0052d1', fontSize: '0.9rem', background: 'rgba(0,82,209,0.1)', padding: '2px 8px', borderRadius: 6 }}>
-                          {proximityRadius} meters
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="300"
-                        max="2500"
-                        step="50"
-                        value={proximityRadius}
-                        onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
-                        style={{ width: '100%', accentColor: '#0052d1', marginTop: 6 }}
-                      />
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                        Any booking drop-off within this circle automatically charges ₱{standardFare}.00
-                      </div>
-                    </div>
-
-                    {/* Map Picker */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>
-                        Pin Location Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
-                      </label>
-                      <div style={{
-                        position: 'relative',
-                        width: '100%',
-                        height: 250,
-                        borderRadius: 12,
-                        overflow: 'hidden',
-                        border: '1px solid var(--border-color)',
-                        marginTop: 4,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      }}>
-                        <MapContainer
-                          center={[lat, lng]}
-                          zoom={14}
-                          zoomControl={false}
-                          scrollWheelZoom={false}
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                        >
-                          <TileLayer
-                            attribution='&copy; OpenStreetMap'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          />
-                          <ModalLocationPicker
-                            lat={lat}
-                            lng={lng}
-                            radiusMeters={proximityRadius}
-                            icon={icon}
-                            onLocationChange={(newLat, newLng) => {
-                              setLat(newLat);
-                              setLng(newLng);
+                            type="number"
+                            step="1.00"
+                            required
+                            value={standardFare}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setStandardFare(val);
+                              setDiscountedFare(Math.round(val * 0.8));
                             }}
+                            className="input-field"
+                            style={{ padding: '7px 10px', fontSize: '0.85rem' }}
                           />
-                        </MapContainer>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>20% Discounted (₱)</label>
+                          <input
+                            type="number"
+                            step="1.00"
+                            required
+                            value={discountedFare}
+                            onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
+                            className="input-field"
+                            style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                          />
+                        </div>
                       </div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
-                        Click or drag the marker pin on the map to place the location center.
-                      </span>
+
+                      {/* Origin Hub */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Origin TODA Hub</label>
+                        <select
+                          value={originTerminalId}
+                          onChange={(e) => setOriginTerminalId(e.target.value)}
+                          className="input-field"
+                          style={{ padding: '7px 10px', fontSize: '0.82rem' }}
+                        >
+                          {terminals.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Ordinance Reference */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Legal Ordinance Notes</label>
+                        <input
+                          type="text"
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="e.g. Municipal Ordinance 2026-04"
+                          className="input-field"
+                          style={{ padding: '7px 10px', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Step 1 Right Column: Geofence & Leaflet Map */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {/* Radius Slider */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.82rem' }}>
+                            Proximity Geofence Radius
+                          </label>
+                          <span style={{ fontWeight: 900, color: '#0052d1', fontSize: '0.85rem', background: 'rgba(0,82,209,0.1)', padding: '2px 8px', borderRadius: 6 }}>
+                            {proximityRadius} meters
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="300"
+                          max="2500"
+                          step="50"
+                          value={proximityRadius}
+                          onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
+                          style={{ width: '100%', accentColor: '#0052d1', marginTop: 4 }}
+                        />
+                      </div>
+
+                      {/* Map Picker */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.82rem' }}>
+                            Pin Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Drag pin to reposition</span>
+                        </div>
+                        <div style={{
+                          position: 'relative',
+                          width: '100%',
+                          height: 210,
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                          border: '1px solid var(--border-color)',
+                          boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
+                        }}>
+                          <MapContainer
+                            center={[lat, lng]}
+                            zoom={14}
+                            zoomControl={false}
+                            scrollWheelZoom={false}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                          >
+                            <TileLayer
+                              attribution='&copy; OpenStreetMap'
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <ModalLocationPicker
+                              lat={lat}
+                              lng={lng}
+                              radiusMeters={proximityRadius}
+                              icon={icon}
+                              onLocationChange={(newLat, newLng) => {
+                                setLat(newLat);
+                                setLng(newLng);
+                              }}
+                            />
+                          </MapContainer>
+                        </div>
+                      </div>
 
                       {/* Manual Lat/Lng inputs */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Latitude</label>
+                          <label className="form-label" style={{ fontSize: '0.74rem', fontWeight: 700 }}>Latitude</label>
                           <input
                             type="number"
                             step="0.00001"
@@ -1022,7 +922,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Longitude</label>
+                          <label className="form-label" style={{ fontSize: '0.74rem', fontWeight: 700 }}>Longitude</label>
                           <input
                             type="number"
                             step="0.00001"
@@ -1034,57 +934,331 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         </div>
                       </div>
                     </div>
-
-                    {/* Origin TODA Hub */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>Origin TODA Hub</label>
-                      <select
-                        value={originTerminalId}
-                        onChange={(e) => setOriginTerminalId(e.target.value)}
-                        className="input-field"
-                      >
-                        {terminals.map(t => (
-                          <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800 }}>Legal Ordinance Reference / Notes</label>
-                      <input
-                        type="text"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="e.g. Sangguniang Bayan Ordinance No. 2026-04 Tariff"
-                        className="input-field"
-                      />
-                    </div>
-
                   </div>
+                )}
 
-                </div>
+                {/* STEP 2: Add Files (Pictures, Video & Audio) (2 Columns, fits without scroll) */}
+                {currentStep === 2 && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 24,
+                    alignItems: 'start',
+                  }}>
+                    {/* Step 2 Left Column: Multiple Picture Upload & Highlights */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Multi-Photo / Picture Upload Section */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <label className="form-label" style={{ fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
+                            <ImageIcon size={16} style={{ color: '#0052d1' }} />
+                            Explore Pictures ({images.length} uploaded)
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Multiple photos supported</span>
+                        </div>
+
+                        {/* Upload Button */}
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          padding: '12px 14px',
+                          border: '2px dashed #0052d1',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                          background: 'rgba(0,82,209,0.04)',
+                          transition: 'all 0.2s',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          color: '#0052d1',
+                        }}>
+                          <UploadCloud size={18} />
+                          <span>Click to Upload Pictures (JPG, PNG, WebP)</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+
+                        {/* Thumbnail Preview Grid */}
+                        {images.length > 0 && (
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
+                            gap: 8,
+                            marginTop: 10,
+                            maxHeight: 120,
+                            overflowY: 'auto',
+                            padding: 2,
+                          }}>
+                            {images.map((imgUrl, idx) => {
+                              const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
+                              return (
+                                <div
+                                  key={idx}
+                                  onClick={() => setCoverImageUrl(imgUrl)}
+                                  style={{
+                                    position: 'relative',
+                                    height: 56,
+                                    borderRadius: 8,
+                                    overflow: 'hidden',
+                                    border: isCover ? '2.5px solid #0052d1' : '1px solid var(--border-color)',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                    cursor: 'pointer',
+                                  }}
+                                  title="Click to set as primary cover photo"
+                                >
+                                  <img
+                                    src={imgUrl}
+                                    alt={`Upload ${idx + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                  {isCover && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      background: 'rgba(0,82,209,0.92)',
+                                      color: '#fff',
+                                      fontSize: '0.55rem',
+                                      fontWeight: 900,
+                                      textAlign: 'center',
+                                      padding: '1px 0',
+                                      textTransform: 'uppercase',
+                                    }}>
+                                      Cover
+                                    </div>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveImage(idx);
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 2,
+                                      right: 2,
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: '50%',
+                                      background: 'rgba(220,38,38,0.95)',
+                                      color: '#fff',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.65rem',
+                                      fontWeight: 900,
+                                    }}
+                                    title="Remove image"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Explore Description */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
+                          Explore Description & Highlights
+                        </label>
+                        <textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Key highlights, attractions, visiting hours, and stories shown to commuters on the Explore feed..."
+                          rows={3}
+                          className="input-field"
+                          style={{ resize: 'none', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Step 2 Right Column: Audio & Video Uploads */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Audio Tour Guide Upload */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
+                          <Music size={16} style={{ color: '#0052d1' }} />
+                          Audio Tour Guide Narration
+                        </label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{
+                            padding: '7px 12px',
+                            borderRadius: 8,
+                            background: 'var(--bg-primary)',
+                            border: '1px solid var(--border-color)',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            flexShrink: 0,
+                          }}>
+                            <UploadCloud size={14} />
+                            Upload Audio
+                            <input
+                              type="file"
+                              accept="audio/*"
+                              onChange={handleAudioUpload}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            value={audioUrl}
+                            onChange={(e) => setAudioUrl(e.target.value)}
+                            placeholder="Or paste audio URL..."
+                            className="input-field"
+                            style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                          />
+                          {audioUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setAudioUrl('')}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 10px', color: 'var(--danger)' }}
+                              title="Clear Audio"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                        {audioUrl && (
+                          <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
+                            <audio controls src={audioUrl} style={{ width: '100%', height: 30 }} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Video Guide / Reel Upload */}
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
+                          <Video size={16} style={{ color: '#0052d1' }} />
+                          Video Showcase / Reel (MP4/WebM)
+                        </label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{
+                            padding: '7px 12px',
+                            borderRadius: 8,
+                            background: 'var(--bg-primary)',
+                            border: '1px solid var(--border-color)',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            flexShrink: 0,
+                          }}>
+                            <UploadCloud size={14} />
+                            Upload Video
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={handleVideoUpload}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            placeholder="Or paste video MP4 URL..."
+                            className="input-field"
+                            style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                          />
+                          {videoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setVideoUrl('')}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 10px', color: 'var(--danger)' }}
+                              title="Clear Video"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                        {videoUrl && (
+                          <div style={{ marginTop: 6, borderRadius: 8, overflow: 'hidden', height: 110, background: '#000' }}>
+                            <video controls src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
 
-              {/* Footer — fixed at bottom */}
+              {/* Stepper Footer Controls */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-end',
-                gap: 12,
-                padding: '14px 24px',
+                justifyContent: 'space-between',
+                padding: '12px 24px',
                 borderTop: '1px solid var(--border-color)',
                 background: 'var(--bg-primary)',
                 flexShrink: 0,
                 borderBottomLeftRadius: 16,
                 borderBottomRightRadius: 16,
               }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Check size={16} /> Save & Enforce Location Rate
-                </button>
+                <div>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                    Cancel
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {currentStep === 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(1)}
+                      className="btn btn-secondary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <ArrowLeft size={16} /> Back: Set Location
+                    </button>
+                  )}
+
+                  {currentStep === 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!locationName) {
+                          alert('Please enter a destination location name.');
+                          return;
+                        }
+                        setCurrentStep(2);
+                      }}
+                      className="btn btn-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <span>Next: Add Files (Pictures / Video / Audio)</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Check size={16} /> Save & Enforce Location Rate
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           </div>
