@@ -22,6 +22,7 @@ import {
 import { TouristSpot } from '../types/database.types';
 import { fetchTouristSpots } from '../services/touristService';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../api/supabaseClient';
 
 interface DiscoveryHomeProps {
   setActiveTab: (tab: string) => void;
@@ -68,7 +69,31 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
         setIsLoading(false);
       }
     };
+
     loadSpots();
+
+    // Subscribe to realtime database changes for live synchronization
+    const channel = supabase
+      .channel('explore-realtime-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'location_fares' },
+        () => {
+          loadSpots();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tourist_spots' },
+        () => {
+          loadSpots();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const toggleFavorite = (id: string, e?: React.MouseEvent) => {
