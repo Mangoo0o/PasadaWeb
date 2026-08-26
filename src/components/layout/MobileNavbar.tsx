@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { 
   Bike, 
   Compass, 
@@ -7,7 +6,9 @@ import {
   ShieldCheck, 
   Navigation,
   User,
-  LayoutDashboard
+  LayoutDashboard,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -17,7 +18,6 @@ interface MobileNavbarProps {
 }
 
 export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActiveTab }) => {
-  const { t } = useTranslation();
   const { user } = useAuth();
 
   const getTabs = () => {
@@ -32,64 +32,54 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
     if (user?.role === 'admin') {
       return [
         { id: 'admin', label: 'Admin Suite', icon: ShieldCheck },
-        { id: 'home', label: 'Passenger App', icon: Bike },
+        { id: 'home', label: 'Explore', icon: Compass },
+        { id: 'pasada', label: 'Pasada Map', icon: Bike },
         { id: 'history', label: 'History', icon: History },
+        { id: 'profile', label: 'Profile', icon: User },
       ];
     }
+    // Passenger Tabs: Explore (Home), Pasada (Ride & Map), Profile (Account, History Hub & Safety)
     return [
-      { id: 'home', label: 'Pasada', icon: Bike },
-      { id: 'tourist', label: 'Explore', icon: Compass },
-      { id: 'history', label: 'History', icon: History },
+      { id: 'home', label: 'Explore', icon: Compass },
+      { id: 'pasada', label: 'Pasada', icon: Bike },
+      { id: 'profile', label: 'Profile', icon: User },
     ];
   };
 
   const tabs = getTabs();
 
   return (
-    <nav 
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        background: 'rgba(255,255,255,0.93)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(0,0,0,0.06)',
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.08)'
-      }}
-    >
-      <div className="max-w-xl mx-auto flex justify-around items-center h-[58px]">
+    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+      <nav 
+        className="bg-[#0052d1]/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[36px] sm:rounded-[44px] p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2.5 shadow-[0_12px_40px_rgba(0,82,209,0.42)] border border-white/30"
+        role="navigation"
+        aria-label="Main Navigation"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (tab.id === 'profile' && activeTab === 'history' && user?.role === 'passenger');
 
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center transition-all active:scale-95 group min-w-0 ${
-                isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+              aria-label={tab.label}
+              title={tab.label}
+              className={`h-11 sm:h-12 px-4 sm:px-5 flex items-center justify-center gap-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+                isActive 
+                  ? 'bg-white text-[#0052d1] shadow-lg font-black' 
+                  : 'text-white/85 hover:text-white hover:bg-white/15 font-bold'
               }`}
             >
-              {isActive ? (
-                <div className="bg-secondary-container text-on-secondary-container rounded-full px-3.5 sm:px-5 py-1 flex items-center justify-center mb-0.5 shadow-sm transition-all">
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-              ) : (
-                <div className="px-3.5 sm:px-5 py-1 flex items-center justify-center mb-0.5">
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-on-surface-variant" />
-                </div>
-              )}
-              <span className={`text-[10px] sm:text-[11px] truncate max-w-[70px] ${isActive ? 'font-black text-primary' : 'font-medium'}`}>
+              <Icon className={`w-5 h-5 ${isActive ? 'text-[#0052d1]' : 'text-white'}`} />
+              <span className={`text-xs sm:text-sm font-extrabold ${isActive ? 'inline-block text-[#0052d1]' : 'hidden sm:inline-block text-white/90'}`}>
                 {tab.label}
               </span>
             </button>
           );
         })}
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 };

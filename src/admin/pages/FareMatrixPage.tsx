@@ -31,7 +31,7 @@ const createAdminLocPin = (loc: LocationFare) => {
   const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
   return L.divIcon({
     className: 'admin-loc-pin',
-    html: `<div style="background:#00346F;color:#ffffff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2.5px solid #00C1FD;box-shadow:0 3px 10px rgba(0,52,111,0.4);cursor:pointer;">${emoji}</div>`,
+    html: `<div style="background:#0052d1;color:#ffffff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2.5px solid #ffffff;box-shadow:0 3px 12px rgba(0,82,209,0.4);cursor:pointer;">${emoji}</div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16]
   });
@@ -92,7 +92,7 @@ function ModalLocationPicker({
 
   const markerIcon = L.divIcon({
     className: 'modal-picker-pin',
-    html: `<div style="background:#00346F;color:#ffffff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #00C1FD;box-shadow:0 4px 14px rgba(0,52,111,0.5);cursor:move;">${getLocationIconEmoji(icon)}</div>`,
+    html: `<div style="background:#0052d1;color:#ffffff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #ffffff;box-shadow:0 4px 14px rgba(0,82,209,0.5);cursor:move;">${getLocationIconEmoji(icon)}</div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 18]
   });
@@ -104,8 +104,8 @@ function ModalLocationPicker({
         center={[lat, lng]}
         radius={radiusMeters}
         pathOptions={{
-          color: '#00346F',
-          fillColor: '#00C1FD',
+          color: '#0052d1',
+          fillColor: '#206afa',
           fillOpacity: 0.22,
           weight: 2.5
         }}
@@ -241,8 +241,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
       {/* Grid: Matrix Table & Live Proximity Visualizer */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.45fr 1.05fr', gap: 24, alignItems: 'start' }}>
         {/* Location-Based Tariff Table */}
-        <div className="table-container glass-card">
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="table-container glass-card" style={{ maxHeight: 'calc(100vh - 230px)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'var(--bg-surface)' }}>
             <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
               📍 Regulated Location Rates ({locationFares.length} Zones)
             </span>
@@ -251,81 +251,83 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             </span>
           </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Destination Location</th>
-                <th>Standard Fare</th>
-                <th>20% Discount</th>
-                <th>Proximity Radius</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {locationFares.length === 0 ? (
+          <div style={{ overflowY: 'auto', overflowX: 'auto', flex: 1 }}>
+            <table className="custom-table">
+              <thead>
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
-                    No location-based fare records found in database.
-                  </td>
+                  <th>Destination Location</th>
+                  <th>Standard Fare</th>
+                  <th>20% Discount</th>
+                  <th>Proximity Radius</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                locationFares.map((loc) => (
-                  <tr key={loc.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: '1.35rem', width: 34, height: 34, borderRadius: 8, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {getLocationIconEmoji(loc.icon, loc.location_name)}
-                        </span>
-                        <div>
-                          <div style={{ fontWeight: 700, color: 'var(--color-pasada-navy)' }}>
-                            {loc.location_name}
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            {loc.notes || 'LGU Standard Tariff'} • {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 800, color: 'var(--success)', fontSize: '1rem' }}>
-                      ₱{Number(loc.standard_fare).toFixed(2)}
-                    </td>
-                    <td style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>
-                      ₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}
-                    </td>
-                    <td>
-                      <span className="badge badge-info" style={{ fontFamily: 'monospace' }}>
-                        {loc.proximity_radius_meters}m
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => handleOpenEdit(loc)}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '5px 8px' }}
-                          title="Edit Rate & Radius"
-                        >
-                          <Edit size={13} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Delete tariff for ${loc.location_name}?`)) {
-                              onDeleteLocationFare(loc.id);
-                            }
-                          }}
-                          className="btn btn-danger btn-sm"
-                          style={{ padding: '5px 8px' }}
-                          title="Delete Location"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {locationFares.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+                      No location-based fare records found in database.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  locationFares.map((loc) => (
+                    <tr key={loc.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: '1.35rem', width: 34, height: 34, borderRadius: 8, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {getLocationIconEmoji(loc.icon, loc.location_name)}
+                          </span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--color-pasada-navy)' }}>
+                              {loc.location_name}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              {loc.notes || 'LGU Standard Tariff'} • {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: 800, color: 'var(--success)', fontSize: '1rem' }}>
+                        ₱{Number(loc.standard_fare).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>
+                        ₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}
+                      </td>
+                      <td>
+                        <span className="badge badge-info" style={{ fontFamily: 'monospace' }}>
+                          {loc.proximity_radius_meters}m
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => handleOpenEdit(loc)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '5px 8px' }}
+                            title="Edit Rate & Radius"
+                          >
+                            <Edit size={13} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete tariff for ${loc.location_name}?`)) {
+                                onDeleteLocationFare(loc.id);
+                              }
+                            }}
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '5px 8px' }}
+                            title="Delete Location"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Live Proximity Geofence Visualizer & Map Tester */}

@@ -1,10 +1,10 @@
 /* PasadaGuide Admin Dashboard CSS */
 :root {
   /* Mobile App Brand Color Tokens */
-  --color-pasada-navy: #00346F;
-  --color-pasada-blue: #004A99;
-  --color-pasada-cyan: #00C1FD;
-  --color-pasada-teal: #006688;
+  --color-pasada-navy: #0052d1;
+  --color-pasada-blue: #206afa;
+  --color-pasada-cyan: #fcd400;
+  --color-pasada-teal: #006947;
 
   /* Light Theme Variables */
   --bg-primary: #f7f9fb;
@@ -12,16 +12,16 @@
   --bg-glass: rgba(255, 255, 255, 0.9);
   --bg-card: #ffffff;
   --border-color: #e0e3e5;
-  --border-glow: rgba(0, 52, 111, 0.25);
+  --border-glow: rgba(0, 82, 209, 0.25);
   
   --text-main: #191c1e;
   --text-muted: #424751;
   --text-inverse: #ffffff;
 
-  --accent-primary: #00346F;
-  --accent-primary-hover: #00234d;
-  --accent-gradient: #00346F;
-  --accent-glow: rgba(0, 52, 111, 0.15);
+  --accent-primary: #0052d1;
+  --accent-primary-hover: #206afa;
+  --accent-gradient: #0052d1;
+  --accent-glow: rgba(0, 82, 209, 0.18);
 
   --success: #10b981;
   --success-bg: #e6f7f2;
@@ -74,17 +74,28 @@
 }
 
 /* App Layout Structure */
+.admin-app-root {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
 .admin-app-root .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   width: 100%;
+  overflow: hidden;
 }
 
 .admin-app-root .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
   min-width: 0;
+  overflow: hidden;
   background-color: var(--bg-primary);
 }
 
@@ -92,7 +103,24 @@
   padding: 28px 36px;
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   animation: adminFadeIn 0.2s ease-out;
+}
+
+/* Sleek scrollbars */
+.admin-app-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-app-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-app-root ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+.admin-app-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
 }
 
 @keyframes adminFadeIn {
@@ -279,6 +307,9 @@
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .dark .admin-app-root .custom-table th {

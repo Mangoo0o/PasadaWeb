@@ -13,8 +13,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   activeTab,
   setActiveTab,
 }) => {
-  const isMapCentric = activeTab === 'home';
+  const isMapCentric = activeTab === 'pasada' || activeTab === 'dispatch';
   const isAdminView = activeTab === 'admin';
+  const isDiscoveryHome = activeTab === 'home';
 
   if (isAdminView) {
     return (
@@ -28,7 +29,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={() => setActiveTab('home')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#00346F] text-white font-bold text-xs shadow-xl hover:bg-[#00234d] border border-sky-400/40 transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0052d1] text-white font-bold text-xs shadow-xl hover:bg-[#206afa] border border-sky-400/40 transition-all active:scale-95 cursor-pointer"
             title="Switch to Passenger View"
           >
             <span>🚶 Switch to Passenger App</span>
@@ -72,7 +73,13 @@ export const AppShell: React.FC<AppShellProps> = ({
           background: 'transparent',
           zIndex: 0
         } : undefined}
-        className={isMapCentric ? '' : 'flex-1 overflow-y-auto pb-24 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'}
+        className={
+          isMapCentric 
+            ? '' 
+            : isDiscoveryHome 
+              ? 'flex-1 overflow-y-auto w-full z-0 bg-[#dbe9f4] min-h-full' 
+              : 'flex-1 overflow-y-auto pb-28 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'
+        }
       >
         {children}
       </main>

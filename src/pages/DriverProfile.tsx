@@ -51,11 +51,11 @@ export const DriverProfile: React.FC = () => {
       {/* Header */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2 sm:gap-3">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#003f87] text-white flex items-center justify-center shadow-md shrink-0 aspect-square">
-            <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#00C1FD]" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0052d1] text-white flex items-center justify-center shadow-md shrink-0 aspect-square">
+            <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#fcd400]" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] truncate">
+            <h1 className="text-xs sm:text-sm font-black text-[#0052d1] dark:text-sky-400 truncate">
               Driver Profile
             </h1>
             <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">
@@ -75,7 +75,7 @@ export const DriverProfile: React.FC = () => {
 
       {/* 1. Driver Hero Section (Stitch Style) */}
       <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden text-center sm:text-left flex flex-col sm:flex-row items-center gap-5">
-        <div className="absolute top-0 right-0 w-36 h-36 bg-[#003f87]/5 rounded-bl-full pointer-events-none -z-0"></div>
+        <div className="absolute top-0 right-0 w-36 h-36 bg-[#0052d1]/5 rounded-bl-full pointer-events-none -z-0"></div>
 
         {/* Avatar with Verified Badge */}
         <div className="relative shrink-0">
@@ -83,7 +83,7 @@ export const DriverProfile: React.FC = () => {
             {user.photo_url ? (
               <img src={user.photo_url} alt={user.full_name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-tr from-[#003f87] to-[#0056b3] text-white flex items-center justify-center text-3xl font-black">
+              <div className="w-full h-full bg-gradient-to-tr from-[#0052d1] to-[#206afa] text-white flex items-center justify-center text-3xl font-black">
                 {user.full_name.charAt(0)}
               </div>
             )}
@@ -96,7 +96,7 @@ export const DriverProfile: React.FC = () => {
         {/* Details & Association */}
         <div className="flex-1 space-y-1 z-10">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#003f87]/10 text-[#003f87] dark:text-[#00C1FD]">
+            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               Body #{driverProfile?.body_number || '0142'}
             </span>
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">

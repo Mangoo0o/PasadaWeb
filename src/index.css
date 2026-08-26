@@ -19,10 +19,10 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background-color: #f2efe9 !important;
-    background: #f2efe9 !important;
+    background-color: #f7f9fb !important;
+    background: #f7f9fb !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #071e27;
+    color: #191c1e;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
@@ -34,6 +34,29 @@
   input, select, textarea {
     font-size: 16px !important;
   }
+}
+
+.travel-bg-text {
+  font-size: clamp(52px, 16vw, 110px);
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.45);
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  letter-spacing: -2px;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .h-screen-dvh {

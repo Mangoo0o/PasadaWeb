@@ -26,8 +26,8 @@ const createTerminalIcon = () => {
   return L.divIcon({
     className: 'custom-terminal-pin',
     html: `
-      <div style="background-color: #00346F; color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,52,111,0.35); border: 2.5px solid #00C1FD;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <div style="background-color: #0052d1; color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,82,209,0.4); border: 2.5px solid #ffffff;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fcd400" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
         </svg>
       </div>
@@ -43,9 +43,9 @@ const createPickupIcon = () => {
     className: 'custom-pickup-pin',
     html: `
       <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; width: 36px; height: 36px; background-color: rgba(0, 193, 253, 0.35); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="background-color: #00346F; color: #00C1FD; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,52,111,0.4); border: 2.5px solid #ffffff; z-index: 2;">
-          <div style="width: 8px; height: 8px; background-color: #00C1FD; border-radius: 50%;"></div>
+        <div style="position: absolute; width: 36px; height: 36px; background-color: rgba(0, 82, 209, 0.3); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="background-color: #0052d1; color: #fcd400; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,82,209,0.4); border: 2.5px solid #ffffff; z-index: 2;">
+          <div style="width: 8px; height: 8px; background-color: #fcd400; border-radius: 50%;"></div>
         </div>
       </div>
     `,
@@ -80,10 +80,10 @@ const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
     className: 'custom-location-fare-pin',
     html: `
       <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -100%);">
-        <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: ${isSelected ? '#00346F' : '#ffffff'}; border: 2.5px solid ${isSelected ? '#00C1FD' : '#00346F'}; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.22); font-size: 16px; transition: transform 0.2s;">
+        <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: ${isSelected ? '#0052d1' : '#ffffff'}; border: 2.5px solid ${isSelected ? '#fcd400' : '#0052d1'}; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.22); font-size: 16px; transition: transform 0.2s;">
           ${emoji}
         </div>
-        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid ${isSelected ? '#00C1FD' : '#00346F'}; margin-top: -1px;"></div>
+        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid ${isSelected ? '#fcd400' : '#0052d1'}; margin-top: -1px;"></div>
       </div>
     `,
     iconSize: [34, 40],
@@ -100,14 +100,14 @@ const createAssignedDriverIcon = (bodyNumber?: string) => {
     className: 'custom-assigned-driver-pin',
     html: `
       <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #00A3FF; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="width: 38px; height: 38px; border-radius: 9999px; background-color: #00346F; border: 3px solid #ffffff; box-shadow: 0 4px 14px rgba(0,52,111,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00C1FD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #0052d1; opacity: 0.35; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="width: 38px; height: 38px; border-radius: 9999px; background-color: #0052d1; border: 3px solid #ffffff; box-shadow: 0 4px 14px rgba(0,82,209,0.45); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fcd400" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/>
             <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
           </svg>
         </div>
-        ${bodyNumber ? `<span style="position: absolute; bottom: -8px; background: #00346F; color: #00C1FD; font-size: 9px; font-weight: 900; padding: 1px 4px; border-radius: 4px; border: 1px solid #ffffff; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">#${bodyNumber}</span>` : ''}
+        ${bodyNumber ? `<span style="position: absolute; bottom: -8px; background: #0052d1; color: #ffffff; font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 4px; border: 1px solid #ffffff; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">#${bodyNumber}</span>` : ''}
       </div>
     `,
     iconSize: [44, 44],
@@ -437,7 +437,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             <Polyline
               positions={roadRouteCoords}
               pathOptions={{
-                color: '#00346F',
+                color: '#0052d1',
                 weight: 6,
                 opacity: hasAssignedDriver ? 0.6 : 0.9,
                 lineJoin: 'round',
@@ -447,7 +447,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             <Polyline
               positions={roadRouteCoords}
               pathOptions={{
-                color: hasAssignedDriver ? '#FF6B00' : '#00C1FD',
+                color: hasAssignedDriver ? '#FF6B00' : '#fcd400',
                 weight: 2.5,
                 opacity: 0.85,
                 lineJoin: 'round',
@@ -471,7 +471,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           >
             <Popup>
               <div className="p-1 space-y-1 text-xs">
-                <div className="font-extrabold text-[#00346F]">{term.name}</div>
+                <div className="font-extrabold text-[#0052d1]">{term.name}</div>
                 <div className="text-[11px] text-slate-600">TODA Code: <strong>{term.code}</strong></div>
                 <div className="text-[10px] text-sky-600 font-bold mt-1">👉 Click to set as Origin Terminal</div>
               </div>
@@ -495,7 +495,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             >
               <Popup>
                 <div className="p-1 text-xs space-y-1">
-                  <div className="font-bold text-[#00346F]">{loc.location_name}</div>
+                  <div className="font-bold text-[#0052d1]">{loc.location_name}</div>
                   <div className="text-[11px] text-slate-600">
                     Regulated Fare: <strong className="text-emerald-700 font-extrabold">₱{Number(loc.standard_fare).toFixed(2)}</strong>
                   </div>
@@ -506,7 +506,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                     onClick={() => {
                       if (onSelectLocationFare) onSelectLocationFare(loc);
                     }}
-                    className="w-full mt-1.5 py-1 px-2 bg-[#00346F] text-white rounded text-[10px] font-bold"
+                    className="w-full mt-1.5 py-1.5 px-2.5 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
                   >
                     Select this Destination
                   </button>

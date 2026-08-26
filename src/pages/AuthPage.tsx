@@ -211,6 +211,7 @@ export const AuthPage: React.FC = () => {
                       id="login-email"
                       type="text"
                       required
+                      autoComplete="username"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="Email or Phone Number"
@@ -227,6 +228,7 @@ export const AuthPage: React.FC = () => {
                       id="login-password"
                       type={showLoginPassword ? 'text' : 'password'}
                       required
+                      autoComplete="current-password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="Password"
@@ -327,6 +329,7 @@ export const AuthPage: React.FC = () => {
                       id="reg-name"
                       type="text"
                       required
+                      autoComplete="name"
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       placeholder="Full Name (e.g. Juan Dela Cruz)"
@@ -438,6 +441,7 @@ export const AuthPage: React.FC = () => {
                       id="reg-email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder="Email Address"
@@ -454,6 +458,7 @@ export const AuthPage: React.FC = () => {
                     <input 
                       id="reg-phone"
                       type="tel"
+                      autoComplete="tel"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       placeholder="Phone Number (e.g. 0917 123 4567)"
@@ -515,6 +520,7 @@ export const AuthPage: React.FC = () => {
                       id="reg-password"
                       type={showRegPassword ? 'text' : 'password'}
                       required
+                      autoComplete="new-password"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="Create Password"

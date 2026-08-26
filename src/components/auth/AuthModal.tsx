@@ -235,6 +235,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <input
                   type="text"
                   required
+                  autoComplete="name"
                   placeholder="Maria Santos"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -253,6 +254,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <input
                 type="email"
                 required
+                autoComplete={mode === 'signin' ? 'username' : 'email'}
                 placeholder="user@example.ph"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -270,6 +272,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 placeholder="Di bababa sa 6 na karakter"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -294,6 +297,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="relative">
                 <input
                   type="tel"
+                  autoComplete="tel"
                   placeholder="+63 917 123 4567"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}

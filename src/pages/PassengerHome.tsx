@@ -40,9 +40,10 @@ import { setAppLanguage } from '../i18n/config';
 
 interface PassengerHomeProps {
   onOpenAuthModal?: () => void;
+  preselectedSpot?: TouristSpot | null;
 }
 
-export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal }) => {
+export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, preselectedSpot }) => {
   const { i18n } = useTranslation();
   const { user, signOut } = useAuth();
 
@@ -60,11 +61,19 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
   const [originName, setOriginName] = useState<string>('Kasalukuyang Lokasyon (Town Plaza)');
 
   // 2. DESTINATION: Initially unselected until passenger clicks/searches a location
-  const [destLat, setDestLat] = useState<number | undefined>(undefined);
-  const [destLng, setDestLng] = useState<number | undefined>(undefined);
-  const [destinationName, setDestinationName] = useState<string>('');
+  const [destLat, setDestLat] = useState<number | undefined>(preselectedSpot?.lat);
+  const [destLng, setDestLng] = useState<number | undefined>(preselectedSpot?.lng);
+  const [destinationName, setDestinationName] = useState<string>(preselectedSpot?.name || '');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (preselectedSpot) {
+      setDestLat(preselectedSpot.lat);
+      setDestLng(preselectedSpot.lng);
+      setDestinationName(preselectedSpot.name);
+    }
+  }, [preselectedSpot]);
 
   // 3. Location-Based Pricing State
   const [currentFare, setCurrentFare] = useState<number>(20);
@@ -437,13 +446,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
         className="max-w-xl mx-auto font-sans"
       >
         <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-lg transition-all duration-150 overflow-hidden ${
-          isSearchFocused ? 'rounded-2xl ring-2 ring-[#00346F]/10 dark:ring-[#00C1FD]/20' : 'rounded-xl'
+          isSearchFocused ? 'rounded-2xl ring-2 ring-[#0052d1]/15 dark:ring-[#206afa]/25' : 'rounded-xl'
         }`}>
           {/* Top Search Input Row */}
           <div className="p-1.5 flex items-center gap-1.5">
             {/* Destination Search Input */}
-            <div className="flex-1 flex items-center px-2.5 h-[38px] rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 focus-within:border-[#00346F] focus-within:bg-white dark:focus-within:bg-slate-800 transition-all relative">
-              <Search className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD] mr-2 shrink-0" />
+            <div className="flex-1 flex items-center px-2.5 h-[38px] rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 focus-within:border-[#0052d1] focus-within:bg-white dark:focus-within:bg-slate-800 transition-all relative">
+              <Search className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400 mr-2 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
@@ -468,7 +477,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               className="flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200/80 dark:border-slate-700 cursor-pointer"
               title="Switch Language"
             >
-              <Globe className="w-3.5 h-3.5 text-[#00346F] dark:text-[#00C1FD]" />
+              <Globe className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400" />
               <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
             </button>
 
@@ -484,9 +493,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
             ) : (
               <button
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1 px-3 h-[38px] rounded-lg text-xs font-bold bg-[#00346F] text-white hover:bg-[#00234d] transition-all shadow-xs shrink-0 cursor-pointer"
+                className="flex items-center gap-1 px-3 h-[38px] rounded-lg text-xs font-bold bg-[#0052d1] text-white hover:bg-[#206afa] transition-all shadow-xs shrink-0 cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5 text-[#00C1FD]" />
+                <LogIn className="w-3.5 h-3.5 text-[#fcd400]" />
                 <span className="text-[11px]">Login</span>
               </button>
             )}
@@ -499,7 +508,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               {/* Minimal Header */}
               <div className="px-3.5 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 flex items-center justify-between border-b border-slate-100/60 dark:border-slate-800/50">
                 <div className="flex items-center gap-1.5 text-slate-400">
-                  <MapPin className="w-3 h-3 text-[#00346F] dark:text-[#00C1FD]" />
+                  <MapPin className="w-3 h-3 text-[#0052d1] dark:text-sky-400" />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {searchQuery ? `Resulta para sa "${searchQuery}"` : 'Mga Destinasyon sa Bauang'}
                   </span>
@@ -528,11 +537,11 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                         className="w-full px-3.5 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between group cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <div className="w-6 h-6 rounded-md bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#00346F] group-hover:text-white dark:group-hover:bg-[#00C1FD] dark:group-hover:text-slate-950 transition-colors text-slate-500 dark:text-slate-400">
+                          <div className="w-6 h-6 rounded-md bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#0052d1] group-hover:text-white dark:group-hover:bg-[#206afa] dark:group-hover:text-white transition-colors text-slate-500 dark:text-slate-400">
                             <MapPin className="w-3 h-3" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#00346F] dark:group-hover:text-[#00C1FD] transition-colors">
+                            <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#0052d1] dark:group-hover:text-sky-400 transition-colors">
                               {loc.location_name}
                             </div>
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
@@ -542,7 +551,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                         </div>
 
                         <div className="text-right shrink-0">
-                          <div className="text-xs font-bold text-[#00346F] dark:text-[#00C1FD]">
+                          <div className="text-xs font-bold text-[#0052d1] dark:text-sky-400">
                             ₱{price.toFixed(2)}
                           </div>
                           {isDiscountEligible ? (
@@ -589,16 +598,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
           {/* Idle Booking Setup Card */}
           {bookingState === 'idle' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,52,111,0.2)] p-2.5 sm:p-3.5 flex items-center justify-between gap-2 sm:gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#00346F] to-[#0056b3] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow shrink-0">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-2 sm:p-2.5 px-3 sm:px-4 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="px-3 py-1 rounded-full bg-[#0052d1] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-sm shrink-0">
                   ₱{currentFare}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] sm:text-[10px] uppercase font-black text-slate-400 tracking-wider truncate">
-                    {estimatedDistance} km • ~{Math.max(4, Math.round(estimatedDistance * 3.5))} min
+                  <div className="text-[9px] sm:text-[10px] uppercase font-bold text-[#0052d1] dark:text-sky-400 tracking-wider truncate">
+                    {estimatedDistance > 30 ? '~1.8 km • ~5 min' : `${estimatedDistance} km • ~${Math.max(4, Math.round(estimatedDistance * 3.5))} min`}
                   </div>
-                  <div className="text-[11px] sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                  <div className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-slate-100 truncate">
                     {selectedLocationFare?.location_name || destinationName}
                   </div>
                 </div>
@@ -606,9 +615,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
               <button
                 onClick={handleStartBooking}
-                className="px-3.5 py-2.5 sm:px-5 sm:py-3 bg-[#00346F] hover:bg-[#00234d] text-white rounded-xl font-black text-xs sm:text-sm shadow-md shadow-[#00346F]/25 flex items-center gap-1.5 sm:gap-2 active:scale-95 transition-all cursor-pointer shrink-0"
+                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-full font-black text-xs sm:text-sm shadow-md shadow-[#0052d1]/25 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
-                <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
+                <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
                 <span>Mag-book</span>
               </button>
             </div>
@@ -616,12 +625,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
           {/* Searching Dispatch State */}
           {bookingState === 'searching' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xl p-3 sm:p-4 text-center space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-3 sm:p-4 text-center space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-center gap-2.5 sm:gap-3">
                 <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full bg-sky-200 animate-ping"></div>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#00346F] text-white flex items-center justify-center relative z-10 shadow">
-                    <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD] animate-bounce" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0052d1] text-white flex items-center justify-center relative z-10 shadow">
+                    <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400] animate-bounce" />
                   </div>
                 </div>
                 <div className="text-left min-w-0">
@@ -636,7 +645,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
               <button
                 onClick={handleCancelBooking}
-                className="w-full py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                className="w-full py-2 rounded-full bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
               >
                 Kanselahin ang Booking
               </button>
@@ -645,10 +654,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
 
           {/* Real Driver Assigned / En Route Card */}
           {bookingState === 'assigned' && activeBooking && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#00346F]/30 dark:border-sky-500/30 shadow-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#0052d1]/30 dark:border-sky-500/30 shadow-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#00346F] dark:bg-sky-950 dark:text-[#00C1FD] flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-[#00C1FD]" />
+                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#fcd400]" />
                   <span>PAPUNTA NA SI MANONG DRIVER</span>
                 </span>
                 <span className="text-[11px] sm:text-xs font-black text-emerald-600">
@@ -657,7 +666,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               </div>
 
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#00346F] text-white flex items-center justify-center font-black text-base sm:text-lg shadow-md shrink-0 border-2 border-white">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0052d1] text-white flex items-center justify-center font-black text-base sm:text-lg shadow-md shrink-0 border-2 border-white">
                   {activeBooking.driver?.profile?.full_name?.charAt(0) || 'D'}
                 </div>
 
@@ -669,7 +678,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                     <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
                   </div>
                   <div className="text-[10px] sm:text-xs text-slate-500 flex items-center gap-1.5 sm:gap-2 mt-0.5">
-                    <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 font-mono font-bold text-[10px] sm:text-[11px] text-[#00346F] dark:text-[#00C1FD]">
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 font-mono font-bold text-[10px] sm:text-[11px] text-[#0052d1] dark:text-sky-400">
                       Body #{activeBooking.driver?.body_number || '0142'}
                     </span>
                     <span>•</span>
@@ -728,7 +737,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
                   KASALUKUYANG BUMIBIYAHE
                 </span>
-                <span className="text-[11px] sm:text-xs font-black text-[#00346F] dark:text-[#00C1FD]">
+                <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400">
                   ₱{Number(activeBooking.estimated_fare).toFixed(2)}
                 </span>
               </div>
@@ -752,7 +761,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
       {/* 5. PASSENGER E-RECEIPT & 5-STAR REVIEW RATING MODAL */}
       {showRatingModal && activeBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
             
             {hasRated ? (
               <div className="py-8 space-y-2 animate-in zoom-in">
@@ -768,8 +777,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
               </div>
             ) : (
               <>
-                <div className="w-12 h-12 rounded-2xl bg-[#00346F] text-[#00C1FD] flex items-center justify-center mx-auto shadow-md">
-                  <Bike className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-2xl bg-[#0052d1] text-white flex items-center justify-center mx-auto shadow-md">
+                  <Bike className="w-6 h-6 text-[#fcd400]" />
                 </div>
 
                 <div className="space-y-1">
@@ -790,7 +799,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-black text-[#00346F] dark:text-[#00C1FD]">
+                    <span className="text-xl font-black text-[#0052d1] dark:text-sky-400">
                       ₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}
                     </span>
                   </div>
@@ -826,16 +835,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal })
                   onChange={(e) => setRatingComment(e.target.value)}
                   placeholder="Mag-iwan ng komento (hal. Maingat magmaneho, magalang)..."
                   rows={2}
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00346F]/20 resize-none"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0052d1]/20 resize-none"
                 />
 
                 {/* Submit CTA */}
                 <button
                   onClick={handleSubmitRating}
                   disabled={isSubmittingRating}
-                  className="w-full py-3.5 rounded-full bg-[#00346F] hover:bg-[#00234d] text-white font-bold text-sm shadow-lg shadow-[#00346F]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+                  className="w-full py-3.5 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-sm shadow-lg shadow-[#0052d1]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#fcd400]" />
                   <span>{isSubmittingRating ? 'Isinusumite...' : 'Ipadala ang Rating at Tapusin'}</span>
                 </button>
               </>
