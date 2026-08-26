@@ -427,8 +427,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           top: 0,
           left: 0,
           right: 0,
-          height: '90px',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.05) 60%, transparent 100%)',
+          height: '50px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.04) 60%, transparent 100%)',
           pointerEvents: 'none',
           zIndex: 10
         }}
@@ -438,7 +438,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
       <div 
         style={{
           position: 'fixed',
-          top: 'max(54px, calc(env(safe-area-inset-top, 44px) + 12px))',
+          top: 'max(12px, calc(env(safe-area-inset-top, 0px) + 10px))',
           left: '12px',
           right: '12px',
           zIndex: 40
