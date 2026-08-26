@@ -79,8 +79,8 @@ const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
   return L.divIcon({
     className: 'custom-location-fare-pin',
     html: `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -100%);">
-        <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: ${isSelected ? '#0052d1' : '#ffffff'}; border: 2.5px solid ${isSelected ? '#fcd400' : '#0052d1'}; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.22); font-size: 16px; transition: transform 0.2s;">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 34px; height: 40px; cursor: pointer;">
+        <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: ${isSelected ? '#0052d1' : '#ffffff'}; border: 2.5px solid ${isSelected ? '#fcd400' : '#0052d1'}; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.25); font-size: 16px; transition: transform 0.2s;">
           ${emoji}
         </div>
         <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid ${isSelected ? '#fcd400' : '#0052d1'}; margin-top: -1px;"></div>
@@ -88,7 +88,7 @@ const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
     `,
     iconSize: [34, 40],
     iconAnchor: [17, 40],
-    popupAnchor: [0, -36],
+    popupAnchor: [0, -40],
   });
 };
 
