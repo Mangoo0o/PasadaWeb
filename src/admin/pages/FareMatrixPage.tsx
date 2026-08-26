@@ -269,6 +269,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!locationName || locationName.trim() === '') {
+      setCurrentStep(1);
+      alert('Please provide a destination location name in Step 1.');
+      return;
+    }
     onSaveLocationFare({
       id: selectedFare?.id,
       origin_terminal_id: originTerminalId,
@@ -661,13 +666,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (!locationName) {
-                    alert('Please enter a location name first.');
-                    return;
-                  }
-                  setCurrentStep(2);
-                }}
+                onClick={() => setCurrentStep(2)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1214,15 +1213,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   {currentStep === 1 ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!locationName) {
-                          alert('Please enter a destination location name.');
-                          return;
-                        }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setCurrentStep(2);
                       }}
                       className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
                     >
                       <span>Next: Add Files (Pictures / Video / Audio)</span>
                       <ArrowRight size={16} />
@@ -1231,7 +1228,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     <button
                       type="submit"
                       className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
                     >
                       <Check size={16} /> Save & Enforce Location Rate
                     </button>
