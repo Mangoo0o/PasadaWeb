@@ -728,8 +728,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     gap: 24,
                     alignItems: 'start',
                   }}>
-                    {/* Step 1 Left Column: Names, Icons, Fares & Hub */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Step 1 Left Column: Names, Icons, Fares & Coordinates */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       {/* Destination Name */}
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
@@ -765,14 +765,14 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                                   flexDirection: 'column',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  padding: '5px 2px',
+                                  padding: '6px 2px',
                                   fontSize: '0.65rem',
                                   border: isSelected ? '2px solid #0052d1' : '1px solid var(--border-color)',
                                   gap: 2,
                                   cursor: 'pointer',
                                 }}
                               >
-                                <span style={{ fontSize: '1.1rem' }}>{opt.icon}</span>
+                                <span style={{ fontSize: '1.15rem' }}>{opt.icon}</span>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
                                   {opt.label.split('/')[0]}
                                 </span>
@@ -783,7 +783,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       </div>
 
                       {/* Fares */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Standard Fare (₱)</label>
                           <input
@@ -797,7 +797,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                               setDiscountedFare(Math.round(val * 0.8));
                             }}
                             className="input-field"
-                            style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                            style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                           />
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
@@ -809,42 +809,46 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                             value={discountedFare}
                             onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
                             className="input-field"
-                            style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                            style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                           />
                         </div>
                       </div>
 
-                      {/* Origin Hub */}
+                      {/* Manual Lat/Lng Coordinates (Moved to Left Column) */}
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Origin TODA Hub</label>
-                        <select
-                          value={originTerminalId}
-                          onChange={(e) => setOriginTerminalId(e.target.value)}
-                          className="input-field"
-                          style={{ padding: '7px 10px', fontSize: '0.82rem' }}
-                        >
-                          {terminals.map(t => (
-                            <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Ordinance Reference */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Legal Ordinance Notes</label>
-                        <input
-                          type="text"
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="e.g. Municipal Ordinance 2026-04"
-                          className="input-field"
-                          style={{ padding: '7px 10px', fontSize: '0.82rem' }}
-                        />
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <MapPin size={15} style={{ color: '#0052d1' }} />
+                          Precise GPS Coordinates
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Latitude</label>
+                            <input
+                              type="number"
+                              step="0.00001"
+                              value={lat}
+                              onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
+                              className="input-field"
+                              style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Longitude</label>
+                            <input
+                              type="number"
+                              step="0.00001"
+                              value={lng}
+                              onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
+                              className="input-field"
+                              style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Step 1 Right Column: Geofence & Leaflet Map */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Step 1 Right Column: Geofence & Enriched Leaflet Map */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {/* Radius Slider */}
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -866,22 +870,22 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         />
                       </div>
 
-                      {/* Map Picker */}
+                      {/* Enriched Bigger Map Picker */}
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                           <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.82rem' }}>
-                            Pin Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
+                            Interactive Map Picker
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Drag pin to reposition</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Click map or drag marker pin</span>
                         </div>
                         <div style={{
                           position: 'relative',
                           width: '100%',
-                          height: 210,
-                          borderRadius: 12,
+                          height: 310,
+                          borderRadius: 14,
                           overflow: 'hidden',
-                          border: '1px solid var(--border-color)',
-                          boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
+                          border: '1.5px solid var(--border-color)',
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
                         }}>
                           <MapContainer
                             center={[lat, lng]}
@@ -905,32 +909,6 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                               }}
                             />
                           </MapContainer>
-                        </div>
-                      </div>
-
-                      {/* Manual Lat/Lng inputs */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.74rem', fontWeight: 700 }}>Latitude</label>
-                          <input
-                            type="number"
-                            step="0.00001"
-                            value={lat}
-                            onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
-                            className="input-field"
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.74rem', fontWeight: 700 }}>Longitude</label>
-                          <input
-                            type="number"
-                            step="0.00001"
-                            value={lng}
-                            onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
-                            className="input-field"
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
                         </div>
                       </div>
                     </div>
