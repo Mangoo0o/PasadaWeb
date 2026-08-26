@@ -155,21 +155,26 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f4faff] min-h-screen min-h-[100dvh] w-full text-[#071e27] antialiased relative overflow-x-hidden overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 py-8 sm:py-12 selection:bg-[#0056b3] selection:text-white font-sans">
+    <div 
+      style={{
+        paddingTop: 'max(16px, calc(env(safe-area-inset-top, 0px) + 12px))',
+      }}
+      className="bg-[#f4faff] min-h-screen min-h-[100dvh] w-full text-[#071e27] antialiased relative overflow-x-hidden overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 pb-8 sm:pb-12 selection:bg-[#0052d1] selection:text-white font-sans"
+    >
       
       {/* Decorative Background Elements */}
-      <div className="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#0056b3]/15 to-transparent pointer-events-none -z-10"></div>
-      <div className="fixed -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#0056b3]/10 blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#0052d1]/15 to-transparent pointer-events-none -z-10"></div>
+      <div className="fixed -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#0052d1]/10 blur-3xl pointer-events-none -z-10"></div>
       <div className="fixed -bottom-[10%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#fcd400]/10 blur-3xl pointer-events-none -z-10"></div>
 
       <main className="w-full max-w-md px-1 sm:px-3 py-2 sm:py-6 relative z-10 my-auto">
         
         {/* Branding Header */}
         <header className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#003f87] text-white shadow-lg shadow-[#003f87]/25 mb-3">
-            <Car className="w-8 h-8 text-[#00C1FD]" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0052d1] text-white shadow-lg shadow-[#0052d1]/25 mb-3">
+            <Car className="w-8 h-8 text-[#fcd400]" />
           </div>
-          <h1 className="text-3xl font-black text-[#003f87] tracking-tight">
+          <h1 className="text-3xl font-black text-[#0052d1] tracking-tight">
             PasadaGuide
           </h1>
           <p className="text-sm font-medium text-[#424752] mt-0.5">
