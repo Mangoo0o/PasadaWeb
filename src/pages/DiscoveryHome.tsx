@@ -331,13 +331,10 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                           <Clock className="w-2.5 h-2.5 text-sky-300" />
                           {spot.opening_hours?.split(' ')[0] || '8 AM'}
                         </span>
-                        <button
-                          onClick={(e) => handleBookRideToSpot(spot, e)}
-                          className="px-1.5 py-0.5 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-[8px] sm:text-[9px] font-bold text-white shadow-sm flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <Bike className="w-2.5 h-2.5 text-[#fcd400]" />
-                          <span>{i18n.language === 'en' ? 'Ride' : 'Punta'}</span>
-                        </button>
+                        <span className="text-[9px] sm:text-[10px] font-extrabold text-[#fcd400] flex items-center gap-0.5 group-hover:underline">
+                          <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+                          <ArrowRight className="w-2.5 h-2.5" />
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -409,13 +406,10 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                         <span>{isPlaying ? (i18n.language === 'en' ? 'Stop' : 'Itigil') : 'Audio'}</span>
                       </button>
 
-                      <button
-                        onClick={(e) => handleBookRideToSpot(spot, e)}
-                        className="flex items-center gap-0.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white text-[9px] sm:text-[10px] font-bold shadow-sm active:scale-95 transition-transform shrink-0"
-                      >
-                        <Bike className="w-2.5 h-2.5 text-[#fcd400]" />
-                        <span>{i18n.language === 'en' ? 'Ride' : 'Sakay'}</span>
-                      </button>
+                      <span className="text-[10px] sm:text-[11px] font-extrabold text-[#0052d1] dark:text-sky-400 flex items-center gap-0.5 group-hover:underline">
+                        <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+                        <ArrowRight className="w-3 h-3 text-[#0052d1] dark:text-sky-400" />
+                      </span>
                     </div>
                   </div>
                 </div>
