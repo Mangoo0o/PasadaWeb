@@ -269,7 +269,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               onClick={(e) => featuredSpot && handleBookRideToSpot(featuredSpot, e)}
               className="shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white text-[#0052d1] font-extrabold text-[11px] sm:text-xs shadow-md hover:bg-sky-50 active:scale-95 transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
             >
-              <span>Sakay</span>
+              <span>{i18n.language === 'en' ? 'Ride' : 'Sakay'}</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -280,17 +280,17 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
           <div className="flex items-center justify-between px-0.5">
             <div>
               <h2 className="text-sm sm:text-base md:text-lg font-black text-[#191c1e] leading-none">
-                Must-See Today
+                {t('discovery.mustSeeToday')}
               </h2>
               <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 mt-0.5">
-                AI Curated Tricycle Route
+                {t('discovery.curatedRoute')}
               </p>
             </div>
             <button 
               onClick={() => setActiveCategory('all')} 
               className="text-[#0052d1] font-bold text-[11px] sm:text-xs hover:underline cursor-pointer"
             >
-              See All
+              {t('discovery.viewAll')}
             </button>
           </div>
 
@@ -345,7 +345,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                           className="px-1.5 py-0.5 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-[8px] sm:text-[9px] font-bold text-white shadow-sm flex items-center gap-0.5 cursor-pointer"
                         >
                           <Bike className="w-2.5 h-2.5 text-[#fcd400]" />
-                          <span>Punta</span>
+                          <span>{i18n.language === 'en' ? 'Ride' : 'Punta'}</span>
                         </button>
                       </div>
                     </div>
@@ -360,10 +360,10 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between px-0.5">
             <h2 className="text-sm sm:text-base md:text-lg font-black text-[#191c1e] leading-none">
-              Hidden Gems Nearby
+              {i18n.language === 'en' ? 'Hidden Gems Nearby' : 'Mga Tagong Atraksyon'}
             </h2>
             <span className="text-[10px] sm:text-xs text-slate-500 font-semibold">
-              {filteredSpots.length} destinations
+              {filteredSpots.length} {i18n.language === 'en' ? 'destinations' : 'mga lugar'}
             </span>
           </div>
 
@@ -415,7 +415,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                         }`}
                       >
                         {isPlaying ? <VolumeX className="w-2.5 h-2.5 text-[#fcd400]" /> : <Volume2 className="w-2.5 h-2.5" />}
-                        <span>{isPlaying ? 'Stop' : 'Audio'}</span>
+                        <span>{isPlaying ? (i18n.language === 'en' ? 'Stop' : 'Itigil') : 'Audio'}</span>
                       </button>
 
                       <button
@@ -423,7 +423,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                         className="flex items-center gap-0.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white text-[9px] sm:text-[10px] font-bold shadow-sm active:scale-95 transition-transform shrink-0"
                       >
                         <Bike className="w-2.5 h-2.5 text-[#fcd400]" />
-                        <span>Sakay</span>
+                        <span>{i18n.language === 'en' ? 'Ride' : 'Sakay'}</span>
                       </button>
                     </div>
                   </div>
@@ -442,7 +442,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               </div>
               <div className="truncate">
                 <p className="text-[9px] text-sky-200 font-bold uppercase tracking-wider">
-                  Audio Tour Guide
+                  {i18n.language === 'en' ? 'Audio Tour Guide' : 'Gabay sa Audio Tour'}
                 </p>
                 <p className="text-xs font-bold text-white truncate">
                   {spots.find(s => s.id === activeAudioSpotId)?.name || 'Bauang Audio Story'}
@@ -458,7 +458,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                 }}
                 className="px-2.5 py-1 rounded-full bg-[#fcd400] text-[#131b2e] font-black text-[10px] shadow-sm"
               >
-                Book
+                {i18n.language === 'en' ? 'Book' : 'Sakay'}
               </button>
               <button
                 onClick={() => setActiveAudioSpotId(null)}
@@ -510,7 +510,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               {selectedSpotModal.opening_hours && (
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 sm:p-3 rounded-xl">
                   <Clock className="w-4 h-4 text-[#0052d1]" />
-                  <span>Bukas: {selectedSpotModal.opening_hours}</span>
+                  <span>{i18n.language === 'en' ? 'Open' : 'Bukas'}: {selectedSpotModal.opening_hours}</span>
                 </div>
               )}
 
@@ -521,7 +521,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                   className="flex-1 h-11 sm:h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 hover:bg-sky-50 transition-colors cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4" />
-                  <span>{activeAudioSpotId === selectedSpotModal.id ? 'Itigil' : 'Pakinggan'}</span>
+                  <span>{activeAudioSpotId === selectedSpotModal.id ? (i18n.language === 'en' ? 'Stop Audio' : 'Itigil') : (i18n.language === 'en' ? 'Play Audio' : 'Pakinggan')}</span>
                 </button>
 
                 <button
@@ -532,7 +532,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                   className="flex-1 h-11 sm:h-12 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-[#0052d1]/25 cursor-pointer active:scale-95 transition-all"
                 >
                   <Bike className="w-4 h-4 text-[#fcd400]" />
-                  <span>Sumakay ng Tricycle</span>
+                  <span>{i18n.language === 'en' ? 'Book Tricycle' : 'Sumakay ng Tricycle'}</span>
                 </button>
               </div>
             </div>

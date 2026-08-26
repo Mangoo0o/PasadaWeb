@@ -1,14 +1,15 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Bike, 
   Compass, 
   History, 
   ShieldCheck, 
-  Navigation,
-  User,
-  LayoutDashboard,
-  MapPin,
-  Sparkles
+  Navigation, 
+  User, 
+  LayoutDashboard, 
+  MapPin, 
+  Sparkles 
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -18,31 +19,32 @@ interface MobileNavbarProps {
 }
 
 export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActiveTab }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const getTabs = () => {
     if (user?.role === 'driver') {
       return [
-        { id: 'driver', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'driver', label: t('nav.driverPortal', 'Dashboard'), icon: LayoutDashboard },
         { id: 'dispatch', label: 'Dispatch', icon: Navigation },
-        { id: 'history', label: 'History', icon: History },
-        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'history', label: t('nav.history', 'History'), icon: History },
+        { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
       ];
     }
     if (user?.role === 'admin') {
       return [
-        { id: 'admin', label: 'Admin Suite', icon: ShieldCheck },
-        { id: 'home', label: 'Explore', icon: Compass },
-        { id: 'pasada', label: 'Pasada Map', icon: Bike },
-        { id: 'history', label: 'History', icon: History },
-        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'admin', label: t('nav.admin', 'Admin'), icon: ShieldCheck },
+        { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
+        { id: 'pasada', label: t('nav.pasada', 'Pasada'), icon: Bike },
+        { id: 'history', label: t('nav.history', 'History'), icon: History },
+        { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
       ];
     }
     // Passenger Tabs: Explore (Home), Pasada (Ride & Map), Profile (Account, History Hub & Safety)
     return [
-      { id: 'home', label: 'Explore', icon: Compass },
-      { id: 'pasada', label: 'Pasada', icon: Bike },
-      { id: 'profile', label: 'Profile', icon: User },
+      { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
+      { id: 'pasada', label: t('nav.pasada', 'Pasada'), icon: Bike },
+      { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
     ];
   };
 

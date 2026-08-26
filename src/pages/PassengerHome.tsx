@@ -459,7 +459,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 value={searchQuery}
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Maghanap ng Destinasyon o TODA..."
+                placeholder={i18n.language === 'en' ? 'Search Destination or TODA...' : 'Maghanap ng Destinasyon o TODA...'}
                 className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-[16px] font-medium placeholder:text-slate-400 placeholder:text-xs p-0"
               />
               {searchQuery && (
@@ -475,8 +475,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200/80 dark:border-slate-700 cursor-pointer"
-              title="Switch Language"
+              className="flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shrink-0 border border-slate-200/80 dark:border-slate-700 cursor-pointer active:scale-95"
+              title="Switch Language / Magpalit ng Wika"
             >
               <Globe className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400" />
               <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
@@ -497,7 +497,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 className="flex items-center gap-1 px-3 h-[38px] rounded-lg text-xs font-bold bg-[#0052d1] text-white hover:bg-[#206afa] transition-all shadow-xs shrink-0 cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#fcd400]" />
-                <span className="text-[11px]">Login</span>
+                <span className="text-[11px]">{i18n.language === 'en' ? 'Sign In' : 'Login'}</span>
               </button>
             )}
           </div>
@@ -511,14 +511,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <div className="flex items-center gap-1.5 text-slate-400">
                   <MapPin className="w-3 h-3 text-[#0052d1] dark:text-sky-400" />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {searchQuery ? `Resulta para sa "${searchQuery}"` : 'Mga Destinasyon sa Bauang'}
+                    {searchQuery ? (i18n.language === 'en' ? `Results for "${searchQuery}"` : `Resulta para sa "${searchQuery}"`) : (i18n.language === 'en' ? 'Bauang Destinations' : 'Mga Destinasyon sa Bauang')}
                   </span>
                 </div>
                 <button
                   onClick={() => setIsSearchFocused(false)}
                   className="text-[10px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700"
                 >
-                  Isara
+                  {i18n.language === 'en' ? 'Close' : 'Isara'}
                 </button>
               </div>
 
@@ -619,7 +619,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-full font-black text-xs sm:text-sm shadow-md shadow-[#0052d1]/25 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
-                <span>Mag-book</span>
+                <span>{i18n.language === 'en' ? 'Book Ride' : 'Mag-book'}</span>
               </button>
             </div>
           )}
@@ -636,7 +636,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 </div>
                 <div className="text-left min-w-0">
                   <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                    Naghahanap ng Driver sa Bauang...
+                    {i18n.language === 'en' ? 'Searching for Driver in Bauang...' : 'Naghahanap ng Driver sa Bauang...'}
                   </h4>
                   <p className="text-[11px] sm:text-xs text-slate-500 truncate">
                     {selectedLocationFare?.location_name || destinationName} • <strong>₱{currentFare}.00</strong>
@@ -648,7 +648,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 onClick={handleCancelBooking}
                 className="w-full py-2 rounded-full bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
               >
-                Kanselahin ang Booking
+                {i18n.language === 'en' ? 'Cancel Booking' : 'Kanselahin ang Booking'}
               </button>
             </div>
           )}
@@ -659,7 +659,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               <div className="flex items-center justify-between">
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-[#fcd400]" />
-                  <span>PAPUNTA NA SI MANONG DRIVER</span>
+                  <span>{i18n.language === 'en' ? 'DRIVER EN ROUTE TO PICKUP' : 'PAPUNTA NA SI MANONG DRIVER'}</span>
                 </span>
                 <span className="text-[11px] sm:text-xs font-black text-emerald-600">
                   ₱{Number(activeBooking.estimated_fare).toFixed(2)}
@@ -703,7 +703,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 className="w-full py-1.5 sm:py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>Kanselahin ang Byahe</span>
+                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
               </button>
             </div>
           )}
@@ -714,11 +714,11 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-pulse" />
                 <h4 className="font-black text-xs sm:text-sm">
-                  Nasa Sakayan Na ang Iyong Tricycle!
+                  {i18n.language === 'en' ? 'Driver Arrived at Pickup!' : 'Nasa Sakayan Na ang Iyong Tricycle!'}
                 </h4>
               </div>
               <p className="text-[11px] sm:text-xs text-emerald-100">
-                Paki-abangan si Manong Driver na may <strong>Body #{activeBooking.driver?.body_number || '0142'}</strong> (Plate: {activeBooking.driver?.plate_number || '1234-AB'}).
+                {i18n.language === 'en' ? `Please look out for Driver with Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).` : `Paki-abangan si Manong Driver na may Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).`}
               </p>
 
               <button
@@ -726,7 +726,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 className="w-full py-1.5 sm:py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>Kanselahin ang Byahe</span>
+                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
               </button>
             </div>
           )}
@@ -736,14 +736,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#FF6B00]/40 shadow-xl p-3 sm:p-4 space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-between">
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
-                  KASALUKUYANG BUMIBIYAHE
+                  {i18n.language === 'en' ? 'TRIP IN PROGRESS' : 'KASALUKUYANG BUMIBIYAHE'}
                 </span>
                 <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400">
                   ₱{Number(activeBooking.estimated_fare).toFixed(2)}
                 </span>
               </div>
               <div className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                Patungong: {selectedLocationFare?.location_name || destinationName}
+                {i18n.language === 'en' ? 'Heading to:' : 'Patungong:'} {selectedLocationFare?.location_name || destinationName}
               </div>
 
               <button
@@ -751,7 +751,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 className="w-full py-1.5 sm:py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>Kanselahin ang Byahe</span>
+                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
               </button>
             </div>
           )}
@@ -770,10 +770,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  Salamat sa Feedback!
+                  {i18n.language === 'en' ? 'Thank You!' : 'Salamat sa Feedback!'}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Naitatala na ang iyong rating sa profile ng driver.
+                  {i18n.language === 'en' ? 'Your rating has been recorded.' : 'Naitatala na ang iyong rating sa profile ng driver.'}
                 </p>
               </div>
             ) : (
@@ -784,17 +784,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                    Tapos na ang Biyahe!
+                    {i18n.language === 'en' ? 'Trip Completed!' : 'Tapos na ang Biyahe!'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Salamat sa pagsakay kasama si {activeBooking.driver?.profile?.full_name || 'Driver'}.
+                    {i18n.language === 'en' ? 'Thanks for riding with' : 'Salamat sa pagsakay kasama si'} {activeBooking.driver?.profile?.full_name || 'Driver'}.
                   </p>
                 </div>
 
                 {/* E-Receipt Strip */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
                   <div className="text-left">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Bayad na Pamasahe</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{i18n.language === 'en' ? 'Fare Paid' : 'Bayad na Pamasahe'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {activeBooking.destination_name}
                     </span>
@@ -809,7 +809,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {/* Interactive 5-Star Selector */}
                 <div className="space-y-2 pt-1">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                    I-rate ang serbisyo ni Manong Driver:
+                    {i18n.language === 'en' ? 'Rate your driver service:' : 'I-rate ang serbisyo ni Manong Driver:'}
                   </span>
                   <div className="flex items-center justify-center gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -834,7 +834,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <textarea
                   value={ratingComment}
                   onChange={(e) => setRatingComment(e.target.value)}
-                  placeholder="Mag-iwan ng komento (hal. Maingat magmaneho, magalang)..."
+                  placeholder={i18n.language === 'en' ? 'Leave a review comment (e.g. Safe driving, courteous)...' : 'Mag-iwan ng komento (hal. Maingat magmaneho, magalang)...'}
                   rows={2}
                   className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0052d1]/20 resize-none"
                 />
@@ -846,7 +846,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   className="w-full py-3.5 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-sm shadow-lg shadow-[#0052d1]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#fcd400]" />
-                  <span>{isSubmittingRating ? 'Isinusumite...' : 'Ipadala ang Rating at Tapusin'}</span>
+                  <span>{isSubmittingRating ? (i18n.language === 'en' ? 'Submitting...' : 'Isinusumite...') : (i18n.language === 'en' ? 'Submit Rating & Done' : 'Ipadala ang Rating at Tapusin')}</span>
                 </button>
               </>
             )}
@@ -865,10 +865,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             
             <div className="space-y-1">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Kanselahin ang Booking?
+                {i18n.language === 'en' ? 'Cancel Booking?' : 'Kanselahin ang Booking?'}
               </h3>
               <p className="text-xs text-slate-500">
-                Sigurado ka bang nais mong kanselahin ang iyong booking request?
+                {i18n.language === 'en' ? 'Are you sure you want to cancel your ride request?' : 'Sigurado ka bang nais mong kanselahin ang iyong booking request?'}
               </p>
             </div>
 
@@ -878,14 +878,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 onClick={handleConfirmCancelBooking}
                 className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
               >
-                {isCancellingBooking ? 'Kinakansela...' : 'Oo, Kanselahin'}
+                {isCancellingBooking ? (i18n.language === 'en' ? 'Cancelling...' : 'Kinakansela...') : (i18n.language === 'en' ? 'Yes, Cancel' : 'Oo, Kanselahin')}
               </button>
               <button
                 disabled={isCancellingBooking}
                 onClick={() => setShowPassengerCancelModal(false)}
                 className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
               >
-                Huwag Kanselahin (Ipagpatuloy ang Biyahe)
+                {i18n.language === 'en' ? 'Keep Ride (Do Not Cancel)' : 'Huwag Kanselahin (Ipagpatuloy ang Biyahe)'}
               </button>
             </div>
           </div>
