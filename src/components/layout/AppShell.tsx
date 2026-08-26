@@ -70,15 +70,14 @@ export const AppShell: React.FC<AppShellProps> = ({
           margin: 0,
           padding: 0,
           overflow: 'hidden',
-          background: 'transparent',
-          zIndex: 0
+          background: 'transparent'
         } : undefined}
         className={
           isMapCentric 
             ? '' 
             : isDiscoveryHome 
-              ? 'flex-1 overflow-y-auto w-full z-0 bg-[#dbe9f4] min-h-full pb-32 sm:pb-36' 
-              : 'flex-1 overflow-y-auto pb-32 sm:pb-36 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'
+              ? 'flex-1 overflow-y-auto w-full bg-[#dbe9f4] min-h-full pb-32 sm:pb-36' 
+              : 'flex-1 overflow-y-auto pb-32 sm:pb-36 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full'
         }
       >
         {children}

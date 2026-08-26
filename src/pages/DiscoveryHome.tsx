@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, 
   Mic, 
@@ -447,9 +448,9 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
         )}
       </main>
 
-      {/* Spot Detail Modal (z-[100] so it renders on top of the navbar) */}
-      {selectedSpotModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      {/* Spot Detail Modal (Mounted to document.body with createPortal so it is 100% above navbar) */}
+      {selectedSpotModal && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
             {/* Modal Image Header */}
             <div className="relative h-52 sm:h-56 w-full shrink-0">
@@ -513,7 +514,8 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
