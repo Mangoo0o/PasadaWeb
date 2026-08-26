@@ -145,6 +145,11 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
     }
   };
 
+  const openSpotModal = (spot: TouristSpot) => {
+    setModalImageIndex(0);
+    setSelectedSpotModal(spot);
+  };
+
   const handleBookRideToSpot = (spot: TouristSpot, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (onSelectDestination) {
@@ -253,11 +258,11 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
 
         {/* Featured Card (Stitch Hero Card: Bauang Beach / Base Camp) */}
         <div 
-          onClick={() => featuredSpot && setSelectedSpotModal(featuredSpot)}
+          onClick={() => featuredSpot && openSpotModal(featuredSpot)}
           className="relative w-full h-[175px] sm:h-[210px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md shadow-[#0052d1]/10 border border-white/50 cursor-pointer group transition-transform active:scale-[0.99]"
         >
           <img 
-            src={featuredSpot?.cover_image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80'} 
+            src={featuredSpot?.cover_image_url || (featuredSpot?.images && featuredSpot.images[0]) || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80'} 
             alt="Bauang Beach" 
             className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
           />
@@ -327,14 +332,15 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
             ) : (
               spots.map((spot) => {
                 const isFav = favorites.includes(spot.id);
+                const spotCover = spot.cover_image_url || (spot.images && spot.images[0]) || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
                 return (
                   <div
                     key={`curated-${spot.id}`}
-                    onClick={() => setSelectedSpotModal(spot)}
+                    onClick={() => openSpotModal(spot)}
                     className="relative w-[125px] h-[170px] sm:w-[145px] sm:h-[190px] rounded-xl sm:rounded-2xl overflow-hidden shadow-sm shadow-[#0052d1]/10 shrink-0 group cursor-pointer border border-white/50 bg-slate-900"
                   >
                     <img 
-                      src={spot.cover_image_url || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80'} 
+                      src={spotCover} 
                       alt={spot.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -389,17 +395,18 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
             {filteredSpots.map((spot) => {
               const isFav = favorites.includes(spot.id);
               const isPlaying = activeAudioSpotId === spot.id;
+              const cardCover = spot.cover_image_url || (spot.images && spot.images[0]) || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80';
 
               return (
                 <div
                   key={`spot-card-${spot.id}`}
-                  onClick={() => setSelectedSpotModal(spot)}
+                  onClick={() => openSpotModal(spot)}
                   className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-white/60 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-2.5 group"
                 >
                   {/* Thumbnail with overlay icon */}
                   <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg sm:rounded-xl overflow-hidden shrink-0 relative bg-slate-100">
                     <img 
-                      src={spot.cover_image_url || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80'} 
+                      src={cardCover} 
                       alt={spot.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

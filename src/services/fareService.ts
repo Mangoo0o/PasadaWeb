@@ -214,11 +214,20 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
       const resolvedIcon = item.icon || iconFromNotes || 'pin';
       const cleanNotes = stripIconFromNotes(item.notes);
 
+      const loadedImages = (Array.isArray(item.images) && item.images.length > 0)
+        ? item.images
+        : (item.cover_image_url ? [item.cover_image_url] : []);
+
       return {
         id: item.id,
         origin_terminal_id: item.origin_terminal_id,
         terminal_name: item.terminals?.name || 'Bauang Terminal',
         location_name: item.location_name,
+        description: item.description || '',
+        cover_image_url: item.cover_image_url || loadedImages[0] || '',
+        images: loadedImages,
+        audio_url: item.audio_url || '',
+        video_url: item.video_url || '',
         lat: Number(item.lat),
         lng: Number(item.lng),
         proximity_radius_meters: Number(item.proximity_radius_meters || 800),
@@ -248,11 +257,22 @@ export const saveLocationFare = async (
   const cleanNotes = stripIconFromNotes(fare.notes || 'LGU Location Tariff');
   const notesWithEmbeddedIcon = `${cleanNotes} [icon:${chosenIcon}]`.trim();
 
-  // Try 1: Save with full payload including `icon` column and embedded note tag
+  const formattedImages = (Array.isArray(fare.images) && fare.images.length > 0)
+    ? fare.images
+    : (fare.cover_image_url ? [fare.cover_image_url] : []);
+
+  const coverUrl = fare.cover_image_url || formattedImages[0] || '';
+
+  // Try 1: Save with full payload including media columns
   try {
-    const fullPayload = {
+    const fullPayload: any = {
       origin_terminal_id: fare.origin_terminal_id,
       location_name: fare.location_name,
+      description: fare.description || '',
+      cover_image_url: coverUrl,
+      images: formattedImages,
+      audio_url: fare.audio_url || '',
+      video_url: fare.video_url || '',
       lat: Number(fare.lat),
       lng: Number(fare.lng),
       proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
@@ -276,6 +296,11 @@ export const saveLocationFare = async (
       return { 
         data: {
           ...(data as LocationFare),
+          cover_image_url: coverUrl,
+          images: formattedImages,
+          description: fare.description || '',
+          audio_url: fare.audio_url || '',
+          video_url: fare.video_url || '',
           icon: chosenIcon,
           notes: cleanNotes
         }
@@ -291,6 +316,11 @@ export const saveLocationFare = async (
       return { 
         data: {
           ...(data as LocationFare),
+          cover_image_url: coverUrl,
+          images: formattedImages,
+          description: fare.description || '',
+          audio_url: fare.audio_url || '',
+          video_url: fare.video_url || '',
           icon: chosenIcon,
           notes: cleanNotes
         }
@@ -299,11 +329,16 @@ export const saveLocationFare = async (
   } catch (primaryErr: any) {
     console.warn('Note on primary DB save, trying fallback schema mode:', primaryErr.message);
 
-    // Try 2: If `icon` column is missing in DB schema, save with notes embedding
+    // Try 2: If optional media or icon columns need simpler payload
     try {
-      const fallbackPayload = {
+      const fallbackPayload: any = {
         origin_terminal_id: fare.origin_terminal_id,
         location_name: fare.location_name,
+        description: fare.description || '',
+        cover_image_url: coverUrl,
+        images: formattedImages,
+        audio_url: fare.audio_url || '',
+        video_url: fare.video_url || '',
         lat: Number(fare.lat),
         lng: Number(fare.lng),
         proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
@@ -326,6 +361,11 @@ export const saveLocationFare = async (
         return { 
           data: {
             ...(data as LocationFare),
+            cover_image_url: coverUrl,
+            images: formattedImages,
+            description: fare.description || '',
+            audio_url: fare.audio_url || '',
+            video_url: fare.video_url || '',
             icon: chosenIcon,
             notes: cleanNotes
           }
@@ -341,6 +381,11 @@ export const saveLocationFare = async (
         return { 
           data: {
             ...(data as LocationFare),
+            cover_image_url: coverUrl,
+            images: formattedImages,
+            description: fare.description || '',
+            audio_url: fare.audio_url || '',
+            video_url: fare.video_url || '',
             icon: chosenIcon,
             notes: cleanNotes
           }
@@ -352,6 +397,11 @@ export const saveLocationFare = async (
         id: fare.id || `loc-fare-${Date.now()}`,
         origin_terminal_id: fare.origin_terminal_id || 'term-bauang-central',
         location_name: fare.location_name,
+        description: fare.description || '',
+        cover_image_url: coverUrl,
+        images: formattedImages,
+        audio_url: fare.audio_url || '',
+        video_url: fare.video_url || '',
         lat: Number(fare.lat),
         lng: Number(fare.lng),
         proximity_radius_meters: Number(fare.proximity_radius_meters || 800),
