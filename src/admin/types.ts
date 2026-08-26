@@ -73,6 +73,11 @@ export interface LocationFare {
   standard_fare: number;
   discounted_fare?: number;
   icon?: string;
+  description?: string;
+  cover_image_url?: string;
+  images?: string[];
+  audio_url?: string;
+  video_url?: string;
   notes?: string;
   is_active?: boolean;
   origin_terminal?: Terminal;

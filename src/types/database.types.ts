@@ -81,6 +81,11 @@ export interface LocationFare {
   standard_fare: number;
   discounted_fare?: number;
   icon?: string;
+  description?: string;
+  cover_image_url?: string;
+  images?: string[];
+  audio_url?: string;
+  video_url?: string;
   notes?: string;
   is_active?: boolean;
   created_at?: string;
@@ -155,7 +160,9 @@ export interface TouristSpot {
   lng: number;
   opening_hours: string;
   audio_url?: string;
+  video_url?: string;
   cover_image_url: string;
+  images?: string[];
   qr_code_ref: string;
   nearest_terminal_name: string;
   est_tricycle_fare: number;

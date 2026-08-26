@@ -8,7 +8,14 @@ import {
   Target, 
   Sparkles, 
   Crosshair, 
-  Layers
+  Layers,
+  Image as ImageIcon,
+  Music,
+  Video,
+  UploadCloud,
+  X,
+  Play,
+  Star
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -38,8 +45,8 @@ const createAdminLocPin = (loc: LocationFare) => {
 };
 
 const testClickPinIcon = L.divIcon({
-  className: 'admin-test-pin',
-  html: `<div style="background:#dc2626;color:#ffffff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;border:2.5px solid #ffffff;box-shadow:0 3px 12px rgba(220,38,38,0.5);">🎯</div>`,
+  className: 'test-click-pin',
+  html: `<div style="background:#fcd400;color:#131b2e;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2.5px solid #131b2e;box-shadow:0 0 12px rgba(252,212,0,0.8);animation:pulse 1.5s infinite;">📍</div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 14]
 });
@@ -49,7 +56,7 @@ function MapInvalidateSize() {
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 250);
+    }, 200);
     return () => clearTimeout(timer);
   }, [map]);
   return null;
@@ -69,16 +76,17 @@ function ModalLocationPicker({
   lat,
   lng,
   radiusMeters,
-  onLocationChange,
-  icon
+  icon,
+  onLocationChange
 }: {
   lat: number;
   lng: number;
   radiusMeters: number;
+  icon: string;
   onLocationChange: (lat: number, lng: number) => void;
-  icon?: string;
 }) {
   const map = useMap();
+  const emoji = getLocationIconEmoji(icon);
 
   useMapEvents({
     click(e) {
@@ -91,10 +99,10 @@ function ModalLocationPicker({
   }, [lat, lng, map]);
 
   const markerIcon = L.divIcon({
-    className: 'modal-picker-pin',
-    html: `<div style="background:#0052d1;color:#ffffff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #ffffff;box-shadow:0 4px 14px rgba(0,82,209,0.5);cursor:move;">${getLocationIconEmoji(icon)}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
+    className: 'picker-marker-pin',
+    html: `<div style="background:#0052d1;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #fff;box-shadow:0 4px 16px rgba(0,82,209,0.5);cursor:move;">${emoji}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17]
   });
 
   return (
@@ -137,6 +145,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
   // Form State
   const [locationName, setLocationName] = useState('');
+  const [description, setDescription] = useState('');
   const [originTerminalId, setOriginTerminalId] = useState(terminals[0]?.id || 'term-bauang-central');
   const [standardFare, setStandardFare] = useState<number>(20);
   const [discountedFare, setDiscountedFare] = useState<number>(16);
@@ -145,6 +154,12 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const [lng, setLng] = useState<number>(120.3333);
   const [icon, setIcon] = useState<string>('pin');
   const [notes, setNotes] = useState<string>('');
+
+  // Media State
+  const [images, setImages] = useState<string[]>([]);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
+  const [audioUrl, setAudioUrl] = useState<string>('');
+  const [videoUrl, setVideoUrl] = useState<string>('');
 
   // Interactive Tester State
   const [testPin, setTestPin] = useState<{ lat: number; lng: number } | null>({ lat: 16.5250, lng: 120.3400 });
@@ -161,6 +176,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const handleOpenAdd = () => {
     setSelectedFare(null);
     setLocationName('');
+    setDescription('');
+    setImages([]);
+    setCoverImageUrl('');
+    setAudioUrl('');
+    setVideoUrl('');
     setOriginTerminalId(terminals[0]?.id || 'term-bauang-central');
     setStandardFare(25);
     setDiscountedFare(20);
@@ -175,6 +195,14 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const handleOpenEdit = (fare: LocationFare) => {
     setSelectedFare(fare);
     setLocationName(fare.location_name);
+    setDescription(fare.description || '');
+    const loadedImages = fare.images && fare.images.length > 0 
+      ? fare.images 
+      : (fare.cover_image_url ? [fare.cover_image_url] : []);
+    setImages(loadedImages);
+    setCoverImageUrl(fare.cover_image_url || loadedImages[0] || '');
+    setAudioUrl(fare.audio_url || '');
+    setVideoUrl(fare.video_url || '');
     setOriginTerminalId(fare.origin_terminal_id || terminals[0]?.id || '');
     setStandardFare(Number(fare.standard_fare));
     setDiscountedFare(Number(fare.discounted_fare || Math.round(Number(fare.standard_fare) * 0.8)));
@@ -186,12 +214,64 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setIsModalOpen(true);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setImages((prev) => {
+          const next = [...prev, result];
+          if (!coverImageUrl) setCoverImageUrl(result);
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImages((prev) => {
+      const next = prev.filter((_, idx) => idx !== indexToRemove);
+      if (coverImageUrl === prev[indexToRemove]) {
+        setCoverImageUrl(next[0] || '');
+      }
+      return next;
+    });
+  };
+
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAudioUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setVideoUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveLocationFare({
       id: selectedFare?.id,
       origin_terminal_id: originTerminalId,
       location_name: locationName,
+      description,
+      cover_image_url: coverImageUrl || images[0] || '',
+      images,
+      audio_url: audioUrl,
+      video_url: videoUrl,
       standard_fare: standardFare,
       discounted_fare: discountedFare,
       proximity_radius_meters: proximityRadius,
@@ -461,20 +541,20 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
         </div>
       </div>
 
-      {/* Add / Edit Location Fare Modal */}
+      {/* Add / Edit Location Fare Modal with 2 Columns and Multi-Media */}
       {isModalOpen && (
         <div
           onClick={() => setIsModalOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15,23,42,0.55)',
+            background: 'rgba(15,23,42,0.65)',
             backdropFilter: 'blur(6px)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 20,
+            padding: 16,
           }}
         >
           <div
@@ -482,14 +562,14 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
-              borderRadius: 14,
+              borderRadius: 16,
               width: '95%',
-              maxWidth: 700,
-              maxHeight: '90vh',
+              maxWidth: 980,
+              maxHeight: '92vh',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
             }}
           >
             {/* Header — fixed */}
@@ -497,14 +577,33 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '18px 24px',
+              padding: '16px 24px',
               borderBottom: '1px solid var(--border-color)',
               flexShrink: 0,
+              background: 'var(--bg-surface)',
             }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
-                {selectedFare ? 'Edit Location Tariff & Proximity' : 'Add New Location Tariff'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, color: 'var(--text-muted)' }}>×</button>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Sparkles size={18} style={{ color: '#fcd400' }} />
+                  {selectedFare ? 'Edit Location Tariff & Explore Media' : 'Add New Location Tariff'}
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Configure municipal fares, proximity geofence, and media showcases for the Explore feed.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontSize: '1.4rem', 
+                  lineHeight: 1, 
+                  color: 'var(--text-muted)' 
+                }}
+              >
+                ×
+              </button>
             </div>
 
             {/* Form — fills remaining space */}
@@ -512,204 +611,459 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               onSubmit={handleSave}
               style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             >
-              {/* Scrollable body */}
+              {/* Scrollable 2-Column Body */}
               <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 24px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+                  gap: 24,
+                  alignItems: 'start',
+                }}>
+                  
+                  {/* Left Column: Destination Details & Multi-Media Uploads */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    
+                    {/* Location Name */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>Destination Location Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={locationName}
+                        onChange={(e) => setLocationName(e.target.value)}
+                        placeholder="e.g. Lomboy Grape Farms, Bauang Beach, Central West"
+                        className="input-field"
+                      />
+                    </div>
 
-                {/* Location Name */}
-                <div className="form-group">
-                  <label className="form-label">Destination Location Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={locationName}
-                    onChange={(e) => setLocationName(e.target.value)}
-                    placeholder="e.g. Lomboy Grape Farms, Bagbag Beach, Central West"
-                    className="input-field"
-                  />
-                </div>
+                    {/* Location Icon Selector */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>Location Icon / Category Pin</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                        {LOCATION_ICON_OPTIONS.map((opt) => {
+                          const isSelected = icon === opt.id || icon === opt.icon;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setIcon(opt.id)}
+                              className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '6px 2px',
+                                fontSize: '0.68rem',
+                                border: isSelected ? '2px solid #0052d1' : '1px solid var(--border-color)',
+                                gap: 2,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
+                                {opt.label.split('/')[0]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                {/* Location Icon Selector */}
-                <div className="form-group">
-                  <label className="form-label">Location Icon / Category Pin</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                    {LOCATION_ICON_OPTIONS.map((opt) => {
-                      const isSelected = icon === opt.id || icon === opt.icon;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setIcon(opt.id)}
-                          className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '8px 4px',
-                            fontSize: '0.72rem',
-                            border: isSelected ? '2px solid #00C1FD' : '1px solid var(--border-color)',
-                            gap: 3,
-                            cursor: 'pointer',
+                    {/* Fares */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800 }}>Standard Regulated Fare (₱)</label>
+                        <input
+                          type="number"
+                          step="1.00"
+                          required
+                          value={standardFare}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setStandardFare(val);
+                            setDiscountedFare(Math.round(val * 0.8));
                           }}
+                          className="input-field"
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 800 }}>20% Discounted Rate (₱)</label>
+                        <input
+                          type="number"
+                          step="1.00"
+                          required
+                          value={discountedFare}
+                          onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
+                          className="input-field"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Explore Description */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>
+                        Explore Description & Highlights
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Key highlights, attractions, visiting hours, and stories shown to commuters on the Explore feed..."
+                        rows={2}
+                        className="input-field"
+                        style={{ resize: 'vertical' }}
+                      />
+                    </div>
+
+                    {/* Multi-Photo / Picture Upload Section */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <label className="form-label" style={{ fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <ImageIcon size={16} style={{ color: '#0052d1' }} />
+                          Explore Photos ({images.length} uploaded)
+                        </label>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Multiple photos supported</span>
+                      </div>
+
+                      {/* Upload Button */}
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '10px 14px',
+                        border: '2px dashed var(--border-color)',
+                        borderRadius: 10,
+                        cursor: 'pointer',
+                        background: 'var(--bg-primary)',
+                        transition: 'all 0.2s',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        color: 'var(--text-main)',
+                      }}>
+                        <UploadCloud size={18} style={{ color: '#0052d1' }} />
+                        <span>Click or Drag to Upload Pictures</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+
+                      {/* Thumbnail Preview Grid */}
+                      {images.length > 0 && (
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+                          gap: 8,
+                          marginTop: 10,
+                        }}>
+                          {images.map((imgUrl, idx) => {
+                            const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  position: 'relative',
+                                  height: 64,
+                                  borderRadius: 8,
+                                  overflow: 'hidden',
+                                  border: isCover ? '2px solid #0052d1' : '1px solid var(--border-color)',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                }}
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`Upload ${idx + 1}`}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                                {isCover && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    background: 'rgba(0,82,209,0.88)',
+                                    color: '#fff',
+                                    fontSize: '0.55rem',
+                                    fontWeight: 900,
+                                    textAlign: 'center',
+                                    padding: '1px 0',
+                                    textTransform: 'uppercase',
+                                  }}>
+                                    Cover
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveImage(idx)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    right: 2,
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: '50%',
+                                    background: 'rgba(220,38,38,0.9)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 900,
+                                  }}
+                                  title="Remove image"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Audio Tour Guide Upload */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Music size={16} style={{ color: '#0052d1' }} />
+                        Audio Tour Guide Narration
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <label style={{
+                          padding: '7px 12px',
+                          borderRadius: 8,
+                          background: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexShrink: 0,
+                        }}>
+                          <UploadCloud size={14} />
+                          Upload Audio (MP3/WAV)
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={handleAudioUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                        <input
+                          type="text"
+                          value={audioUrl}
+                          onChange={(e) => setAudioUrl(e.target.value)}
+                          placeholder="Or paste audio URL..."
+                          className="input-field"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                        />
+                        {audioUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setAudioUrl('')}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', color: 'var(--danger)' }}
+                            title="Clear Audio"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {audioUrl && (
+                        <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
+                          <audio controls src={audioUrl} style={{ width: '100%', height: 32 }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Video Guide / Reel Upload */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Video size={16} style={{ color: '#0052d1' }} />
+                        Video Showcase / Reel (MP4/WebM)
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <label style={{
+                          padding: '7px 12px',
+                          borderRadius: 8,
+                          background: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexShrink: 0,
+                        }}>
+                          <UploadCloud size={14} />
+                          Upload Video (MP4)
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                        <input
+                          type="text"
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          placeholder="Or paste video MP4 URL..."
+                          className="input-field"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                        />
+                        {videoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setVideoUrl('')}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', color: 'var(--danger)' }}
+                            title="Clear Video"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {videoUrl && (
+                        <div style={{ marginTop: 6, borderRadius: 8, overflow: 'hidden', maxHeight: 150, background: '#000' }}>
+                          <video controls src={videoUrl} style={{ width: '100%', maxHeight: 150, objectFit: 'contain' }} />
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+
+                  {/* Right Column: Proximity Geofence, Map Picker & Ordinance Reference */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    
+                    {/* Radius Slider */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label" style={{ fontWeight: 800, margin: 0 }}>Proximity Geofence Radius</label>
+                        <span style={{ fontWeight: 900, color: '#0052d1', fontSize: '0.9rem', background: 'rgba(0,82,209,0.1)', padding: '2px 8px', borderRadius: 6 }}>
+                          {proximityRadius} meters
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="300"
+                        max="2500"
+                        step="50"
+                        value={proximityRadius}
+                        onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
+                        style={{ width: '100%', accentColor: '#0052d1', marginTop: 6 }}
+                      />
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        Any booking drop-off within this circle automatically charges ₱{standardFare}.00
+                      </div>
+                    </div>
+
+                    {/* Map Picker */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>
+                        Pin Location Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
+                      </label>
+                      <div style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: 250,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        border: '1px solid var(--border-color)',
+                        marginTop: 4,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      }}>
+                        <MapContainer
+                          center={[lat, lng]}
+                          zoom={14}
+                          zoomControl={false}
+                          scrollWheelZoom={false}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                         >
-                          <span style={{ fontSize: '1.3rem' }}>{opt.icon}</span>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
-                            {opt.label.split('/')[0]}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                          <TileLayer
+                            attribution='&copy; OpenStreetMap'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          />
+                          <ModalLocationPicker
+                            lat={lat}
+                            lng={lng}
+                            radiusMeters={proximityRadius}
+                            icon={icon}
+                            onLocationChange={(newLat, newLng) => {
+                              setLat(newLat);
+                              setLng(newLng);
+                            }}
+                          />
+                        </MapContainer>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                        Click or drag the marker pin on the map to place the location center.
+                      </span>
 
-                {/* Fares */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div className="form-group">
-                    <label className="form-label">Standard Regulated Fare (₱)</label>
-                    <input
-                      type="number"
-                      step="1.00"
-                      required
-                      value={standardFare}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        setStandardFare(val);
-                        setDiscountedFare(Math.round(val * 0.8));
-                      }}
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">20% Discounted Rate (₱)</label>
-                    <input
-                      type="number"
-                      step="1.00"
-                      required
-                      value={discountedFare}
-                      onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
-                      className="input-field"
-                    />
-                  </div>
-                </div>
+                      {/* Manual Lat/Lng inputs */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Latitude</label>
+                          <input
+                            type="number"
+                            step="0.00001"
+                            value={lat}
+                            onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
+                            className="input-field"
+                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Longitude</label>
+                          <input
+                            type="number"
+                            step="0.00001"
+                            value={lng}
+                            onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
+                            className="input-field"
+                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Radius Slider */}
-                <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <label className="form-label">Proximity Geofence Radius</label>
-                    <span style={{ fontWeight: 800, color: 'var(--accent-primary)', fontSize: '0.85rem' }}>
-                      {proximityRadius} meters
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="300"
-                    max="2500"
-                    step="50"
-                    value={proximityRadius}
-                    onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
-                    style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
-                  />
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Any booking drop-off within this circle automatically gets charged ₱{standardFare}.00
-                  </div>
-                </div>
-
-                {/* Map Picker */}
-                <div className="form-group">
-                  <label className="form-label">
-                    Pin Location Coordinates ({lat.toFixed(5)}, {lng.toFixed(5)})
-                  </label>
-                  {/* Rigid map container — Leaflet cannot escape this */}
-                  <div style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 220,
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    border: '1px solid var(--border-color)',
-                    marginTop: 6,
-                    flexShrink: 0,
-                  }}>
-                    <MapContainer
-                      center={[lat, lng]}
-                      zoom={14}
-                      zoomControl={false}
-                      scrollWheelZoom={false}
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                    >
-                      <TileLayer
-                        attribution='&copy; OpenStreetMap'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <ModalLocationPicker
-                        lat={lat}
-                        lng={lng}
-                        radiusMeters={proximityRadius}
-                        icon={icon}
-                        onLocationChange={(newLat, newLng) => {
-                          setLat(newLat);
-                          setLng(newLng);
-                        }}
-                      />
-                    </MapContainer>
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
-                    Click or drag the marker on the map to set the exact destination coordinates
-                  </span>
-
-                  {/* Manual Lat/Lng inputs */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem' }}>Latitude</label>
-                      <input
-                        type="number"
-                        step="0.00001"
-                        value={lat}
-                        onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
+                    {/* Origin TODA Hub */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>Origin TODA Hub</label>
+                      <select
+                        value={originTerminalId}
+                        onChange={(e) => setOriginTerminalId(e.target.value)}
                         className="input-field"
-                        style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                      >
+                        {terminals.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800 }}>Legal Ordinance Reference / Notes</label>
+                      <input
+                        type="text"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="e.g. Sangguniang Bayan Ordinance No. 2026-04 Tariff"
+                        className="input-field"
                       />
                     </div>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '0.78rem' }}>Longitude</label>
-                      <input
-                        type="number"
-                        step="0.00001"
-                        value={lng}
-                        onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
-                        className="input-field"
-                        style={{ fontSize: '0.82rem', padding: '7px 10px' }}
-                      />
-                    </div>
+
                   </div>
-                </div>
 
-                {/* Origin TODA Hub */}
-                <div className="form-group">
-                  <label className="form-label">Origin TODA Hub</label>
-                  <select
-                    value={originTerminalId}
-                    onChange={(e) => setOriginTerminalId(e.target.value)}
-                    className="input-field"
-                  >
-                    {terminals.map(t => (
-                      <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
-                    ))}
-                  </select>
                 </div>
-
-                {/* Notes */}
-                <div className="form-group">
-                  <label className="form-label">Legal Ordinance Reference / Notes</label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. Sangguniang Bayan Ordinance No. 2026-04 Tariff"
-                    className="input-field"
-                  />
-                </div>
-
               </div>
 
               {/* Footer — fixed at bottom */}
@@ -722,11 +1076,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 borderTop: '1px solid var(--border-color)',
                 background: 'var(--bg-primary)',
                 flexShrink: 0,
-                borderBottomLeftRadius: 14,
-                borderBottomRightRadius: 14,
+                borderBottomLeftRadius: 16,
+                borderBottomRightRadius: 16,
               }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Check size={16} /> Save & Enforce Location Rate
                 </button>
               </div>

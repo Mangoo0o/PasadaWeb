@@ -96,15 +96,69 @@ const FALLBACK_TOURIST_SPOTS: TouristSpot[] = [
 
 export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
   try {
-    const { data, error } = await supabase
-      .from('tourist_spots')
-      .select('*')
-      .order('name');
+    const [spotsRes, faresRes] = await Promise.all([
+      supabase.from('tourist_spots').select('*').order('name'),
+      supabase.from('location_fares').select('*').eq('is_active', true).order('location_name')
+    ]);
 
-    if (error || !data || data.length === 0) {
-      return FALLBACK_TOURIST_SPOTS;
+    const baseSpots: TouristSpot[] = (spotsRes.data && spotsRes.data.length > 0)
+      ? (spotsRes.data as TouristSpot[])
+      : FALLBACK_TOURIST_SPOTS;
+
+    // Merge location fares that have custom images or media attachments
+    if (faresRes.data && faresRes.data.length > 0) {
+      const existingNames = new Set(baseSpots.map(s => s.name.toLowerCase().trim()));
+      
+      const extraSpots: TouristSpot[] = [];
+      
+      faresRes.data.forEach((fare: any) => {
+        const cleanName = fare.location_name?.toLowerCase().trim();
+        const hasMedia = fare.cover_image_url || (fare.images && fare.images.length > 0) || fare.video_url || fare.audio_url;
+        
+        // If it already exists in baseSpots, merge media attributes onto it
+        const existingSpotIndex = baseSpots.findIndex(s => s.name.toLowerCase().trim() === cleanName || s.id === fare.id);
+        if (existingSpotIndex >= 0) {
+          baseSpots[existingSpotIndex] = {
+            ...baseSpots[existingSpotIndex],
+            cover_image_url: fare.cover_image_url || baseSpots[existingSpotIndex].cover_image_url,
+            images: fare.images || baseSpots[existingSpotIndex].images || [baseSpots[existingSpotIndex].cover_image_url],
+            audio_url: fare.audio_url || baseSpots[existingSpotIndex].audio_url,
+            video_url: fare.video_url || baseSpots[existingSpotIndex].video_url,
+            description: fare.description || baseSpots[existingSpotIndex].description,
+            est_tricycle_fare: Number(fare.standard_fare || baseSpots[existingSpotIndex].est_tricycle_fare)
+          };
+        } else if (hasMedia) {
+          // If it's a new location with media, add it as a new spot
+          let cat: 'historical' | 'nature' | 'church' | 'food' | 'recreation' = 'recreation';
+          if (fare.icon === 'church') cat = 'church';
+          else if (fare.icon === 'farm' || fare.icon === 'park') cat = 'nature';
+          else if (fare.icon === 'market' || fare.icon === 'food') cat = 'food';
+          else if (fare.icon === 'landmark') cat = 'historical';
+
+          extraSpots.push({
+            id: fare.id || `loc-fare-${Date.now()}`,
+            name: fare.location_name,
+            category: cat,
+            description: fare.description || fare.notes || 'Sikat na destinasyon at lokasyon sa bayan ng Bauang.',
+            tagalog_description: fare.description || fare.notes,
+            lat: Number(fare.lat),
+            lng: Number(fare.lng),
+            opening_hours: '6:00 AM - 8:00 PM',
+            cover_image_url: fare.cover_image_url || (fare.images && fare.images[0]) || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+            images: fare.images && fare.images.length > 0 ? fare.images : (fare.cover_image_url ? [fare.cover_image_url] : []),
+            audio_url: fare.audio_url || undefined,
+            video_url: fare.video_url || undefined,
+            qr_code_ref: `QR-LOC-${fare.id?.slice(0, 8) || 'BAUANG'}`,
+            nearest_terminal_name: fare.origin_terminal_id ? 'Bauang Central Terminal' : 'Poblacion Terminal',
+            est_tricycle_fare: Number(fare.standard_fare || 25)
+          });
+        }
+      });
+
+      return [...baseSpots, ...extraSpots];
     }
-    return data as TouristSpot[];
+
+    return baseSpots;
   } catch (err) {
     console.warn('Using fallback spots:', err);
     return FALLBACK_TOURIST_SPOTS;

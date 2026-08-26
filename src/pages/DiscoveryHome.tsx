@@ -13,7 +13,11 @@ import {
   Sparkles, 
   Clock,
   ArrowRight,
-  Globe
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  Video,
+  Image as ImageIcon
 } from 'lucide-react';
 import { TouristSpot } from '../types/database.types';
 import { fetchTouristSpots } from '../services/touristService';
@@ -41,6 +45,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeAudioSpotId, setActiveAudioSpotId] = useState<string | null>(null);
+  const [modalImageIndex, setModalImageIndex] = useState<number>(0);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('pasada_fav_spots') || '[]');
@@ -457,74 +462,159 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
       </main>
 
       {/* Spot Detail Modal (Mounted to document.body with createPortal so it is 100% above navbar) */}
-      {selectedSpotModal && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
-            {/* Modal Image Header */}
-            <div className="relative h-52 sm:h-56 w-full shrink-0">
-              <img 
-                src={selectedSpotModal.cover_image_url || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'} 
-                alt={selectedSpotModal.name} 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent"></div>
+      {selectedSpotModal && (() => {
+        const spotImages = (selectedSpotModal.images && selectedSpotModal.images.length > 0)
+          ? selectedSpotModal.images
+          : [selectedSpotModal.cover_image_url || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'];
+        const currentImg = spotImages[modalImageIndex % spotImages.length] || spotImages[0];
+
+        return createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] flex flex-col">
               
-              <button
-                onClick={() => setSelectedSpotModal(null)}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center text-sm font-bold cursor-pointer"
-              >
-                ✕
-              </button>
+              {/* Modal Image Carousel Header */}
+              <div className="relative h-56 sm:h-64 w-full shrink-0 bg-slate-900 overflow-hidden">
+                <img 
+                  src={currentImg} 
+                  alt={selectedSpotModal.name} 
+                  className="w-full h-full object-cover transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => setSelectedSpotModal(null)}
+                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center text-sm font-black cursor-pointer hover:bg-black/70 transition-colors z-20"
+                >
+                  ✕
+                </button>
 
-              <div className="absolute bottom-4 left-4 right-4">
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#fcd400] text-[#131b2e]">
-                  {selectedSpotModal.category || 'Atraksyon'}
-                </span>
-                <h2 className="text-lg sm:text-xl font-black text-white mt-1">
-                  {selectedSpotModal.name}
-                </h2>
-              </div>
-            </div>
+                {/* Multi-Image Carousel Controls */}
+                {spotImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setModalImageIndex(prev => (prev > 0 ? prev - 1 : spotImages.length - 1))}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setModalImageIndex(prev => (prev < spotImages.length - 1 ? prev + 1 : 0))}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
 
-            {/* Modal Body with safe bottom padding */}
-            <div className="p-4 sm:p-5 pb-8 sm:pb-5 overflow-y-auto space-y-3.5 flex-1 text-sm text-slate-700 dark:text-slate-300">
-              <p className="leading-relaxed font-medium text-xs sm:text-sm">
-                {selectedSpotModal.description || 'Magandang pasyalan sa Bauang na dinarayo ng mga turista at lokal.'}
-              </p>
+                    {/* Image Counter Badge */}
+                    <div className="absolute top-3.5 left-3.5 bg-black/50 backdrop-blur-md text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 z-20">
+                      <ImageIcon className="w-3 h-3 text-[#fcd400]" />
+                      <span>{modalImageIndex + 1} / {spotImages.length}</span>
+                    </div>
+                  </>
+                )}
 
-              {selectedSpotModal.opening_hours && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 sm:p-3 rounded-xl">
-                  <Clock className="w-4 h-4 text-[#0052d1]" />
-                  <span>{i18n.language === 'en' ? 'Open' : 'Bukas'}: {selectedSpotModal.opening_hours}</span>
+                {/* Spot Title & Category in Header */}
+                <div className="absolute bottom-3 left-4 right-4 z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#fcd400] text-[#131b2e] shadow-sm">
+                      {selectedSpotModal.category || 'Atraksyon'}
+                    </span>
+                    {selectedSpotModal.est_tricycle_fare && (
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-white/90 text-[#0052d1] shadow-sm">
+                        ₱{selectedSpotModal.est_tricycle_fare}.00 Fare
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-white mt-1 leading-tight drop-shadow-md">
+                    {selectedSpotModal.name}
+                  </h2>
                 </div>
-              )}
+              </div>
 
-              {/* Action Buttons */}
-              <div className="pt-1 flex gap-2.5">
-                <button
-                  onClick={() => toggleAudio(selectedSpotModal.id)}
-                  className="flex-1 h-11 sm:h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 hover:bg-sky-50 transition-colors cursor-pointer"
-                >
-                  <Volume2 className="w-4 h-4" />
-                  <span>{activeAudioSpotId === selectedSpotModal.id ? (i18n.language === 'en' ? 'Stop Audio' : 'Itigil') : (i18n.language === 'en' ? 'Play Audio' : 'Pakinggan')}</span>
-                </button>
+              {/* Modal Body */}
+              <div className="p-4 sm:p-5 pb-8 sm:pb-5 overflow-y-auto space-y-4 flex-1 text-sm text-slate-700 dark:text-slate-300">
+                
+                {/* Thumbnail Strip if Multi-Image */}
+                {spotImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                    {spotImages.map((thumbUrl, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setModalImageIndex(idx)}
+                        className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                          idx === modalImageIndex ? 'border-[#0052d1] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={thumbUrl} alt="Thumb" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                <button
-                  onClick={() => {
-                    handleBookRideToSpot(selectedSpotModal);
-                    setSelectedSpotModal(null);
-                  }}
-                  className="flex-1 h-11 sm:h-12 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-[#0052d1]/25 cursor-pointer active:scale-95 transition-all"
-                >
-                  <Bike className="w-4 h-4 text-[#fcd400]" />
-                  <span>{i18n.language === 'en' ? 'Book Tricycle' : 'Sumakay ng Tricycle'}</span>
-                </button>
+                {/* Description */}
+                <p className="leading-relaxed font-medium text-xs sm:text-sm">
+                  {selectedSpotModal.description || 'Magandang pasyalan sa Bauang na dinarayo ng mga turista at lokal.'}
+                </p>
+
+                {/* Visiting Hours & Coordinates */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {selectedSpotModal.opening_hours && (
+                    <div className="flex items-center gap-2 font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl">
+                      <Clock className="w-4 h-4 text-[#0052d1]" />
+                      <span>{i18n.language === 'en' ? 'Hours' : 'Oras'}: {selectedSpotModal.opening_hours}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl">
+                    <MapPin className="w-4 h-4 text-[#0052d1]" />
+                    <span>Bauang, La Union ({selectedSpotModal.lat.toFixed(3)}, {selectedSpotModal.lng.toFixed(3)})</span>
+                  </div>
+                </div>
+
+                {/* Video Tour Player if Available */}
+                {selectedSpotModal.video_url && (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-[#0052d1] uppercase tracking-wider">
+                      <Video className="w-3.5 h-3.5 text-[#0052d1]" />
+                      <span>{i18n.language === 'en' ? 'Video Tour & Showcase' : 'Video Tour at Atraksyon'}</span>
+                    </div>
+                    <div className="rounded-2xl overflow-hidden bg-black aspect-video border border-slate-200 dark:border-slate-800 shadow-md">
+                      <video 
+                        controls 
+                        src={selectedSpotModal.video_url} 
+                        className="w-full h-full object-contain" 
+                        poster={selectedSpotModal.cover_image_url}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="pt-2 flex gap-2.5">
+                  <button
+                    onClick={() => toggleAudio(selectedSpotModal.id)}
+                    className="flex-1 h-11 sm:h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 hover:bg-sky-50 transition-colors cursor-pointer"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                    <span>{activeAudioSpotId === selectedSpotModal.id ? (i18n.language === 'en' ? 'Stop Audio' : 'Itigil') : (i18n.language === 'en' ? 'Play Audio Guide' : 'Pakinggan')}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleBookRideToSpot(selectedSpotModal);
+                      setSelectedSpotModal(null);
+                    }}
+                    className="flex-1 h-11 sm:h-12 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-[#0052d1]/25 cursor-pointer active:scale-95 transition-all"
+                  >
+                    <Bike className="w-4 h-4 text-[#fcd400]" />
+                    <span>{i18n.language === 'en' ? 'Book Tricycle' : 'Sumakay ng Tricycle'}</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        );
+      })()}
     </div>
   );
 };
