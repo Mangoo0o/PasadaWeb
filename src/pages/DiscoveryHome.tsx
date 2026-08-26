@@ -295,7 +295,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
             <div
               className="shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white text-[#0052d1] font-extrabold text-[11px] sm:text-xs shadow-md group-hover:bg-sky-50 transition-all flex items-center gap-1 whitespace-nowrap"
             >
-              <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+              <span>{i18n.language === 'en' ? 'See more' : 'Tingnan'}</span>
               <ArrowRight className="w-3 h-3 text-[#0052d1]" />
             </div>
           </div>
@@ -368,7 +368,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                           {spot.opening_hours?.split(' ')[0] || '8 AM'}
                         </span>
                         <span className="text-[9px] sm:text-[10px] font-extrabold text-[#fcd400] flex items-center gap-0.5 group-hover:underline">
-                          <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+                          <span>{i18n.language === 'en' ? 'See more' : 'Tingnan'}</span>
                           <ArrowRight className="w-2.5 h-2.5" />
                         </span>
                       </div>
@@ -444,7 +444,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                       </button>
 
                       <span className="text-[10px] sm:text-[11px] font-extrabold text-[#0052d1] dark:text-sky-400 flex items-center gap-0.5 group-hover:underline">
-                        <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+                        <span>{i18n.language === 'en' ? 'See more' : 'Tingnan'}</span>
                         <ArrowRight className="w-3 h-3 text-[#0052d1] dark:text-sky-400" />
                       </span>
                     </div>
