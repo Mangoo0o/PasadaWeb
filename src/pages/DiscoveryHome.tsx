@@ -176,14 +176,6 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               <Globe className="w-3.5 h-3.5 text-[#0052d1]" />
               <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('pasada')}
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white text-[11px] sm:text-xs font-extrabold shadow-md shadow-[#0052d1]/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-            >
-              <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
-              <span>{t('discovery.rideNow')}</span>
-            </button>
           </div>
         </div>
 
@@ -251,7 +243,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
             </div>
           </div>
 
-          {/* Caption & Quick Booking Action */}
+          {/* Caption & See More Action */}
           <div className="absolute bottom-2.5 left-3 right-3 sm:bottom-3.5 sm:left-4 sm:right-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
@@ -265,13 +257,12 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={(e) => featuredSpot && handleBookRideToSpot(featuredSpot, e)}
-              className="shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white text-[#0052d1] font-extrabold text-[11px] sm:text-xs shadow-md hover:bg-sky-50 active:scale-95 transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+            <div
+              className="shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white text-[#0052d1] font-extrabold text-[11px] sm:text-xs shadow-md group-hover:bg-sky-50 transition-all flex items-center gap-1 whitespace-nowrap"
             >
-              <span>{i18n.language === 'en' ? 'Ride' : 'Sakay'}</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
+              <span>{i18n.language === 'en' ? 'See more' : 'Tingnan pa'}</span>
+              <ArrowRight className="w-3 h-3 text-[#0052d1]" />
+            </div>
           </div>
         </div>
 
