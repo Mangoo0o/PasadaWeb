@@ -56,7 +56,7 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
   const totalTabs = tabs.length;
 
   return (
-    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-in fade-in slide-in-from-bottom-5 duration-300">
+    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-in fade-in slide-in-from-bottom-5 duration-300 max-w-[95vw]">
       <nav 
         className="relative bg-[#0052d1]/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[36px] sm:rounded-[44px] p-1.5 grid grid-flow-col auto-cols-fr shadow-[0_12px_40px_rgba(0,82,209,0.42)] border border-white/30"
         role="tablist"
@@ -84,7 +84,7 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
               onClick={() => setActiveTab(tab.id)}
               aria-label={tab.label}
               title={tab.label}
-              className="relative z-10 h-11 sm:h-12 w-full min-w-[78px] sm:min-w-[104px] px-2 sm:px-4 flex items-center justify-center gap-1.5 rounded-full select-none cursor-pointer active:scale-95 transition-all duration-200"
+              className="relative z-10 h-11 sm:h-12 w-full min-w-[88px] sm:min-w-[115px] px-2.5 sm:px-4 flex items-center justify-center gap-1.5 rounded-full select-none cursor-pointer active:scale-95 transition-all duration-200"
             >
               <Icon 
                 className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shrink-0 ${
@@ -94,7 +94,7 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
                 }`} 
               />
               <span 
-                className={`text-xs sm:text-sm font-black transition-colors duration-200 whitespace-nowrap leading-none ${
+                className={`text-[11px] sm:text-xs font-black transition-colors duration-200 whitespace-nowrap leading-none ${
                   isActive 
                     ? 'text-[#0052d1] inline-block' 
                     : 'text-white/80 hover:text-white hidden sm:inline-block font-bold'
