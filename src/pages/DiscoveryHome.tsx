@@ -138,13 +138,13 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   const featuredSpot = spots.find(s => s.name.toLowerCase().includes('beach')) || spots[0];
 
   return (
-    <div className="min-h-screen bg-[#dbe9f4] text-on-surface font-sans antialiased overflow-x-hidden relative pb-28 pt-1 select-none">
+    <div className="min-h-screen bg-[#dbe9f4] text-on-surface font-sans antialiased overflow-x-hidden relative pb-28 select-none">
       {/* Background Watermark Text from Stitch */}
       <div className="travel-bg-text">Travel</div>
 
-      <main className="w-full max-w-lg sm:max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto px-3 sm:px-5 pt-2 pb-8 relative z-10 space-y-4 sm:space-y-5">
+      <main className="w-full max-w-lg sm:max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto px-3 sm:px-5 pt-1.5 sm:pt-2.5 pb-8 relative z-10 space-y-3.5 sm:space-y-4">
         {/* Top Header & Greeting */}
-        <div className="flex items-center justify-between gap-2 pt-0.5">
+        <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[#0052d1] uppercase tracking-wider truncate">
               <Sparkles className="w-3.5 h-3.5 text-[#fcd400] shrink-0" />
