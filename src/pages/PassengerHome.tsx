@@ -579,7 +579,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
       {/* 4. BOTTOM FLOATING ACTION BAR & DISPATCH TRACKER */}
       {hasSelectedDestination && (
-        <div className="absolute bottom-20 sm:bottom-22 left-2.5 sm:left-4 right-2.5 sm:right-4 max-w-2xl mx-auto z-40 space-y-2">
+        <div className="absolute bottom-24 sm:bottom-28 left-3 sm:left-4 right-3 sm:right-4 max-w-2xl mx-auto z-40 space-y-2">
           
           {/* Booking Error Notice */}
           {bookingError && (
