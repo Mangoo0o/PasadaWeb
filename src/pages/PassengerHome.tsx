@@ -482,16 +482,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
             </button>
 
-            {/* Login / Profile */}
-            {user ? (
-              <button
-                onClick={signOut}
-                className="h-[38px] px-2.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center justify-center"
-                title="Sign Out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            ) : (
+            {/* Login for Guests only */}
+            {!user && onOpenAuthModal && (
               <button
                 onClick={onOpenAuthModal}
                 className="flex items-center gap-1 px-3 h-[38px] rounded-lg text-xs font-bold bg-[#0052d1] text-white hover:bg-[#206afa] transition-all shadow-xs shrink-0 cursor-pointer"
