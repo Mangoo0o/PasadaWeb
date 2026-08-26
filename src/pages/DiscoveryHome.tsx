@@ -547,24 +547,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
 
                 {/* Spot Title & Category in Header */}
                 <div className="absolute bottom-3 left-4 right-4 z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#fcd400] text-[#131b2e] shadow-sm">
-                      {selectedSpotModal.category || 'Atraksyon'}
-                    </span>
-                    {selectedSpotModal.est_tricycle_fare && (
-                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-white/90 text-[#0052d1] shadow-sm">
-                        ₱{selectedSpotModal.est_tricycle_fare}.00 Fare
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-black text-white mt-1 leading-tight drop-shadow-md">
+                  <h2 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                     {selectedSpotModal.name}
                   </h2>
                 </div>
               </div>
 
               {/* Modal Body */}
-              <div className="p-4 sm:p-5 pb-8 sm:pb-5 overflow-y-auto space-y-4 flex-1 text-sm text-slate-700 dark:text-slate-300">
+              <div className="p-4 sm:p-5 pb-8 sm:pb-5 overflow-y-auto space-y-3.5 flex-1 text-sm text-slate-700 dark:text-slate-300">
                 
                 {/* Thumbnail Strip if Multi-Image */}
                 {spotImages.length > 1 && (
@@ -573,7 +563,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                       <button
                         key={idx}
                         onClick={() => setModalImageIndex(idx)}
-                        className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                           idx === modalImageIndex ? 'border-[#0052d1] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
                         }`}
                       >
@@ -583,10 +573,9 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                   </div>
                 )}
 
-                {/* Simple Regulated Fare Rate Display */}
+                {/* Price Display */}
                 {(() => {
                   const fareNum = Number(selectedSpotModal.est_tricycle_fare || 25);
-                  const discountedNum = Math.round(fareNum * 0.8);
                   const rawDesc = selectedSpotModal.description || '';
                   const cleanDesc = rawDesc
                     .replace(/LGU Ordinance Rate Schedule/gi, '')
@@ -594,20 +583,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     .trim() || 'Magandang pasyalan at destinasyon sa bayan ng Bauang na may opisyal na regulated tricycle tariff rate.';
 
                   return (
-                    <div className="space-y-3">
-                      {/* Simple Fare Row */}
+                    <div className="space-y-2.5">
                       <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800 pb-2">
                         <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                          {i18n.language === 'en' ? 'Tariff Fare Rate' : 'Opisyal na Pamasahe'}
+                          {i18n.language === 'en' ? 'Price / Fare' : 'Pamasahe'}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-black text-[#0052d1] dark:text-sky-400">
-                            ₱{fareNum.toFixed(2)}
-                          </span>
-                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
-                            ₱{discountedNum}.00 (-20%)
-                          </span>
-                        </div>
+                        <span className="text-lg font-black text-[#0052d1] dark:text-sky-400">
+                          ₱{fareNum.toFixed(2)}
+                        </span>
                       </div>
 
                       {/* Clean Description */}
