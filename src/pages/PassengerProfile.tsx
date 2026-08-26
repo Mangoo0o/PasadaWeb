@@ -76,11 +76,11 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
   return (
     <div className="w-full space-y-3.5 pt-1 pb-10 font-sans max-w-xl mx-auto select-none">
       
-      {/* 1. Header Bar */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2">
+      {/* 1. Header Bar styled matching the search card */}
+      <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full p-2 sm:p-2.5 px-3.5 sm:px-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#0052d1] text-white flex items-center justify-center shadow-md shrink-0">
-            <User className="w-4 h-4 text-[#fcd400]" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0052d1] text-white flex items-center justify-center shadow-md shrink-0">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#fcd400]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1 text-[10px] font-bold text-[#0052d1] uppercase tracking-wider">
@@ -94,20 +94,20 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Functional Language Switch with Account Sync */}
+          {/* Functional Language Switch with Account Sync - Taller matching search card */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-[#0052d1]/10 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 hover:bg-[#0052d1]/20 transition-all cursor-pointer border border-[#0052d1]/20 dark:border-slate-700 active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 h-[38px] sm:h-[40px] rounded-full text-xs font-black bg-slate-100 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 hover:bg-slate-200 transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700 active:scale-95"
             title="Switch Language / Magpalit ng Wika"
           >
             <Globe className="w-3.5 h-3.5 text-[#0052d1]" />
             <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
           </button>
 
-          {/* Sign Out */}
+          {/* Sign Out - Taller matching search card */}
           <button
             onClick={signOut}
-            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs cursor-pointer active:scale-95"
+            className="h-[38px] sm:h-[40px] px-3 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs cursor-pointer active:scale-95 flex items-center justify-center"
             title={t('auth.logoutConfirm')}
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -339,40 +339,13 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         </div>
       </section>
 
-      {/* 6. Quick Navigation Shortcuts */}
-      {setActiveTab && (
-        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-1.5 border border-slate-200/80 dark:border-slate-800 shadow-sm divide-y divide-slate-100 dark:divide-slate-800">
-          <button
-            onClick={() => setActiveTab('home')}
-            className="w-full p-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors rounded-xl cursor-pointer"
-          >
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <Compass className="w-3.5 h-3.5 text-[#0052d1]" />
-              <span>{t('profile.exploreSpots')}</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('pasada')}
-            className="w-full p-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors rounded-xl cursor-pointer"
-          >
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <Bike className="w-3.5 h-3.5 text-[#0052d1]" />
-              <span>{t('profile.liveBooking')}</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </button>
-        </section>
-      )}
-
-      {/* 7. Sign Out Button */}
+      {/* 6. Sign Out Button */}
       <div className="pt-1">
         <button
           onClick={signOut}
-          className="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+          className="w-full py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="w-4 h-4" />
           <span>{t('profile.signOut')}</span>
         </button>
       </div>
