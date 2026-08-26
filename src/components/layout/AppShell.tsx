@@ -77,8 +77,8 @@ export const AppShell: React.FC<AppShellProps> = ({
           isMapCentric 
             ? '' 
             : isDiscoveryHome 
-              ? 'flex-1 overflow-y-auto w-full z-0 bg-[#dbe9f4] min-h-full' 
-              : 'flex-1 overflow-y-auto pb-28 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'
+              ? 'flex-1 overflow-y-auto w-full z-0 bg-[#dbe9f4] min-h-full pb-32 sm:pb-36' 
+              : 'flex-1 overflow-y-auto pb-32 sm:pb-36 px-3 sm:px-5 md:px-8 pt-4 w-full max-w-4xl mx-auto z-0 bg-slate-50 dark:bg-slate-950 min-h-full'
         }
       >
         {children}

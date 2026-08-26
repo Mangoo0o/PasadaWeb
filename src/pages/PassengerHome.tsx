@@ -760,7 +760,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
       {/* 5. PASSENGER E-RECEIPT & 5-STAR REVIEW RATING MODAL */}
       {showRatingModal && activeBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
             
             {hasRated ? (

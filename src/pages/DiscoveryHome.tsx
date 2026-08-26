@@ -411,7 +411,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
 
         {/* Live Audio Audio Player Sheet if Active */}
         {activeAudioSpotId && (
-          <div className="fixed bottom-20 left-3 right-3 max-w-sm mx-auto z-40 bg-[#0052d1] text-white p-2.5 rounded-xl shadow-2xl border border-white/20 flex items-center justify-between animate-in slide-from-bottom-4 duration-200">
+          <div className="fixed bottom-22 sm:bottom-24 left-3 right-3 max-w-sm mx-auto z-40 bg-[#0052d1] text-white p-2.5 rounded-xl shadow-2xl border border-white/20 flex items-center justify-between animate-in slide-from-bottom-4 duration-200">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
                 <Volume2 className="w-4 h-4 text-[#fcd400]" />
@@ -447,12 +447,12 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
         )}
       </main>
 
-      {/* Spot Detail Modal */}
+      {/* Spot Detail Modal (z-[100] so it renders on top of the navbar) */}
       {selectedSpotModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
             {/* Modal Image Header */}
-            <div className="relative h-56 w-full shrink-0">
+            <div className="relative h-52 sm:h-56 w-full shrink-0">
               <img 
                 src={selectedSpotModal.cover_image_url || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'} 
                 alt={selectedSpotModal.name} 
@@ -471,33 +471,33 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#fcd400] text-[#131b2e]">
                   {selectedSpotModal.category || 'Atraksyon'}
                 </span>
-                <h2 className="text-xl font-black text-white mt-1">
+                <h2 className="text-lg sm:text-xl font-black text-white mt-1">
                   {selectedSpotModal.name}
                 </h2>
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-4 flex-1 text-sm text-slate-700 dark:text-slate-300">
-              <p className="leading-relaxed font-medium">
+            {/* Modal Body with safe bottom padding */}
+            <div className="p-4 sm:p-5 pb-8 sm:pb-5 overflow-y-auto space-y-3.5 flex-1 text-sm text-slate-700 dark:text-slate-300">
+              <p className="leading-relaxed font-medium text-xs sm:text-sm">
                 {selectedSpotModal.description || 'Magandang pasyalan sa Bauang na dinarayo ng mga turista at lokal.'}
               </p>
 
               {selectedSpotModal.opening_hours && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-3 rounded-xl">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 sm:p-3 rounded-xl">
                   <Clock className="w-4 h-4 text-[#0052d1]" />
                   <span>Bukas: {selectedSpotModal.opening_hours}</span>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="pt-2 flex gap-3">
+              <div className="pt-1 flex gap-2.5">
                 <button
                   onClick={() => toggleAudio(selectedSpotModal.id)}
-                  className="flex-1 h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-sky-50 transition-colors cursor-pointer"
+                  className="flex-1 h-11 sm:h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 hover:bg-sky-50 transition-colors cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4" />
-                  <span>{activeAudioSpotId === selectedSpotModal.id ? 'Itigil ang Audio' : 'Pakinggan ang Gabay'}</span>
+                  <span>{activeAudioSpotId === selectedSpotModal.id ? 'Itigil' : 'Pakinggan'}</span>
                 </button>
 
                 <button
@@ -505,7 +505,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     handleBookRideToSpot(selectedSpotModal);
                     setSelectedSpotModal(null);
                   }}
-                  className="flex-1 h-12 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#0052d1]/25 cursor-pointer"
+                  className="flex-1 h-11 sm:h-12 rounded-full bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-[#0052d1]/25 cursor-pointer active:scale-95 transition-all"
                 >
                   <Bike className="w-4 h-4 text-[#fcd400]" />
                   <span>Sumakay ng Tricycle</span>
