@@ -46,12 +46,17 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
             ? fare.images
             : (fare.cover_image_url ? [fare.cover_image_url] : []);
 
+          let cleanSpotDesc = fare.description;
+          if (!cleanSpotDesc || cleanSpotDesc.includes('LGU Ordinance Rate Schedule') || cleanSpotDesc.includes('[icon:')) {
+            cleanSpotDesc = 'Sikat na destinasyon at lokasyon sa bayan ng Bauang na may regulated tricycle fare.';
+          }
+
           extraSpots.push({
             id: fare.id || `loc-fare-${Date.now()}`,
             name: fare.location_name,
             category: cat,
-            description: fare.description || fare.notes || 'Sikat na destinasyon sa bayan ng Bauang.',
-            tagalog_description: fare.description || fare.notes,
+            description: cleanSpotDesc,
+            tagalog_description: cleanSpotDesc,
             lat: Number(fare.lat),
             lng: Number(fare.lng),
             opening_hours: '6:00 AM - 8:00 PM',
