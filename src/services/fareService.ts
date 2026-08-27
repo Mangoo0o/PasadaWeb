@@ -63,7 +63,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 20.00,
     discounted_fare: 16.00,
     icon: 'landmark',
-    notes: 'Zone 1: Central Commercial Hub & Town Hall'
+    notes: 'Central Commercial Hub & Town Hall',
+    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000002',
@@ -76,7 +77,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 20.00,
     discounted_fare: 16.00,
     icon: 'church',
-    notes: 'Zone 1: Historical Landmark & Church Ground'
+    notes: 'Historical Landmark & Church Ground',
+    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000003',
@@ -89,7 +91,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 20.00,
     discounted_fare: 16.00,
     icon: 'market',
-    notes: 'Zone 1: Commercial Market & Terminal Exchange'
+    notes: 'Commercial Market & Terminal Exchange',
+    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000004',
@@ -102,7 +105,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 25.00,
     discounted_fare: 20.00,
     icon: 'school',
-    notes: 'Zone 2: Residential Community & School Zone'
+    notes: 'Residential Community & School District',
+    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000005',
@@ -115,7 +119,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 30.00,
     discounted_fare: 24.00,
     icon: 'barangay',
-    notes: 'Zone 3: South Barangay Highway Corridor'
+    notes: 'South Barangay Highway Corridor',
+    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000006',
@@ -128,7 +133,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 35.00,
     discounted_fare: 28.00,
     icon: 'farm',
-    notes: 'Zone 3: Pioneer Vineyard & Farm Tourism Zone'
+    notes: 'Pioneer Vineyard & Farm Tourism Hub',
+    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000007',
@@ -141,7 +147,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 40.00,
     discounted_fare: 32.00,
     icon: 'beach',
-    notes: 'Zone 4: Coastal Beach & Resort Tourist Hub'
+    notes: 'Coastal Beach & Resort Tourist Hub',
+    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000008',
@@ -154,7 +161,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 45.00,
     discounted_fare: 36.00,
     icon: 'resort',
-    notes: 'Zone 4: North Coastal Beach & Hotel Zone'
+    notes: 'North Coastal Beach & Hotel Strip',
+    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000009',
@@ -167,7 +175,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 35.00,
     discounted_fare: 28.00,
     icon: 'gas',
-    notes: 'Zone 3: East Inland Agricultural District'
+    notes: 'East Inland Agricultural District',
+    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
   },
   {
     id: 'a0000001-0000-0000-0000-000000000010',
@@ -180,7 +189,8 @@ export const DEFAULT_LOCATION_FARES: LocationFare[] = [
     standard_fare: 50.00,
     discounted_fare: 40.00,
     icon: 'park',
-    notes: 'Zone 5: Outer Foothills & Extended Barangay Route'
+    notes: 'Outer Foothills & Extended Barangay Route',
+    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
   }
 ];
 
@@ -266,7 +276,7 @@ export const saveLocationFare = async (
   // Try 1: Save with full payload including media columns
   try {
     const fullPayload: any = {
-      origin_terminal_id: fare.origin_terminal_id,
+      origin_terminal_id: fare.origin_terminal_id && fare.origin_terminal_id.trim() !== '' ? fare.origin_terminal_id : null,
       location_name: fare.location_name,
       description: fare.description || '',
       cover_image_url: coverUrl,
@@ -332,7 +342,7 @@ export const saveLocationFare = async (
     // Try 2: If optional media or icon columns need simpler payload
     try {
       const fallbackPayload: any = {
-        origin_terminal_id: fare.origin_terminal_id,
+        origin_terminal_id: fare.origin_terminal_id && fare.origin_terminal_id.trim() !== '' ? fare.origin_terminal_id : null,
         location_name: fare.location_name,
         description: fare.description || '',
         cover_image_url: coverUrl,
@@ -518,6 +528,6 @@ export const findMatchingLocationByProximity = (
     distanceMeters: nearest.distanceMeters,
     standardFare: Number(nearest.location.standard_fare),
     discountedFare: Number(nearest.location.discounted_fare || Math.round(nearest.location.standard_fare * 0.8)),
-    proximityStatusText: `Nearest Zone: ${nearest.location.location_name} (~${kmDist} km)`
+    proximityStatusText: `Nearest Location: ${nearest.location.location_name} (~${kmDist} km)`
   };
 };

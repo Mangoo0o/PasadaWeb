@@ -146,92 +146,91 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
   };
 
   return (
-    <div className="page-container">
-      {/* Page Header */}
-      <div className="page-header">
+    <div className="page-container p-6 sm:p-8 space-y-6">
+      {/* Stitch Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="page-title">
-            <Compass size={28} /> Tourist Attractions & Multi-Language Audio Guide
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <Compass size={24} />
+            </span>
+            <span>Tourist Attractions &amp; Audio Guide</span>
           </h2>
-          <p className="page-subtitle">
-            Manage Bauang tourism destinations, upload official spoken audio guides, & generate QR landmarks.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            Manage Bauang tourism destinations, upload official spoken audio guides, &amp; generate QR landmarks.
           </p>
         </div>
 
-        <button onClick={handleOpenAdd} className="btn btn-primary">
-          <Plus size={16} /> Add Tourist Destination
+        <button 
+          onClick={handleOpenAdd} 
+          className="px-4 py-2.5 rounded-xl bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+        >
+          <Plus size={15} /> Add Tourist Destination
         </button>
       </div>
 
       {/* Spots Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: 20
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {spots.length === 0 ? (
-          <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+          <div className="col-span-full text-center p-12 text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow">
             No tourist destinations registered in database yet.
           </div>
         ) : (
           spots.map((spot) => (
-            <div key={spot.id} className="glass-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div 
+              key={spot.id} 
+              className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
+            >
               {(spot.cover_image_url || spot.image_url) && (
-                <div style={{ height: 160, position: 'relative', overflow: 'hidden' }}>
+                <div className="h-44 relative overflow-hidden bg-slate-100 dark:bg-slate-800">
                   <img
                     src={spot.cover_image_url || spot.image_url}
                     alt={spot.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div style={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    background: 'var(--bg-glass)',
-                    padding: '4px 10px',
-                    borderRadius: 9999,
-                    fontSize: '0.72rem',
-                    fontWeight: 700
-                  }}>
+                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-extrabold uppercase">
                     {spot.category || 'Attraction'}
                   </div>
                 </div>
               )}
 
-              <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800 }}>{spot.name}</h3>
-                  <button
-                    onClick={() => { setSelectedSpot(spot); setIsQRModalOpen(true); }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: 6 }}
-                    title="Generate QR Signage"
-                  >
-                    <QrCode size={16} />
-                  </button>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white leading-tight">
+                      {spot.name}
+                    </h3>
+                    <button
+                      onClick={() => { setSelectedSpot(spot); setIsQRModalOpen(true); }}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 transition-colors cursor-pointer shrink-0"
+                      title="Generate QR Signage"
+                    >
+                      <QrCode size={16} />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">
+                    {spot.description}
+                  </p>
                 </div>
 
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '8px 0 14px', flex: 1 }}>
-                  {spot.description}
-                </p>
+                <div>
+                  <div className="text-[11px] text-slate-400 space-y-1 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div>⏰ Hours: <strong className="text-slate-700 dark:text-slate-300">{spot.opening_hours}</strong></div>
+                    <div>🌐 Language: <strong className="text-slate-700 dark:text-slate-300 uppercase">{spot.language || 'fil'}</strong></div>
+                  </div>
 
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 14, borderBottom: '1px solid var(--border-color)' }}>
-                  <div>⏰ Hours: <strong>{spot.opening_hours}</strong></div>
-                  <div>🌐 Language: <strong style={{ textTransform: 'uppercase' }}>{spot.language || 'fil'}</strong></div>
-                  {spot.audio_url && (
-                    <div style={{ color: 'var(--success)', fontWeight: 600 }}>
-                      🎧 Audio Tour Configured
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-                  <button
-                    onClick={() => handleOpenEdit(spot)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Edit size={14} /> Edit Details
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      📍 {spot.lat.toFixed(3)}, {spot.lng.toFixed(3)}
+                    </span>
+                    <button
+                      onClick={() => handleOpenEdit(spot)}
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <Edit size={13} className="inline mr-1" /> Edit Spot
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

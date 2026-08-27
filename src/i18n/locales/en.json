@@ -95,7 +95,7 @@
     "destination": "Destination",
     "calculateFare": "Location Tariff & Proximity",
     "officialFare": "Official Regulated Location Fare",
-    "proximityMatched": "Matched Proximity Zone",
+    "proximityMatched": "Matched Regulated Location",
     "estimatedTime": "Est. Duration",
     "distance": "Distance",
     "nearbyTerminals": "Nearby Tricycle Terminals",

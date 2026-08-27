@@ -471,6 +471,7 @@ const AdminContent: React.FC = () => {
               drivers={drivers}
               bookings={bookings}
               complaints={complaints}
+              locationFares={locationFares}
               setActiveTab={setActiveTab}
             />
           )}
@@ -479,6 +480,7 @@ const AdminContent: React.FC = () => {
             <FareMatrixPage
               locationFares={locationFares}
               terminals={terminals}
+              drivers={drivers}
               onSaveLocationFare={handleSaveLocationFare}
               onDeleteLocationFare={handleDeleteLocationFare}
             />

@@ -538,7 +538,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                               {loc.location_name}
                             </div>
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                              {loc.notes || 'Taripa-regulated zone'}
+                              {loc.notes || 'Taripa-regulated location'}
                             </div>
                           </div>
                         </div>

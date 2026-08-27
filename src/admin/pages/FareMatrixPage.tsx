@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  DollarSign, 
   Edit, 
   Check, 
   Plus, 
@@ -18,21 +17,28 @@ import {
   Star,
   ArrowRight,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  ShieldCheck,
+  Search,
   MapPin
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { LocationFare, Terminal } from '../types';
-import { PDFExportButton } from '../components/ui/PDFExportButton';
+import type { LocationFare, Terminal, Driver } from '../types';
 import { 
   findMatchingLocationByProximity, 
+  calculateHaversineDistanceMeters,
   LOCATION_ICON_OPTIONS, 
   getLocationIconEmoji 
 } from '../../services/fareService';
+import { supabase } from '../../api/supabaseClient';
 
 interface FareMatrixPageProps {
   locationFares: LocationFare[];
   terminals: Terminal[];
+  drivers?: Driver[];
   onSaveLocationFare: (fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => void;
   onDeleteLocationFare: (id: string) => void;
 }
@@ -52,6 +58,13 @@ const testClickPinIcon = L.divIcon({
   html: `<div style="background:#fcd400;color:#131b2e;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2.5px solid #131b2e;box-shadow:0 0 12px rgba(252,212,0,0.8);animation:pulse 1.5s infinite;">📍</div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 14]
+});
+
+const liveVehiclePinIcon = L.divIcon({
+  className: 'live-driver-pin',
+  html: `<div style="background:#10b981;color:#ffffff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #ffffff;box-shadow:0 2px 8px rgba(16,185,129,0.6);cursor:pointer;">🛺</div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
 });
 
 function MapInvalidateSize() {
@@ -137,9 +150,20 @@ function ModalLocationPicker({
   );
 }
 
+const LocationRecenter: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center && !isNaN(center[0]) && !isNaN(center[1])) {
+      map.setView(center, map.getZoom(), { animate: true });
+    }
+  }, [center, map]);
+  return null;
+};
+
 export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({ 
   locationFares, 
   terminals, 
+  drivers = [],
   onSaveLocationFare, 
   onDeleteLocationFare 
 }) => {
@@ -164,6 +188,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
 
   // Interactive Tester State
   const [testPin, setTestPin] = useState<{ lat: number; lng: number } | null>({ lat: 16.5250, lng: 120.3400 });
@@ -257,14 +283,34 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setVideoUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+
+    setIsUploadingVideo(true);
+    setVideoUploadError(null);
+
+    try {
+      // Upload to Supabase Storage — stores as a streamable public URL instead of base64
+      const ext = file.name.split('.').pop() || 'mp4';
+      const filePath = `videos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('pasada-media')
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('pasada-media')
+        .getPublicUrl(filePath);
+
+      setVideoUrl(urlData.publicUrl);
+    } catch (err: any) {
+      console.error('Video upload failed:', err);
+      setVideoUploadError(err.message || 'Upload failed. Try again.');
+    } finally {
+      setIsUploadingVideo(false);
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -294,261 +340,361 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setIsModalOpen(false);
   };
 
+  const [selectedLocation, setSelectedLocation] = useState<LocationFare | null>(null);
+  const [searchRule, setSearchRule] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedLocation && locationFares.length > 0) {
+      setSelectedLocation(locationFares[0]);
+    }
+  }, [locationFares, selectedLocation]);
+
   const handleMapTestClick = (clickedLat: number, clickedLng: number) => {
     setTestPin({ lat: clickedLat, lng: clickedLng });
     const match = findMatchingLocationByProximity(clickedLat, clickedLng, locationFares);
     setTestResult(match);
+    if (match?.matchedLocation) {
+      setSelectedLocation(match.matchedLocation);
+    }
   };
 
+  const filteredLocationFares = locationFares.filter(loc => {
+    const term = searchRule.toLowerCase();
+    return loc.location_name.toLowerCase().includes(term) || (loc.notes && loc.notes.toLowerCase().includes(term));
+  });
+
+  const activeLocation = selectedLocation || testResult?.matchedLocation || locationFares[0] || null;
+
+  // Strictly calculate active approved vehicles whose live GPS coordinates fall within the selected location radius
+  const liveVehiclesAtLocation = React.useMemo(() => {
+    if (!activeLocation) return [];
+    const radiusMeters = activeLocation.proximity_radius_meters || 1000;
+
+    return (drivers || []).filter(d => {
+      // Only approved active drivers
+      if (d.verification_status && d.verification_status !== 'approved') {
+        return false;
+      }
+
+      // Check live GPS coordinates against location center and radius
+      if (d.current_lat !== undefined && d.current_lat !== null && d.current_lng !== undefined && d.current_lng !== null) {
+        const dist = calculateHaversineDistanceMeters(
+          Number(d.current_lat),
+          Number(d.current_lng),
+          Number(activeLocation.lat),
+          Number(activeLocation.lng)
+        );
+        return dist <= radiusMeters;
+      }
+
+      // If driver has no live GPS reported, check if strictly assigned to this location's terminal
+      if (d.terminal_id && activeLocation.origin_terminal_id && d.terminal_id === activeLocation.origin_terminal_id) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [activeLocation, drivers]);
+
+  // Strict live vehicle count — exactly 0 if none are at this location
+  const activeVehicleCount = liveVehiclesAtLocation.length;
+
+  const estWaitTime = React.useMemo(() => {
+    if (activeVehicleCount >= 10) return '2m';
+    if (activeVehicleCount >= 5) return '3m';
+    if (activeVehicleCount >= 2) return '5m';
+    if (activeVehicleCount === 1) return '4m';
+    return 'None';
+  }, [activeVehicleCount]);
+
   return (
-    <div className="page-container" id="location-fare-matrix-report">
-      {/* Top Header */}
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">
-            <DollarSign size={28} /> Location-Based Tariff & Proximity Matrix
-          </h2>
-          <p className="page-subtitle">
-            Configure municipal fixed tricycle fares per destination location & adjust proximity geofence radius.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={handleOpenAdd} className="btn btn-primary">
-            <Plus size={16} /> Add Location Tariff
-          </button>
-
-          <PDFExportButton
-            elementId="location-fare-matrix-report"
-            filename="PasadaGuide_LGU_Location_Fare_Schedule"
-            title="LGU Municipal Location-Based Tricycle Fare Schedule"
-            data={locationFares}
-            headers={['Destination Location', 'Standard Fare (₱)', 'Discounted (₱)', 'Proximity Radius', 'Ordinance Notes']}
-            keys={['location_name', 'standard_fare', 'discounted_fare', 'proximity_radius_meters', 'notes']}
-          />
-        </div>
+    <div className="page-container p-6 sm:p-8 space-y-8" id="location-fare-matrix-report">
+      {/* Stitch Page Header */}
+      <div>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          Fare Matrix &amp; Proximity Rates
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Manage regulated location rates and dynamic geofence pricing.
+        </p>
       </div>
 
-      {/* Grid: Matrix Table & Live Proximity Visualizer */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.45fr 1.05fr', gap: 24, alignItems: 'start' }}>
-        {/* Location-Based Tariff Table */}
-        <div className="table-container glass-card" style={{ maxHeight: 'calc(100vh - 230px)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'var(--bg-surface)' }}>
-            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
-              📍 Regulated Location Rates ({locationFares.length} Zones)
-            </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Fixed Municipal Tariff
-            </span>
+      {/* Bento Grid Layout (Span 8 + Span 4) */}
+      <div className="grid grid-cols-12 gap-6 items-start">
+        {/* Main Table Area (Span 8) */}
+        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow hover:shadow-lg transition-shadow duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white shrink-0">
+              Regulated Location Rates
+            </h3>
+
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search location or landmark..."
+                  value={searchRule}
+                  onChange={(e) => setSearchRule(e.target.value)}
+                  className="w-56 sm:w-64 h-9 pl-9 pr-3.5 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-full text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#276efe] focus:bg-white dark:focus:bg-slate-900 transition-all"
+                />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+
+              <button
+                onClick={handleOpenAdd}
+                className="h-9 px-4 bg-[#276efe] text-white rounded-full text-xs font-medium hover:opacity-90 transition-opacity shadow-sm shadow-[#276efe]/20 cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+              >
+                <Plus size={14} />
+                <span>Add Location</span>
+              </button>
+            </div>
           </div>
 
-          <div style={{ overflowY: 'auto', overflowX: 'auto', flex: 1 }}>
-            <table className="custom-table">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Destination Location</th>
-                  <th>Standard Fare</th>
-                  <th>20% Discount</th>
-                  <th>Proximity Radius</th>
-                  <th>Actions</th>
+                <tr className="border-b border-slate-200/60 dark:border-slate-800">
+                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">DESTINATION / LOCATION</th>
+                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">STANDARD FARE</th>
+                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">DISCOUNT FARE</th>
+                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">PROXIMITY RADIUS</th>
+                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-right">STATUS</th>
                 </tr>
               </thead>
-              <tbody>
-                {locationFares.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
-                      No location-based fare records found in database.
-                    </td>
-                  </tr>
-                ) : (
-                  locationFares.map((loc) => (
-                    <tr key={loc.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: '1.35rem', width: 34, height: 34, borderRadius: 8, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {filteredLocationFares.map((loc) => {
+                  const isSelected = activeLocation?.id === loc.id;
+                  const radiusKm = (loc.proximity_radius_meters / 1000).toFixed(1);
+                  const isSurge = loc.location_name.includes('Stadium') || loc.notes?.includes('Surge');
+                  const isActive = loc.is_active !== false;
+
+                  return (
+                    <tr 
+                      key={loc.id} 
+                      onClick={() => {
+                        setSelectedLocation(loc);
+                        setTestResult(null);
+                        setTestPin({ lat: loc.lat, lng: loc.lng });
+                      }}
+                      className={`border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group ${
+                        isSelected ? 'bg-[#276efe]/5 dark:bg-[#276efe]/10' : ''
+                      }`}
+                    >
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                            loc.icon === 'stadium' 
+                              ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300' 
+                              : loc.icon === 'business'
+                              ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                              : 'bg-[#276efe]/10 text-[#276efe]'
+                          }`}>
                             {getLocationIconEmoji(loc.icon, loc.location_name)}
-                          </span>
+                          </div>
                           <div>
-                            <div style={{ fontWeight: 700, color: 'var(--color-pasada-navy)' }}>
-                              {loc.location_name}
-                            </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                              {loc.notes || 'LGU Standard Tariff'} • {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
-                            </div>
+                            <p className="font-medium text-slate-900 dark:text-white text-xs">{loc.location_name}</p>
+                            <p className="text-[12px] text-slate-400">{loc.notes || 'Regulated Destination'}</p>
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontWeight: 800, color: 'var(--success)', fontSize: '1rem' }}>
+
+                      <td className="py-4 font-medium text-slate-900 dark:text-white text-xs">
                         ₱{Number(loc.standard_fare).toFixed(2)}
+                        {isSurge && (
+                          <span className="text-[10px] text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 px-1.5 py-0.5 rounded ml-1 font-semibold">
+                            Surge
+                          </span>
+                        )}
                       </td>
-                      <td style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>
-                        ₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}
-                      </td>
-                      <td>
-                        <span className="badge badge-info" style={{ fontFamily: 'monospace' }}>
-                          {loc.proximity_radius_meters}m
+
+                      <td className="py-4 text-slate-500 dark:text-slate-400 text-xs">
+                        <span>₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}</span>
+                        <span className="text-[10px] bg-[#dae2fd] text-[#5c647a] dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded ml-1 font-semibold">
+                          Sen/Stu
                         </span>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button
-                            onClick={() => handleOpenEdit(loc)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ padding: '5px 8px' }}
-                            title="Edit Rate & Radius"
-                          >
-                            <Edit size={13} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Delete tariff for ${loc.location_name}?`)) {
-                                onDeleteLocationFare(loc.id);
-                              }
-                            }}
-                            className="btn btn-danger btn-sm"
-                            style={{ padding: '5px 8px' }}
-                            title="Delete Location"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+
+                      <td className="py-4 text-slate-700 dark:text-slate-300 font-normal text-xs">
+                        {radiusKm} km
+                      </td>
+
+                      <td className="py-4 text-right">
+                        {isActive ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#e6f7ef] text-[#006947] dark:bg-emerald-950/60 dark:text-emerald-300">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#eceef0] text-[#565e74] dark:bg-slate-800 dark:text-slate-400">
+                            Inactive
+                          </span>
+                        )}
                       </td>
                     </tr>
-                  ))
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Live Proximity Geofence Visualizer & Map Tester */}
-        <div className="glass-card" style={{ padding: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ padding: 8, borderRadius: 10, background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
-                <Target size={20} />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Proximity Zone Visualizer</h3>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Click anywhere on the map to test live proximity fare matching
-                </p>
+        {/* Right Sidebar Area (Span 4) */}
+        <div className="col-span-12 xl:col-span-4 space-y-6">
+          {/* Card 1: Location Map Visualizer */}
+          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+            <div className="flex justify-between items-center mb-3 px-2">
+              <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white">
+                Location Map Visualizer
+              </h3>
+              <button className="text-[#276efe] hover:bg-[#276efe]/5 p-1.5 rounded-full transition-colors cursor-pointer">
+                <Layers size={20} />
+              </button>
+            </div>
+
+            <div className="w-full h-[240px] rounded-[16px] overflow-hidden relative bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
+              <MapContainer
+                center={[activeLocation?.lat || 16.5333, activeLocation?.lng || 120.3333]}
+                zoom={12}
+                zoomControl={false}
+                scrollWheelZoom={true}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapClickTester onMapClick={handleMapTestClick} />
+                <LocationRecenter center={[activeLocation?.lat || 16.5333, activeLocation?.lng || 120.3333]} />
+
+                {filteredLocationFares.map((loc) => {
+                  const isHighlighted = activeLocation?.id === loc.id;
+                  return (
+                    <React.Fragment key={`admin-circle-${loc.id}`}>
+                      <Circle
+                        center={[loc.lat, loc.lng]}
+                        radius={loc.proximity_radius_meters || 1500}
+                        pathOptions={{
+                          color: isHighlighted ? '#276efe' : '#206afa',
+                          fillColor: isHighlighted ? '#276efe' : '#206afa',
+                          fillOpacity: isHighlighted ? 0.35 : 0.12,
+                          weight: isHighlighted ? 2.5 : 1,
+                        }}
+                      />
+                      <Marker 
+                        position={[loc.lat, loc.lng]} 
+                        icon={createAdminLocPin(loc)}
+                        eventHandlers={{
+                          click: () => {
+                            setSelectedLocation(loc);
+                            setTestResult(null);
+                            setTestPin({ lat: loc.lat, lng: loc.lng });
+                          }
+                        }}
+                      >
+                        <Popup>
+                          <div className="text-xs font-bold">
+                            {loc.location_name}<br />
+                            <span className="text-[#276efe]">₱{Number(loc.standard_fare).toFixed(2)}</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Live Active Vehicles At Selected Location */}
+                {liveVehiclesAtLocation.map((d) => (
+                  <Marker 
+                    key={`driver-live-marker-${d.id || d.profile_id}`} 
+                    position={[d.current_lat!, d.current_lng!]} 
+                    icon={liveVehiclePinIcon}
+                  >
+                    <Popup>
+                      <div className="text-xs font-bold">
+                        🛺 {d.profile?.full_name || 'Active Tricycle'}<br />
+                        <span className="text-slate-500 font-normal">Plate: {d.plate_number}</span><br />
+                        <span className="text-emerald-600 font-semibold">● At {activeLocation?.location_name}</span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+
+              {/* Map Overlay Controls */}
+              <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 z-[500]">
+                <button 
+                  onClick={() => {}}
+                  className="w-8 h-8 bg-white dark:bg-slate-800 rounded-md shadow flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition-colors font-bold text-sm cursor-pointer"
+                >
+                  +
+                </button>
+                <button 
+                  onClick={() => {}}
+                  className="w-8 h-8 bg-white dark:bg-slate-800 rounded-md shadow flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition-colors font-bold text-sm cursor-pointer"
+                >
+                  -
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Interactive Leaflet Map */}
-          <div style={{ height: '340px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-            <MapContainer
-              center={[16.5333, 120.3333]}
-              zoom={14}
-              zoomControl={false}
-              scrollWheelZoom={true}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <TileLayer
-                attribution='&copy; OpenStreetMap'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <MapClickTester onMapClick={handleMapTestClick} />
+          {/* Card 2: Location Details */}
+          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+            <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white mb-4">
+              Location Details
+            </h3>
 
-              {/* All Location Proximity Circles with Icon Pins */}
-              {locationFares.map((loc) => {
-                const isMatched = testResult?.matchedLocation?.id === loc.id;
-                return (
-                  <React.Fragment key={`admin-circle-${loc.id}`}>
-                    <Circle
-                      center={[loc.lat, loc.lng]}
-                      radius={loc.proximity_radius_meters || 800}
-                      pathOptions={{
-                        color: isMatched ? '#00346F' : '#00C1FD',
-                        fillColor: isMatched ? '#00346F' : '#00C1FD',
-                        fillOpacity: isMatched ? 0.25 : 0.08,
-                        weight: isMatched ? 3 : 1.5,
-                      }}
-                    />
-                    <Marker 
-                      key={`admin-loc-pin-${loc.id}-${loc.icon || 'pin'}-${loc.lat}-${loc.lng}`}
-                      position={[loc.lat, loc.lng]} 
-                      icon={createAdminLocPin(loc)}
-                    >
-                      <Popup>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {getLocationIconEmoji(loc.icon, loc.location_name)} {loc.location_name}<br />
-                          <span style={{ color: '#16a34a' }}>₱{Number(loc.standard_fare).toFixed(2)}</span> • Radius: {loc.proximity_radius_meters}m
-                        </div>
-                      </Popup>
-                    </Marker>
-                  </React.Fragment>
-                );
-              })}
-
-              {/* Clicked Test Pin */}
-              {testPin && (
-                <Marker position={[testPin.lat, testPin.lng]} icon={testClickPinIcon}>
-                  <Popup>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 800 }}>
-                      🎯 Test Click Pin<br />
-                      <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
-                        {testPin.lat.toFixed(4)}, {testPin.lng.toFixed(4)}
-                      </span>
-                    </div>
-                  </Popup>
-                </Marker>
-              )}
-            </MapContainer>
-          </div>
-
-          {/* Test Decision Output Box */}
-          {testResult && (
-            <div style={{
-              marginTop: 16,
-              padding: 14,
-              borderRadius: 12,
-              background: testResult.isExactProximityMatch ? 'rgba(22, 163, 74, 0.08)' : 'rgba(2, 132, 199, 0.08)',
-              border: `1.5px solid ${testResult.isExactProximityMatch ? 'rgba(22, 163, 74, 0.4)' : 'rgba(2, 132, 199, 0.4)'}`
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 900,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: testResult.isExactProximityMatch ? '#15803d' : '#0369a1'
-                }}>
-                  {testResult.isExactProximityMatch ? '✅ Proximity Geofence Match' : 'ℹ️ Closest Location Assigned'}
+            <div className="bg-[#f2f4f6] dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 mb-4">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs font-medium text-[#276efe] bg-[#276efe]/10 px-2 py-1 rounded">
+                  Selected Location: {activeLocation?.location_name || 'Bauang Landmark'}
                 </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                  Distance: {testResult.distanceMeters}m
+                <span className="text-xs text-slate-400 flex items-center font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                  Live Data
                 </span>
               </div>
 
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-pasada-navy)', marginBottom: 2 }}>
-                {getLocationIconEmoji(testResult.matchedLocation.icon, testResult.matchedLocation.location_name)} {testResult.matchedLocation.location_name}
-              </div>
+              <h4 className="font-medium text-slate-900 dark:text-white mb-1">
+                {activeLocation?.location_name || 'Bauang Central'}
+              </h4>
+              <p className="text-xs text-slate-400 mb-4">
+                Radius: {((activeLocation?.proximity_radius_meters || 1000) / 1000).toFixed(1)}km • Center: {activeLocation?.lat ? activeLocation.lat.toFixed(4) : '16.5333'}° N, {activeLocation?.lng ? Math.abs(activeLocation.lng).toFixed(4) : '120.3333'}° {activeLocation?.lng && activeLocation.lng >= 0 ? 'E' : 'W'}
+              </p>
 
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingTop: 10,
-                borderTop: '1px solid var(--border-color)'
-              }}>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Official Regulated Price:</div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--success)' }}>
-                    ₱{testResult.standardFare}.00
-                  </div>
+                  <span className="block text-xs text-slate-400 mb-1">Current Active Vehicles</span>
+                  <span className="block text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>{activeVehicleCount}</span>
+                    {activeVehicleCount > 0 ? (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full border border-emerald-200/50">
+                        Live
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">
+                        None
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Student/Senior (20% Off):</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-                    ₱{testResult.discountedFare}.00
-                  </div>
+                <div>
+                  <span className="block text-xs text-slate-400 mb-1">Est. Wait Time</span>
+                  <span className="block text-xl font-semibold text-slate-900 dark:text-white">
+                    {estWaitTime}
+                  </span>
                 </div>
               </div>
             </div>
-          )}
+
+            <button
+              onClick={() => activeLocation && handleOpenEdit(activeLocation)}
+              className="w-full py-2.5 bg-[#276efe]/5 text-[#276efe] border border-[#276efe]/20 rounded-full text-xs font-medium hover:bg-[#276efe]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShieldCheck size={16} />
+              <span>Edit Location Rate</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -914,267 +1060,215 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </div>
                 )}
 
-                {/* STEP 2: Add Files (Pictures, Video & Audio) (2 Columns, fits without scroll) */}
+                {/* STEP 2: Add Files (Pictures, Video & Audio) */}
                 {currentStep === 2 && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 24,
-                    alignItems: 'start',
-                  }}>
-                    {/* Step 2 Left Column: Multiple Picture Upload & Highlights */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {/* Multi-Photo / Picture Upload Section */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <label className="form-label" style={{ fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
-                            <ImageIcon size={16} style={{ color: '#0052d1' }} />
-                            Explore Pictures ({images.length} uploaded)
-                          </label>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Multiple photos supported</span>
-                        </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-                        {/* Upload Button */}
-                        <label style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 8,
-                          padding: '12px 14px',
-                          border: '2px dashed #0052d1',
-                          borderRadius: 12,
-                          cursor: 'pointer',
-                          background: 'rgba(0,82,209,0.04)',
-                          transition: 'all 0.2s',
-                          fontSize: '0.82rem',
-                          fontWeight: 800,
-                          color: '#0052d1',
-                        }}>
-                          <UploadCloud size={18} />
-                          <span>Click to Upload Pictures (JPG, PNG, WebP)</span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-
-                        {/* Thumbnail Preview Grid */}
-                        {images.length > 0 && (
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
-                            gap: 8,
-                            marginTop: 10,
-                            maxHeight: 120,
-                            overflowY: 'auto',
-                            padding: 2,
-                          }}>
-                            {images.map((imgUrl, idx) => {
-                              const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
-                              return (
-                                <div
-                                  key={idx}
-                                  onClick={() => setCoverImageUrl(imgUrl)}
-                                  style={{
-                                    position: 'relative',
-                                    height: 56,
-                                    borderRadius: 8,
-                                    overflow: 'hidden',
-                                    border: isCover ? '2.5px solid #0052d1' : '1px solid var(--border-color)',
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                    cursor: 'pointer',
-                                  }}
-                                  title="Click to set as primary cover photo"
-                                >
-                                  <img
-                                    src={imgUrl}
-                                    alt={`Upload ${idx + 1}`}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                  />
-                                  {isCover && (
-                                    <div style={{
-                                      position: 'absolute',
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      background: 'rgba(0,82,209,0.92)',
-                                      color: '#fff',
-                                      fontSize: '0.55rem',
-                                      fontWeight: 900,
-                                      textAlign: 'center',
-                                      padding: '1px 0',
-                                      textTransform: 'uppercase',
-                                    }}>
-                                      Cover
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRemoveImage(idx);
-                                    }}
-                                    style={{
-                                      position: 'absolute',
-                                      top: 2,
-                                      right: 2,
-                                      width: 16,
-                                      height: 16,
-                                      borderRadius: '50%',
-                                      background: 'rgba(220,38,38,0.95)',
-                                      color: '#fff',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '0.65rem',
-                                      fontWeight: 900,
-                                    }}
-                                    title="Remove image"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                    {/* ── Unified Media Upload Zone ── */}
+                    <div style={{
+                      border: '2px dashed #0052d1',
+                      borderRadius: 14,
+                      background: 'rgba(0,82,209,0.03)',
+                      padding: '14px 16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.83rem', fontWeight: 800, color: '#0052d1', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <UploadCloud size={15} /> Media Files
+                        </span>
+                        <span style={{ fontSize: '0.71rem', color: 'var(--text-muted)' }}>Photos, videos — all in one</span>
                       </div>
 
-                      {/* Explore Description */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
-                          Explore Description & Highlights
+                      {/* Two upload buttons side by side */}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <label style={{
+                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '10px 0', borderRadius: 10, cursor: 'pointer',
+                          background: '#0052d1', color: '#fff',
+                          fontSize: '0.78rem', fontWeight: 800, transition: 'opacity 0.15s',
+                        }}>
+                          <ImageIcon size={14} /> Add Photos
+                          <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                         </label>
-                        <textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Key highlights, attractions, visiting hours, and stories shown to commuters on the Explore feed..."
-                          rows={3}
+
+                        <label style={{
+                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '10px 0', borderRadius: 10, cursor: isUploadingVideo ? 'not-allowed' : 'pointer',
+                          background: isUploadingVideo ? '#6b9cf5' : '#131b2e', color: '#fff',
+                          fontSize: '0.78rem', fontWeight: 800, transition: 'opacity 0.15s',
+                          opacity: isUploadingVideo ? 0.8 : 1,
+                        }}>
+                          {isUploadingVideo ? (
+                            <>
+                              <span style={{ display: 'inline-block', width: 13, height: 13, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                              Uploading…
+                            </>
+                          ) : (
+                            <><Video size={14} /> Add Video</>
+                          )}
+                          <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={isUploadingVideo} style={{ display: 'none' }} />
+                        </label>
+                      </div>
+
+                      {videoUploadError && (
+                        <div style={{ marginTop: 8, fontSize: '0.72rem', color: '#dc2626', fontWeight: 600 }}>⚠️ {videoUploadError}</div>
+                      )}
+
+                      {/* ── Unified Preview Strip ── */}
+                      {(images.length > 0 || videoUrl) && (
+                        <div style={{ marginTop: 12, display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                          {/* Image thumbnails */}
+                          {images.map((imgUrl, idx) => {
+                            const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
+                            return (
+                              <div
+                                key={`img-${idx}`}
+                                onClick={() => setCoverImageUrl(imgUrl)}
+                                title="Click to set as cover"
+                                style={{
+                                  position: 'relative', flexShrink: 0,
+                                  width: 72, height: 72, borderRadius: 10, overflow: 'hidden',
+                                  border: isCover ? '2.5px solid #0052d1' : '2px solid transparent',
+                                  boxShadow: isCover ? '0 0 0 1px #0052d1' : '0 1px 4px rgba(0,0,0,0.15)',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                {isCover && (
+                                  <div style={{
+                                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                                    background: 'rgba(0,82,209,0.9)', color: '#fff',
+                                    fontSize: '0.5rem', fontWeight: 900, textAlign: 'center', padding: '2px 0', letterSpacing: 1
+                                  }}>COVER</div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveImage(idx); }}
+                                  style={{
+                                    position: 'absolute', top: 3, right: 3, width: 17, height: 17,
+                                    borderRadius: '50%', background: 'rgba(220,38,38,0.9)', color: '#fff',
+                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.6rem', fontWeight: 900, lineHeight: 1,
+                                  }}
+                                  title="Remove"
+                                >×</button>
+                              </div>
+                            );
+                          })}
+
+                          {/* Video preview tile */}
+                          {videoUrl && !isUploadingVideo && (
+                            <div style={{
+                              position: 'relative', flexShrink: 0,
+                              width: 120, height: 72, borderRadius: 10, overflow: 'hidden',
+                              border: '2px solid #fcd400', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                            }}>
+                              <video
+                                src={videoUrl}
+                                muted playsInline
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                              <div style={{
+                                position: 'absolute', inset: 0,
+                                background: 'rgba(0,0,0,0.35)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                <Play size={20} color="#fff" fill="#fff" />
+                              </div>
+                              <div style={{
+                                position: 'absolute', bottom: 3, left: 0, right: 0, textAlign: 'center',
+                                fontSize: '0.5rem', fontWeight: 900, color: '#fcd400', letterSpacing: 1,
+                              }}>VIDEO</div>
+                              <button
+                                type="button"
+                                onClick={() => setVideoUrl('')}
+                                style={{
+                                  position: 'absolute', top: 3, right: 3, width: 17, height: 17,
+                                  borderRadius: '50%', background: 'rgba(220,38,38,0.9)', color: '#fff',
+                                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '0.6rem', fontWeight: 900,
+                                }}
+                                title="Remove video"
+                              >×</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Empty state */}
+                      {images.length === 0 && !videoUrl && !isUploadingVideo && (
+                        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
+                          No media yet — upload photos or a video above
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ── Explore Description ── */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', marginBottom: 4 }}>
+                        Description & Highlights
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Key highlights, attractions, visiting hours, and stories shown on the Explore feed…"
+                        rows={3}
+                        className="input-field"
+                        style={{ resize: 'none', fontSize: '0.82rem' }}
+                      />
+                    </div>
+
+                    {/* ── Audio Tour Guide ── */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <Music size={14} style={{ color: '#0052d1' }} /> Audio Tour Guide
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <label style={{
+                          padding: '7px 12px', borderRadius: 8,
+                          background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+                          fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                        }}>
+                          <UploadCloud size={13} /> Upload Audio
+                          <input type="file" accept="audio/*" onChange={handleAudioUpload} style={{ display: 'none' }} />
+                        </label>
+                        <input
+                          type="text"
+                          value={audioUrl}
+                          onChange={(e) => setAudioUrl(e.target.value)}
+                          placeholder="Or paste audio URL…"
                           className="input-field"
-                          style={{ resize: 'none', fontSize: '0.82rem' }}
+                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                        />
+                        {audioUrl && (
+                          <button type="button" onClick={() => setAudioUrl('')} className="btn btn-secondary"
+                            style={{ padding: '6px 10px', color: 'var(--danger)' }} title="Clear Audio">
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {audioUrl && (
+                        <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
+                          <audio controls src={audioUrl} style={{ width: '100%', height: 30 }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Video URL override (manual paste) ── */}
+                    {!videoUrl && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <Video size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        <input
+                          type="text"
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          placeholder="Or paste a video MP4 URL directly…"
+                          className="input-field"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
                         />
                       </div>
-                    </div>
+                    )}
 
-                    {/* Step 2 Right Column: Audio & Video Uploads */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {/* Audio Tour Guide Upload */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
-                          <Music size={16} style={{ color: '#0052d1' }} />
-                          Audio Tour Guide Narration
-                        </label>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <label style={{
-                            padding: '7px 12px',
-                            borderRadius: 8,
-                            background: 'var(--bg-primary)',
-                            border: '1px solid var(--border-color)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            flexShrink: 0,
-                          }}>
-                            <UploadCloud size={14} />
-                            Upload Audio
-                            <input
-                              type="file"
-                              accept="audio/*"
-                              onChange={handleAudioUpload}
-                              style={{ display: 'none' }}
-                            />
-                          </label>
-                          <input
-                            type="text"
-                            value={audioUrl}
-                            onChange={(e) => setAudioUrl(e.target.value)}
-                            placeholder="Or paste audio URL..."
-                            className="input-field"
-                            style={{ fontSize: '0.78rem', padding: '6px 10px' }}
-                          />
-                          {audioUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setAudioUrl('')}
-                              className="btn btn-secondary"
-                              style={{ padding: '6px 10px', color: 'var(--danger)' }}
-                              title="Clear Audio"
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
-                        </div>
-                        {audioUrl && (
-                          <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
-                            <audio controls src={audioUrl} style={{ width: '100%', height: 30 }} />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Video Guide / Reel Upload */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }}>
-                          <Video size={16} style={{ color: '#0052d1' }} />
-                          Video Showcase / Reel (MP4/WebM)
-                        </label>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <label style={{
-                            padding: '7px 12px',
-                            borderRadius: 8,
-                            background: 'var(--bg-primary)',
-                            border: '1px solid var(--border-color)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            flexShrink: 0,
-                          }}>
-                            <UploadCloud size={14} />
-                            Upload Video
-                            <input
-                              type="file"
-                              accept="video/*"
-                              onChange={handleVideoUpload}
-                              style={{ display: 'none' }}
-                            />
-                          </label>
-                          <input
-                            type="text"
-                            value={videoUrl}
-                            onChange={(e) => setVideoUrl(e.target.value)}
-                            placeholder="Or paste video MP4 URL..."
-                            className="input-field"
-                            style={{ fontSize: '0.78rem', padding: '6px 10px' }}
-                          />
-                          {videoUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setVideoUrl('')}
-                              className="btn btn-secondary"
-                              style={{ padding: '6px 10px', color: 'var(--danger)' }}
-                              title="Clear Video"
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
-                        </div>
-                        {videoUrl && (
-                          <div style={{ marginTop: 6, borderRadius: 8, overflow: 'hidden', height: 110, background: '#000' }}>
-                            <video controls src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 )}
 

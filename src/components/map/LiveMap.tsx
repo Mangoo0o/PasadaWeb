@@ -500,7 +500,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                     Regulated Fare: <strong className="text-emerald-700 font-extrabold">₱{Number(loc.standard_fare).toFixed(2)}</strong>
                   </div>
                   <div className="text-[10px] text-slate-500">
-                    {loc.notes || 'Official LGU Tariff Zone'}
+                    {loc.notes || 'Official Regulated Location'}
                   </div>
                   <button
                     onClick={() => {

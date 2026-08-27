@@ -147,72 +147,71 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
   };
 
   return (
-    <div className="page-container">
-      {/* Top Header */}
-      <div className="page-header">
+    <div className="page-container p-6 sm:p-8 space-y-6">
+      {/* Stitch Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="page-title">
-            <MapPin size={28} /> TODA Terminals & Barangay Locations
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <MapPin size={24} />
+            </span>
+            <span>TODA Terminals &amp; Barangay Locations</span>
           </h2>
-          <p className="page-subtitle">
-            Configure municipal terminal coordinates, operational codes, & dispatch geofence zones.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            Configure municipal terminal coordinates, operational codes, &amp; dispatch coverage.
           </p>
         </div>
 
-        <button onClick={handleOpenAdd} className="btn btn-primary">
-          <Plus size={16} /> Add New Terminal
+        <button 
+          onClick={handleOpenAdd} 
+          className="px-4 py-2.5 rounded-xl bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+        >
+          <Plus size={15} /> Add New Terminal
         </button>
       </div>
 
       {/* Terminal Grid & Map */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 24, alignItems: 'start' }}>
-        {/* Terminal Cards List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: 4 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Terminal Cards List (Span 5) */}
+        <div className="lg:col-span-5 flex flex-col gap-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
           {terminals.length === 0 ? (
-            <div className="glass-card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="p-8 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow">
               No terminals registered yet. Click "Add New Terminal" to register one.
             </div>
           ) : (
             terminals.map((t) => (
               <div
                 key={t.id}
-                className="glass-card"
-                style={{
-                  padding: '16px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderLeft: '4px solid var(--accent-primary)'
-                }}
+                className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all flex items-center justify-between border-l-4 border-l-[#0052d1]"
               >
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{t.name}</span>
-                    <span className="badge badge-info" style={{ fontFamily: 'monospace' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">{t.name}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-bold text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700">
                       {t.code || 'NO-CODE'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  <div className="text-[11px] text-slate-400 mt-1">
                     Coordinates: {t.lat.toFixed(4)}, {t.lng.toFixed(4)} • Radius: {t.coverage_radius_km || 3.0} km
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, marginTop: 4 }}>
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
                     ● {t.active_drivers_count || 8} Active Tricycles Dispatched
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleOpenEdit(t)}
-                  className="btn btn-secondary btn-sm"
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer shrink-0 ml-2"
                 >
-                  <Edit size={14} /> Edit
+                  <Edit size={13} className="inline mr-1" /> Edit
                 </button>
               </div>
             ))
           )}
         </div>
 
-        {/* Interactive GIS Overview Map */}
-        <div className="glass-card" style={{ padding: 18, height: '580px', display: 'flex', flexDirection: 'column' }}>
+        {/* Interactive GIS Overview Map (Span 7) */}
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow h-[560px] flex flex-col">
           <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>Terminal Geofence Coverage Map</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Click map to preview coordinates</span>

@@ -7,11 +7,9 @@ import {
   Sparkles, 
   Heart, 
   Bike, 
-  PhoneCall, 
   Globe, 
   CheckCircle2, 
   Percent, 
-  AlertTriangle,
   History,
   Compass,
   ChevronRight,
@@ -299,47 +297,7 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         </div>
       </section>
 
-      {/* 5. Emergency Hotlines & Safety SOS */}
-      <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
-        <div className="flex items-center gap-1.5">
-          <AlertTriangle className="w-4 h-4 text-rose-600" />
-          <h3 className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-white">
-            {t('profile.emergencyTitle')}
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-0.5">
-          {/* PNP Hotline */}
-          <a 
-            href="tel:0727051234"
-            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <div className="min-w-0 pr-1">
-              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{t('profile.pnp')}</div>
-              <div className="text-[9px] text-slate-500 font-mono">(072) 705-1234</div>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-[#0052d1] text-white flex items-center justify-center shrink-0">
-              <PhoneCall className="w-3.5 h-3.5" />
-            </div>
-          </a>
-
-          {/* MDRRMO Ambulance */}
-          <a 
-            href="tel:0727055555"
-            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <div className="min-w-0 pr-1">
-              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{t('profile.rescue')}</div>
-              <div className="text-[9px] text-slate-500 font-mono">(072) 705-5555</div>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
-              <PhoneCall className="w-3.5 h-3.5" />
-            </div>
-          </a>
-        </div>
-      </section>
-
-      {/* 6. Sign Out Button */}
+      {/* 5. Sign Out Button */}
       <div className="pt-1">
         <button
           onClick={signOut}

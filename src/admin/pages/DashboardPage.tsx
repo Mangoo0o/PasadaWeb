@@ -1,14 +1,33 @@
 import React from 'react';
 import { 
-  Car, AlertTriangle, DollarSign, MapPin, TrendingUp 
+  Car, AlertTriangle, MapPin, TrendingUp 
 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+
+const PesoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 18, className = '' }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M7 4h7a5 5 0 0 1 0 10H7V4z" />
+    <path d="M7 14v7" />
+    <line x1="4" y1="8" x2="17" y2="8" />
+    <line x1="4" y1="11" x2="17" y2="11" />
+  </svg>
+);
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell 
 } from 'recharts';
-import type { Terminal, Driver, Booking, Complaint } from '../types';
-import { PDFExportButton } from '../components/ui/PDFExportButton';
+import type { Terminal, Driver, Booking, Complaint, LocationFare } from '../types';
+import { getLocationIconEmoji } from '../../services/fareService';
 
 // Fix Leaflet marker icon asset issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,14 +35,6 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom Terminal Marker Icon
-const terminalIcon = L.divIcon({
-  className: 'custom-terminal-marker',
-  html: `<div style="background:#2563eb;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2px solid #fff;box-shadow:0 0 10px rgba(37,99,235,0.6);">T</div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14]
 });
 
 // Custom Driver Marker Icon
@@ -34,16 +45,28 @@ const driverIcon = L.divIcon({
   iconAnchor: [13, 13]
 });
 
+// Custom Location Landmark Marker Icon
+const createLocationPin = (loc: LocationFare) => {
+  const emoji = getLocationIconEmoji(loc.icon, loc.location_name);
+  return L.divIcon({
+    className: 'dashboard-loc-pin',
+    html: `<div style="background:#0052d1;color:#ffffff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #ffffff;box-shadow:0 3px 10px rgba(0,82,209,0.45);cursor:pointer;">${emoji}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+};
+
 interface DashboardPageProps {
   terminals: Terminal[];
   drivers: Driver[];
   bookings: Booking[];
   complaints: Complaint[];
+  locationFares?: LocationFare[];
   setActiveTab: (tab: string) => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ 
-  terminals, drivers, bookings, complaints, setActiveTab 
+  terminals, drivers, bookings, complaints, locationFares = [], setActiveTab 
 }) => {
   const activeDriversCount = drivers.filter(d => d.verification_status === 'approved').length;
   const pendingDriversCount = drivers.filter(d => d.verification_status === 'pending').length;
@@ -70,198 +93,189 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     };
   });
 
-  // Dynamic Terminal Occupancy Distribution
-  const terminalDistData = terminals.slice(0, 5).map(t => {
-    const driversInTerminal = drivers.filter(d => d.terminal_id === t.id).length;
-    return {
-      name: t.name.replace(' Terminal', ''),
-      value: driversInTerminal > 0 ? driversInTerminal : (t.active_drivers_count || 1)
-    };
-  });
+  // Fleet Distribution (by terminal or active driver status)
+  const terminalDistData = terminals.length > 0
+    ? terminals.slice(0, 5).map(t => {
+        const driversInTerminal = drivers.filter(d => d.terminal_id === t.id).length;
+        return {
+          name: t.name.replace(' Terminal', ''),
+          value: driversInTerminal > 0 ? driversInTerminal : (t.active_drivers_count || 1)
+        };
+      })
+    : [
+        { name: 'Active (Approved)', value: Math.max(activeDriversCount, 1) },
+        { name: 'Pending Verification', value: Math.max(pendingDriversCount, 0) },
+        { name: 'Live On-Duty', value: Math.max(drivers.filter(d => d.current_lat).length, 1) }
+      ].filter(item => item.value > 0);
 
   const PIE_COLORS = ['#00346F', '#00C1FD', '#10b981', '#f59e0b', '#8b5cf6'];
 
   return (
-    <div className="page-container" id="dashboard-audit-report">
-      {/* Page Header */}
-      <div className="page-header">
+    <div className="page-container p-6 sm:p-8 space-y-6" id="dashboard-audit-report">
+      {/* Stitch Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="page-title">
-            <TrendingUp size={28} /> Bauang TODA Operations Center
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <TrendingUp size={24} />
+            </span>
+            <span>Bauang TODA Operations Center</span>
           </h2>
-          <p className="page-subtitle">
-            Live municipal transport telemetry, tariff regulation compliance, & fleet monitoring.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            Real-time overview of municipal transit network, tariff regulation, & fleet monitoring.
+          </p>
+        </div>
+      </div>
+
+      {/* Stitch 4 Stats Bento Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Registered Drivers */}
+        <div 
+          onClick={() => setActiveTab('drivers')}
+          className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 rounded-xl group-hover:scale-105 transition-transform">
+              <Car size={20} />
+            </div>
+            <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-extrabold text-[11px] bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/70 dark:border-emerald-800">
+              <TrendingUp size={12} /> {activeDriversCount > 0 ? `${Math.round((activeDriversCount / (drivers.length || 1)) * 100)}% Active` : 'Live'}
+            </span>
+          </div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Registered Drivers</p>
+          <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            {drivers.length}
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-1">
+            {pendingDriversCount > 0 ? `${pendingDriversCount} pending verification` : 'All operators verified'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <PDFExportButton
-            elementId="dashboard-audit-report"
-            filename="PasadaGuide_LGU_Dashboard_Summary"
-            title="LGU Transport Telemetry & Operational Summary"
-          />
-        </div>
-      </div>
-
-      {/* KPI Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 18,
-        marginBottom: 24
-      }}>
-        {/* Total Active Fleet */}
+        {/* Card 2: Regulated Locations */}
         <div 
-          className="glass-card" 
-          onClick={() => setActiveTab('drivers')}
-          style={{ padding: '20px 22px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Registered Drivers</span>
-            <div style={{ padding: 8, borderRadius: 10, background: 'var(--info-bg)', color: 'var(--info)' }}>
-              <Car size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, marginTop: 10, color: 'var(--text-main)' }}>
-            {drivers.length}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: '0.75rem', color: 'var(--success)' }}>
-            <span>{activeDriversCount} active verified</span>
-            {pendingDriversCount > 0 && (
-              <span className="badge badge-warning" style={{ marginLeft: 'auto' }}>
-                {pendingDriversCount} Pending
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Total Terminals Managed */}
-        <div 
-          className="glass-card" 
           onClick={() => setActiveTab('fare-matrix')}
-          style={{ padding: '20px 22px', cursor: 'pointer' }}
+          className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group"
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>TODA Terminals</span>
-            <div style={{ padding: 8, borderRadius: 10, background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl group-hover:scale-105 transition-transform">
               <MapPin size={20} />
             </div>
+            <span className="text-[11px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+              Bauang LGU
+            </span>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, marginTop: 10, color: 'var(--text-main)' }}>
-            {terminals.length}
-          </div>
-          <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Barangay route hubs covered
-          </div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Regulated Locations</p>
+          <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            {locationFares.length > 0 ? `${locationFares.length} Locations` : '10 Locations'}
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Active proximity tariff destinations
+          </p>
         </div>
 
-        {/* Complaints Open */}
+        {/* Card 3: Active Complaints */}
         <div 
-          className="glass-card" 
           onClick={() => setActiveTab('complaints')}
-          style={{ padding: '20px 22px', cursor: 'pointer' }}
+          className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group"
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Active Complaints</span>
-            <div style={{ padding: 8, borderRadius: 10, background: 'var(--danger-bg)', color: 'var(--danger)' }}>
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl group-hover:scale-105 transition-transform">
               <AlertTriangle size={20} />
             </div>
+            <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-extrabold text-[11px] bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/70 dark:border-rose-800">
+              {openComplaintsCount} Open
+            </span>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, marginTop: 10, color: openComplaintsCount > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Active Complaints</p>
+          <h3 className={`text-3xl font-black tracking-tight ${openComplaintsCount > 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
             {openComplaintsCount}
-          </div>
-          <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-1">
             {complaints.filter(c => c.category === 'overcharging').length} Overcharging reports
-          </div>
+          </p>
         </div>
 
-        {/* Revenue Regulated */}
+        {/* Card 4: Computed Fares (Today) */}
         <div 
-          className="glass-card" 
           onClick={() => setActiveTab('bookings')}
-          style={{ padding: '20px 22px', cursor: 'pointer' }}
+          className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group"
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Computed Fares</span>
-            <div style={{ padding: 8, borderRadius: 10, background: 'var(--success-bg)', color: 'var(--success)' }}>
-              <DollarSign size={20} />
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:scale-105 transition-transform">
+              <PesoIcon size={20} />
             </div>
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/70 dark:border-emerald-800">
+              Tariff Regulated
+            </span>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, marginTop: 10, color: 'var(--success)' }}>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Computed Fares (Today)</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             ₱{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-1">
             Across {bookings.length} recorded rides
-          </div>
+          </p>
         </div>
       </div>
 
-      {/* Main Telemetry & Visual Analytics Section */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '2fr 1.2fr',
-        gap: 20,
-        marginBottom: 24
-      }}>
-        {/* Live Interactive GIS Map */}
-        <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', minHeight: 440 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Bauang TODA Live GIS Map</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Terminals (Blue), Coverage Radii (Circles), & Active Tricycles (Green)
-              </p>
-            </div>
-            <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-              ● Realtime Sync
-            </span>
+      {/* Stitch Bento Grid: Map + Right Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left 8-col: Regulated Locations Map */}
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden relative flex flex-col min-h-[480px]">
+          {/* Floating Glass Panel */}
+          <div className="absolute top-4 left-4 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-md pointer-events-auto">
+            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Regulated Locations</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Live view of Bauang TODA operations</p>
           </div>
 
-          <div style={{ flex: 1, minHeight: 350, borderRadius: 12, overflow: 'hidden' }}>
+          <div className="w-full h-full min-h-[480px] flex-1 relative">
             <MapContainer
               center={[16.5333, 120.3333]}
               zoom={13}
               zoomControl={false}
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', minHeight: '480px' }}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {/* Terminals & Coverage */}
-              {terminals.map(term => (
-                <React.Fragment key={term.id}>
-                  <Marker position={[term.lat, term.lng]} icon={terminalIcon}>
-                    <Popup>
-                      <div style={{ padding: 4 }}>
-                        <div style={{ fontWeight: 800, color: '#00346F', fontSize: '0.85rem' }}>{term.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#666', marginTop: 2 }}>Code: {term.code || 'N/A'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, marginTop: 2 }}>
-                          {term.active_drivers_count || 8} Active Drivers
-                        </div>
+              {/* Regulated Places & Landmarks */}
+              {locationFares.map(loc => (
+                <Marker 
+                  key={`loc-${loc.id}`} 
+                  position={[loc.lat, loc.lng]} 
+                  icon={createLocationPin(loc)}
+                >
+                  <Popup>
+                    <div className="p-1 min-w-[150px]">
+                      <div className="font-bold text-[#0052d1] text-xs">{loc.location_name}</div>
+                      <div className="text-[11px] text-slate-700 dark:text-slate-200 mt-1">
+                        Regulated Fare: <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold">₱{Number(loc.standard_fare).toFixed(2)}</strong>
                       </div>
-                    </Popup>
-                  </Marker>
-                  <Circle
-                    center={[term.lat, term.lng]}
-                    radius={(term.coverage_radius_km || 3.0) * 1000}
-                    pathOptions={{ color: '#004A99', fillColor: '#00C1FD', fillOpacity: 0.08, weight: 1.5 }}
-                  />
-                </React.Fragment>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{loc.notes || 'Regulated Destination'}</div>
+                      <button
+                        onClick={() => setActiveTab('fare-matrix')}
+                        className="mt-2 text-[10px] text-blue-600 dark:text-sky-400 font-bold hover:underline cursor-pointer block"
+                      >
+                        View in Fare Matrix →
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
               ))}
 
-              {/* Active Drivers */}
+              {/* Live Driver Locations */}
               {drivers.filter(d => d.current_lat && d.current_lng).map(d => (
                 <Marker key={d.profile_id || d.id} position={[d.current_lat!, d.current_lng!]} icon={driverIcon}>
                   <Popup>
-                    <div style={{ padding: 4 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                    <div className="p-1">
+                      <div className="font-black text-xs text-slate-900">
                         {d.profile?.full_name || 'Driver'}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#333' }}>Plate: <strong>{d.plate_number}</strong></div>
-                      <div style={{ fontSize: '0.75rem', color: '#666' }}>Model: {d.tricycle_model}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 700 }}>
+                      <div className="text-[10px] text-slate-600">Plate: <strong>{d.plate_number}</strong></div>
+                      <div className="text-[10px] text-slate-500">Model: {d.tricycle_model}</div>
+                      <div className="text-[10px] text-amber-500 font-bold mt-0.5">
                         ★ {d.rating ? d.rating.toFixed(1) : '5.0'} Rating
                       </div>
                     </div>
@@ -272,70 +286,76 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Charts Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Hourly Ride Activity Chart */}
-          <div className="glass-card" style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 4 }}>Hourly Ride Demand (Today)</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-              Passenger trip requests across municipal terminals
-            </p>
+        {/* Right 4-col: Charts */}
+        <div className="lg:col-span-4 flex flex-col gap-5">
+          {/* Hourly Ride Demand */}
+          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Hourly Ride Demand</h3>
+                <p className="text-[11px] text-slate-400 font-medium">Passenger trip traffic today</p>
+              </div>
+            </div>
 
-            <div style={{ flex: 1, minHeight: 150 }}>
+            <div className="flex-1 min-h-[160px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={rideTrendData}>
                   <defs>
                     <linearGradient id="rideGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00C1FD" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#00346F" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#0052d1" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#206afa" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={10} tickLine={false} />
-                  <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} />
+                  <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                   <Tooltip 
-                    contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: '0.75rem' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px', fontSize: '11px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                   />
-                  <Area type="monotone" dataKey="rides" stroke="#00346F" strokeWidth={2.5} fillOpacity={1} fill="url(#rideGradient)" />
+                  <Area type="monotone" dataKey="rides" stroke="#0052d1" strokeWidth={2.5} fillOpacity={1} fill="url(#rideGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Terminal Fleet Allocation Pie */}
-          <div className="glass-card" style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 4 }}>Terminal Fleet Distribution</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-              Tricycle driver distribution by TODA terminal
-            </p>
+          {/* Terminal Fleet Distribution */}
+          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Fleet Distribution</h3>
+                <p className="text-[11px] text-slate-400 font-medium">Driver allocation by TODA</p>
+              </div>
+            </div>
 
-            <div style={{ flex: 1, minHeight: 150, display: 'flex', alignItems: 'center' }}>
-              <ResponsiveContainer width="100%" height={140}>
-                <PieChart>
-                  <Pie
-                    data={terminalDistData}
-                    innerRadius={36}
-                    outerRadius={55}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {terminalDistData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: '0.75rem' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex-1 min-h-[150px] flex items-center justify-between gap-2">
+              <div className="w-1/2 h-[140px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={terminalDistData}
+                      innerRadius={36}
+                      outerRadius={55}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {terminalDistData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px', fontSize: '11px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.72rem' }}>
+              <div className="w-1/2 space-y-1.5 text-xs">
                 {terminalDistData.slice(0, 4).map((item, idx) => (
-                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[idx % PIE_COLORS.length] }}></span>
-                    <span style={{ color: 'var(--text-muted)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.name}
-                    </span>
-                    <strong style={{ marginLeft: 'auto' }}>{item.value}</strong>
+                  <div key={item.name} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}></span>
+                      <span className="text-slate-600 dark:text-slate-400 truncate">{item.name}</span>
+                    </div>
+                    <strong className="text-slate-900 dark:text-white font-mono shrink-0 ml-1">{item.value}</strong>
                   </div>
                 ))}
               </div>

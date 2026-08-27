@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Video,
+  Play,
+  Pause,
   Image as ImageIcon
 } from 'lucide-react';
 import { TouristSpot } from '../types/database.types';
@@ -47,6 +49,10 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeAudioSpotId, setActiveAudioSpotId] = useState<string | null>(null);
   const [modalImageIndex, setModalImageIndex] = useState<number>(0);
+  const [modalMediaMode, setModalMediaMode] = useState<'video' | 'photo'>('video');
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
+  const [isVideoMuted, setIsVideoMuted] = useState<boolean>(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('pasada_fav_spots') || '[]');
@@ -96,6 +102,20 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
     };
   }, []);
 
+  // Ensure modal video cover starts playback smoothly when opened
+  useEffect(() => {
+    if (selectedSpotModal?.video_url && modalMediaMode === 'video' && videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = isVideoMuted;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsVideoPlaying(true))
+          .catch(() => setIsVideoPlaying(false));
+      }
+    }
+  }, [selectedSpotModal?.id, selectedSpotModal?.video_url, modalMediaMode]);
+
   const toggleFavorite = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setFavorites(prev => {
@@ -107,6 +127,9 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
 
   const toggleAudio = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+    }
     setActiveAudioSpotId(prev => (prev === id ? null : id));
   };
 
@@ -148,6 +171,13 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   const openSpotModal = (spot: TouristSpot) => {
     setModalImageIndex(0);
     setSelectedSpotModal(spot);
+    if (spot.video_url) {
+      setModalMediaMode('video');
+      setIsVideoPlaying(true);
+      setIsVideoMuted(true);
+    } else {
+      setModalMediaMode('photo');
+    }
   };
 
   const handleBookRideToSpot = (spot: TouristSpot, e?: React.MouseEvent) => {
@@ -268,6 +298,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/75"></div>
 
+          {/* Video Indicator Badge */}
+          {featuredSpot?.video_url && (
+            <div className="absolute top-2.5 left-2.5 z-10 bg-black/60 backdrop-blur-md text-[#fcd400] text-[9px] sm:text-[10px] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20 shadow-md">
+              <Video className="w-3.5 h-3.5 animate-pulse text-[#fcd400]" />
+              <span className="text-white">Video Tour Available</span>
+            </div>
+          )}
+
           {/* Map Pin Base Camp Badge */}
           <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
             <div className="bg-white/95 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold text-[#0052d1] mb-1 shadow-md uppercase tracking-wider">
@@ -346,6 +384,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/80"></div>
 
+                    {/* Video Indicator Badge */}
+                    {spot.video_url && (
+                      <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[#fcd400] text-[8px] sm:text-[9px] font-extrabold flex items-center gap-1 border border-white/20 z-10 shadow-sm">
+                        <Video className="w-2.5 h-2.5 text-[#fcd400]" />
+                        <span>Video</span>
+                      </div>
+                    )}
+
                     {/* Favorite Button */}
                     <button
                       onClick={(e) => toggleFavorite(spot.id, e)}
@@ -416,6 +462,12 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     >
                       <Heart className={`w-2.5 h-2.5 ${isFav ? 'fill-red-500 text-red-500' : 'text-white'}`} />
                     </button>
+                    {spot.video_url && (
+                      <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[#fcd400] text-[8px] font-extrabold flex items-center gap-0.5 border border-white/10">
+                        <Video className="w-2.5 h-2.5" />
+                        <span>Video</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Info Column */}
@@ -504,49 +556,157 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
           <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] flex flex-col">
               
-              {/* Modal Image Carousel Header */}
-              <div className="relative h-56 sm:h-64 w-full shrink-0 bg-slate-900 overflow-hidden">
-                <img 
-                  src={currentImg} 
-                  alt={selectedSpotModal.name} 
-                  className="w-full h-full object-cover transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                
+              {/* Modal Cover Header (Video or Photos) */}
+              <div className="relative h-60 sm:h-72 w-full shrink-0 bg-slate-950 overflow-hidden">
+                {selectedSpotModal.video_url && modalMediaMode === 'video' ? (
+                  <div className="relative w-full h-full bg-black group/vid">
+                    <video 
+                      key={`${selectedSpotModal.id}-${selectedSpotModal.video_url}`}
+                      ref={videoRef}
+                      src={selectedSpotModal.video_url} 
+                      poster={selectedSpotModal.cover_image_url || currentImg}
+                      className="w-full h-full object-cover cursor-pointer"
+                      playsInline
+                      autoPlay
+                      preload="auto"
+                      muted={isVideoMuted}
+                      loop
+                      onPlay={() => setIsVideoPlaying(true)}
+                      onPause={() => setIsVideoPlaying(false)}
+                      onError={(e) => {
+                        console.warn('Video failed to load for spot, falling back to photo:', selectedSpotModal.name, e);
+                        setModalMediaMode('photo');
+                      }}
+                      onClick={() => {
+                        if (videoRef.current) {
+                          if (videoRef.current.paused) {
+                            videoRef.current.play();
+                          } else {
+                            videoRef.current.pause();
+                          }
+                        }
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none"></div>
+
+                    {/* Central Play/Pause Tap Overlay Indicator */}
+                    <div 
+                      onClick={() => {
+                        if (videoRef.current) {
+                          if (videoRef.current.paused) {
+                            videoRef.current.play();
+                          } else {
+                            videoRef.current.pause();
+                          }
+                        }
+                      }}
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer pointer-events-auto"
+                    >
+                      {!isVideoPlaying && (
+                        <div className="w-14 h-14 rounded-full bg-[#0052d1]/90 hover:bg-[#0052d1] text-white flex items-center justify-center shadow-2xl pl-1 backdrop-blur-md transition-transform hover:scale-110 active:scale-95">
+                          <Play className="w-7 h-7 fill-white text-white" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Video Audio Mute/Unmute Toggle */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsVideoMuted(prev => {
+                          if (videoRef.current) videoRef.current.muted = !prev;
+                          return !prev;
+                        });
+                      }}
+                      className="absolute bottom-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-md transition-all active:scale-90"
+                      title={isVideoMuted ? 'Unmute video' : 'Mute video'}
+                    >
+                      {isVideoMuted ? <VolumeX className="w-4 h-4 text-amber-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={currentImg} 
+                      alt={selectedSpotModal.name} 
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+
+                    {/* Multi-Image Carousel Controls */}
+                    {spotImages.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setModalImageIndex(prev => (prev > 0 ? prev - 1 : spotImages.length - 1))}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setModalImageIndex(prev => (prev < spotImages.length - 1 ? prev + 1 : 0))}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Top-Left Media Switcher (Video vs Photos) or Image Counter */}
+                <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1">
+                  {selectedSpotModal.video_url ? (
+                    <div className="bg-black/60 backdrop-blur-md p-1 rounded-full border border-white/20 flex items-center gap-1 shadow-md">
+                      <button
+                        onClick={() => setModalMediaMode('video')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                          modalMediaMode === 'video'
+                            ? 'bg-[#0052d1] text-white shadow-sm'
+                            : 'text-white/70 hover:text-white'
+                        }`}
+                      >
+                        <Video className="w-3 h-3 text-[#fcd400]" />
+                        <span>Video Cover</span>
+                      </button>
+
+                      {spotImages.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setModalMediaMode('photo');
+                            if (videoRef.current) videoRef.current.pause();
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                            modalMediaMode === 'photo'
+                              ? 'bg-white text-slate-900 shadow-sm'
+                              : 'text-white/70 hover:text-white'
+                          }`}
+                        >
+                          <ImageIcon className="w-3 h-3 text-[#0052d1]" />
+                          <span>Photos ({spotImages.length})</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : spotImages.length > 1 ? (
+                    <div className="bg-black/50 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-white/10">
+                      <ImageIcon className="w-3 h-3 text-[#fcd400]" />
+                      <span>{modalImageIndex + 1} / {spotImages.length}</span>
+                    </div>
+                  ) : null}
+                </div>
+
                 {/* Close Button */}
                 <button
-                  onClick={() => setSelectedSpotModal(null)}
-                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center text-sm font-black cursor-pointer hover:bg-black/70 transition-colors z-20"
+                  onClick={() => {
+                    if (videoRef.current) videoRef.current.pause();
+                    setSelectedSpotModal(null);
+                  }}
+                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center text-sm font-black cursor-pointer transition-colors z-20 shadow-md"
                 >
                   ✕
                 </button>
 
-                {/* Multi-Image Carousel Controls */}
-                {spotImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setModalImageIndex(prev => (prev > 0 ? prev - 1 : spotImages.length - 1))}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setModalImageIndex(prev => (prev < spotImages.length - 1 ? prev + 1 : 0))}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-transform active:scale-90 z-20"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-
-                    {/* Image Counter Badge */}
-                    <div className="absolute top-3.5 left-3.5 bg-black/50 backdrop-blur-md text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 z-20">
-                      <ImageIcon className="w-3 h-3 text-[#fcd400]" />
-                      <span>{modalImageIndex + 1} / {spotImages.length}</span>
-                    </div>
-                  </>
-                )}
-
-                {/* Spot Title & Category in Header */}
-                <div className="absolute bottom-3 left-4 right-4 z-10">
+                {/* Spot Title in Header Scrim */}
+                <div className="absolute bottom-3 left-4 right-14 z-10 pointer-events-none">
                   <h2 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                     {selectedSpotModal.name}
                   </h2>
@@ -562,9 +722,13 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     {spotImages.map((thumbUrl, idx) => (
                       <button
                         key={idx}
-                        onClick={() => setModalImageIndex(idx)}
+                        onClick={() => {
+                          setModalMediaMode('photo');
+                          setModalImageIndex(idx);
+                          if (videoRef.current) videoRef.current.pause();
+                        }}
                         className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                          idx === modalImageIndex ? 'border-[#0052d1] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                          modalMediaMode === 'photo' && idx === modalImageIndex ? 'border-[#0052d1] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
                         }`}
                       >
                         <img src={thumbUrl} alt="Thumb" className="w-full h-full object-cover" />
@@ -600,24 +764,6 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                     </div>
                   );
                 })()}
-
-                {/* Video Tour Player if Available */}
-                {selectedSpotModal.video_url && (
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-[#0052d1] uppercase tracking-wider">
-                      <Video className="w-3.5 h-3.5 text-[#0052d1]" />
-                      <span>{i18n.language === 'en' ? 'Video Tour & Showcase' : 'Video Tour at Atraksyon'}</span>
-                    </div>
-                    <div className="rounded-2xl overflow-hidden bg-black aspect-video border border-slate-200 dark:border-slate-800 shadow-md">
-                      <video 
-                        controls 
-                        src={selectedSpotModal.video_url} 
-                        className="w-full h-full object-contain" 
-                        poster={selectedSpotModal.cover_image_url}
-                      />
-                    </div>
-                  </div>
-                )}
 
                 {/* Action Buttons */}
                 <div className="pt-2 flex gap-2.5">

@@ -31,126 +31,69 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header style={{
-      height: 'var(--header-height)',
-      background: 'var(--bg-glass)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border-color)',
-      padding: '0 32px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      position: 'sticky',
-      top: 0,
-      zIndex: 10
-    }}>
-      {/* Search Input */}
-      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '380px' }}>
-        <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 14 }} />
+    <header className="h-16 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 select-none">
+      {/* Stitch Rounded Search Input */}
+      <div className="flex items-center relative w-72 md:w-96">
+        <Search size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Global search drivers, bookings, complaints..."
+          placeholder="Search routes, fares..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="input-field"
-          style={{ paddingLeft: 42, background: 'var(--bg-surface)' }}
+          className="w-full h-10 pl-10 pr-4 bg-[#f2f4f6] dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-full text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:border-[#276efe] focus:ring-2 focus:ring-[#276efe]/20 outline-none transition-all"
         />
       </div>
 
       {/* Action Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {/* Live DB Status Pill */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 12px',
-          borderRadius: 9999,
-          background: 'var(--success-bg)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          color: 'var(--success)',
-          fontSize: '0.75rem',
-          fontWeight: 700
-        }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }}></span>
-          <span>LIVE DB CONNECTED</span>
-        </div>
-
-        {/* Sync / Refresh Button */}
+      <div className="flex items-center gap-2.5">
+        {/* Stitch Sensors Telemetry Indicator */}
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="btn btn-secondary btn-sm"
-          title="Refresh & Sync Data"
+          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer flex items-center justify-center"
+          title="Sensors & Live Telemetry"
         >
-          <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-          <span>{isRefreshing ? 'Syncing...' : 'Sync'}</span>
+          <span className="text-sm font-black tracking-tighter">((•))</span>
         </button>
 
         {/* Dark/Light Mode Toggle */}
         <button
           onClick={toggleTheme}
-          className="btn btn-secondary btn-sm"
+          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer flex items-center justify-center"
           title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
         >
-          {theme === 'dark' ? <Sun size={16} color="#fbbf24" /> : <Moon size={16} />}
+          {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
         </button>
 
         {/* Notifications Dropdown */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="btn btn-secondary btn-sm"
-            style={{ position: 'relative', padding: 8 }}
+            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer flex items-center justify-center relative"
+            title="Notifications"
           >
-            <Bell size={18} />
+            <Bell size={16} />
             {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                background: 'var(--danger)',
-                color: '#fff',
-                borderRadius: '50%',
-                width: 16,
-                height: 16,
-                fontSize: '0.65rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800
-              }}>
-                {unreadCount}
-              </span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-600 rounded-full border border-white dark:border-slate-900"></span>
             )}
           </button>
 
           {showNotifications && (
-            <div
-              className="glass-card"
-              style={{
-                position: 'absolute',
-                top: 46,
-                right: 0,
-                width: 340,
-                maxHeight: 400,
-                overflowY: 'auto',
-                zIndex: 100,
-                padding: 12,
-                boxShadow: 'var(--shadow-lg)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border-color)' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>Notifications ({unreadCount})</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => notifications.forEach(n => markAsRead(n.id))}>
+            <div className="absolute top-12 right-0 w-80 max-h-96 overflow-y-auto z-50 p-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl space-y-2">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span className="font-extrabold text-xs text-slate-900 dark:text-white">Notifications ({unreadCount})</span>
+                <button
+                  type="button"
+                  className="text-[11px] font-bold text-[#0052d1] hover:underline cursor-pointer"
+                  onClick={() => notifications.forEach(n => markAsRead(n.id))}
+                >
                   Mark all read
-                </span>
+                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+              <div className="space-y-1.5">
                 {notifications.length === 0 ? (
-                  <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  <div className="py-6 text-center text-slate-400 text-xs font-medium">
                     No new alerts or complaints.
                   </div>
                 ) : (
@@ -158,25 +101,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <div
                       key={n.id}
                       onClick={() => markAsRead(n.id)}
-                      style={{
-                        padding: 10,
-                        borderRadius: 8,
-                        background: n.read ? 'transparent' : 'var(--accent-glow)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        gap: 10,
-                        alignItems: 'flex-start',
-                        transition: 'background 0.15s ease'
-                      }}
+                      className={`p-2.5 rounded-xl border transition-colors cursor-pointer flex items-start gap-2.5 ${
+                        n.read 
+                          ? 'bg-slate-50/50 dark:bg-slate-800/40 border-transparent text-slate-600 dark:text-slate-400' 
+                          : 'bg-sky-50/60 dark:bg-sky-950/40 border-sky-100 dark:border-sky-900 text-slate-900 dark:text-white'
+                      }`}
                     >
-                      {n.type === 'complaint' && <AlertCircle size={16} color="var(--danger)" style={{ marginTop: 2, flexShrink: 0 }} />}
-                      {n.type === 'driver_verification' && <ShieldCheck size={16} color="var(--warning)" style={{ marginTop: 2, flexShrink: 0 }} />}
-                      {n.type === 'system' && <CheckCircle size={16} color="var(--success)" style={{ marginTop: 2, flexShrink: 0 }} />}
+                      {n.type === 'complaint' && <AlertCircle size={15} className="text-rose-600 shrink-0 mt-0.5" />}
+                      {n.type === 'driver_verification' && <ShieldCheck size={15} className="text-amber-500 shrink-0 mt-0.5" />}
+                      {n.type === 'system' && <CheckCircle size={15} className="text-emerald-600 shrink-0 mt-0.5" />}
                       
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: n.read ? 600 : 700 }}>{n.title}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{n.message}</div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold truncate">{n.title}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">{n.message}</div>
+                        <div className="text-[9px] text-slate-400 font-mono mt-1">
                           {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -186,6 +124,13 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Stitch User Profile Avatar */}
+        <div className="ml-1 w-8 h-8 rounded-full bg-[#206afa] text-white flex items-center justify-center shadow-xs cursor-pointer hover:ring-2 hover:ring-[#206afa]/30 transition-all">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          </svg>
         </div>
       </div>
     </header>
