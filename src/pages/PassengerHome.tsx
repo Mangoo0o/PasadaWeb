@@ -56,7 +56,6 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const [locationFares, setLocationFares] = useState<LocationFare[]>([]);
   const [activeDrivers, setActiveDrivers] = useState<Array<{ id: string; lat: number; lng: number; bodyNumber?: string }>>([]);
   
-  const [selectedTerminal, setSelectedTerminal] = useState<Terminal | null>(null);
   const [selectedLocationFare, setSelectedLocationFare] = useState<LocationFare | null>(null);
   const [, setProximityResult] = useState<ProximityMatchResult | null>(null);
 
@@ -120,12 +119,11 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const resolveLocationFare = useCallback((
     targetLat: number,
     targetLng: number,
-    allLocations: LocationFare[],
-    terminalId?: string
+    allLocations: LocationFare[]
   ) => {
     if (!allLocations || allLocations.length === 0) return;
 
-    const match = findMatchingLocationByProximity(targetLat, targetLng, allLocations, terminalId);
+    const match = findMatchingLocationByProximity(targetLat, targetLng, allLocations);
     setProximityResult(match);
 
     if (match) {
@@ -170,10 +168,6 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
       setTerminals(termData);
       setLocationFares(locData);
-
-      if (termData.length > 0) {
-        setSelectedTerminal(termData[0]);
-      }
 
       await fetchTouristSpots();
 
@@ -284,10 +278,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   };
 
   // Select Destination Terminal
-  const handleSelectTerminal = (term: Terminal) => {
-    setSelectedTerminal(term);
+  const handleSelectTerminal = () => {
     if (destLat !== undefined && destLng !== undefined) {
-      resolveLocationFare(destLat, destLng, locationFares, term.id);
+      resolveLocationFare(destLat, destLng, locationFares);
     }
   };
 
@@ -296,7 +289,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     setDestLat(lat);
     setDestLng(lng);
     setDestinationName(`Map Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-    resolveLocationFare(lat, lng, locationFares, selectedTerminal?.id);
+    resolveLocationFare(lat, lng, locationFares);
   };
 
   // Clear Selected Destination
@@ -316,13 +309,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
       return;
     }
 
-    if (!selectedTerminal) {
-      setBookingError('Pumili ng TODA Terminal na magseserbisyo.');
-      return;
-    }
-
     if (destLat === undefined || destLng === undefined) {
-      setBookingError('Pumili ng pupuntahang destinasyon sa mapa.');
+      setBookingError(i18n.language === 'en' ? 'Select a destination on the map.' : 'Pumili ng pupuntahang destinasyon sa mapa.');
       return;
     }
 
@@ -459,7 +447,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 value={searchQuery}
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={i18n.language === 'en' ? 'Search Destination or TODA...' : 'Maghanap ng Destinasyon o TODA...'}
+                placeholder={i18n.language === 'en' ? 'Search Destination...' : 'Maghanap ng Destinasyon...'}
                 className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-slate-800 dark:text-slate-100 text-[16px] font-medium placeholder:text-slate-400 placeholder:text-xs p-0"
               />
               {searchQuery && (

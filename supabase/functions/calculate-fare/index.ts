@@ -20,21 +20,36 @@ serve(async (req: Request) => {
     );
 
     // Fetch the latest effective fare matrix
-    const { data: matrix, error } = await supabase
+    let matrixQuery = supabase
       .from('fare_matrix')
       .select('*')
-      .eq('origin_terminal_id', origin_terminal_id)
-      .order('effective_date', { ascending: false })
-      .limit(1)
-      .single();
+      .order('effective_date', { ascending: false });
 
-    if (error || !matrix) {
-      throw new Error("Fare matrix not found for this terminal.");
+    if (origin_terminal_id) {
+      matrixQuery = matrixQuery.eq('origin_terminal_id', origin_terminal_id);
     }
 
-    const baseFare = Number(matrix.base_fare);
-    const baseKm = Number(matrix.base_km);
-    const perKmRate = Number(matrix.per_km_rate);
+    const { data: matrix } = await matrixQuery.limit(1).maybeSingle();
+
+    let activeMatrix = matrix;
+    if (!activeMatrix) {
+      // Secondary fallback to default Bauang municipality rate if terminal-specific is unlinked
+      const { data: fallbackMatrix } = await supabase
+        .from('fare_matrix')
+        .select('*')
+        .order('effective_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!fallbackMatrix) {
+        throw new Error("Fare matrix not configured.");
+      }
+      activeMatrix = fallbackMatrix;
+    }
+
+    const baseFare = Number(activeMatrix.base_fare);
+    const baseKm = Number(activeMatrix.base_km);
+    const perKmRate = Number(activeMatrix.per_km_rate);
 
     let calculatedFare = baseFare;
     if (distance_km > baseKm) {
