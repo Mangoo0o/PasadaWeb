@@ -292,8 +292,13 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
           </div>
           <div>
             <div className="text-[10px] uppercase font-bold text-slate-400">Rehistradong Tricycle</div>
-            <div className="font-bold text-xs text-slate-900 dark:text-slate-100">
-              {driverProfile?.tricycle_model || 'Honda TMX 125'} • Plate: {driverProfile?.plate_number || '1234-AB'}
+            <div className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5 flex-wrap mt-0.5">
+              <span className="px-2 py-0.5 bg-[#003f87] text-white font-mono font-black text-[11px] rounded">
+                {driverProfile?.plate_number || '1234-AB'}
+              </span>
+              <span className="text-slate-500 font-semibold text-[11px]">
+                Body #{driverProfile?.body_number || '0142'}
+              </span>
             </div>
           </div>
         </div>

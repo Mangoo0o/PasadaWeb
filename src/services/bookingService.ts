@@ -383,25 +383,7 @@ export const fetchDriverReviews = async (driverId: string): Promise<Array<{
       .limit(10);
 
     if (error || !data || data.length === 0) {
-      // Return realistic local feedback for preview if empty
-      return [
-        {
-          id: 'sample-rev-1',
-          rating: 5,
-          comment: 'Mabilis at maingat magmaneho si Manong! Maayos ang biyahe patungong Bauang Central.',
-          created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-          passenger_name: 'Maria Santos',
-          route: 'Bauang Town Plaza ➔ Baccuit Sur'
-        },
-        {
-          id: 'sample-rev-2',
-          rating: 5,
-          comment: 'Tamang-tama ang siningil sa Taripa. Napakagalang na driver!',
-          created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-          passenger_name: 'Pedro Reyes',
-          route: 'Bauang TODA Terminal ➔ Central East'
-        }
-      ];
+      return [];
     }
 
     // Resolve passenger names and routes
@@ -437,9 +419,9 @@ export const fetchDriverReviews = async (driverId: string): Promise<Array<{
     return data.map((r: any) => ({
       id: r.id,
       rating: r.rating || 5,
-      comment: r.comment || 'Maayos at ligtas ang biyahe.',
+      comment: r.comment || '',
       created_at: r.created_at || new Date().toISOString(),
-      passenger_name: profileMap[r.passenger_id] || 'Ka-Pasada Commuter',
+      passenger_name: profileMap[r.passenger_id] || 'Pasahero',
       route: bookingMap[r.booking_id] || undefined
     }));
   } catch {
