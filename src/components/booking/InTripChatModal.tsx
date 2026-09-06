@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, MessageSquare, Sparkles } from 'lucide-react';
 import { ChatMessage, sendTripMessage, subscribeToTripChat, getStoredTripMessages } from '../../services/tripChatService';
 import { soundService } from '../../services/soundNotificationService';
@@ -108,14 +109,31 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleEscape);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const presets = currentUserRole === 'passenger' ? PASSENGER_PRESETS : DRIVER_PRESETS;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div 
-        className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] border border-slate-200 dark:border-slate-800 overflow-hidden"
+        className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col h-[78vh] sm:h-[600px] border border-slate-200 dark:border-slate-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -198,8 +216,8 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
           </div>
         </div>
 
-        {/* Free-Text Input Bar */}
-        <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+        {/* Free-Text Input Bar with Safe Area Bottom Padding */}
+        <div className="p-3 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
           <input
             type="text"
             value={inputText}
@@ -218,6 +236,7 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
