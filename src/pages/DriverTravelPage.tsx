@@ -21,6 +21,8 @@ import { useAuth } from '../hooks/useAuth';
 import { broadcastDriverLocation } from '../services/driverTrackingService';
 import { soundService } from '../services/soundNotificationService';
 import { InTripChatModal } from '../components/booking/InTripChatModal';
+import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
+import { subscribeToTripChat } from '../services/tripChatService';
 
 interface DriverTravelPageProps {
   booking: Booking;
@@ -220,8 +222,19 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const [completedFare, setCompletedFare] = useState<number | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
   const [isCancelling, setIsCancelling] = useState(false);
   const [focusKey, setFocusKey] = useState<number>(0);
+
+  useEffect(() => {
+    if (!booking?.id) return;
+    const unsubscribe = subscribeToTripChat(booking.id, (newMsg) => {
+      if (newMsg.senderId !== (activeDriverId || 'driver') && !showChatModal) {
+        setUnreadChatCount((prev) => prev + 1);
+      }
+    });
+    return () => unsubscribe();
+  }, [booking?.id, activeDriverId, showChatModal]);
 
   // Trigger camera auto-focus once when phase changes
   useEffect(() => {
@@ -322,11 +335,19 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => setShowChatModal(true)}
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0052d1] hover:bg-[#003f9e] text-white shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+                onClick={() => {
+                  setShowChatModal(true);
+                  setUnreadChatCount(0);
+                }}
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0052d1] hover:bg-[#003f9e] text-white shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer relative"
                 title="Mensahe sa Pasahero"
               >
                 <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white font-black text-[8px] rounded-full flex items-center justify-center animate-pulse shadow-sm">
+                    {unreadChatCount}
+                  </span>
+                )}
               </button>
               {booking.passenger?.phone_number && (
                 <a
@@ -656,6 +677,17 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         currentUserName={driverProfile?.tricycle_model ? `Driver (${driverProfile.body_number || 'Tricycle'})` : 'Driver'}
         otherPartyName={booking.passenger?.full_name || 'Pasahero'}
         otherPartySubtitle={`${booking.origin_name} ➔ ${booking.destination_name}`}
+      />
+
+      {/* 7. IN-PHONE MESSAGE NOTIFICATION BANNER (HEADS-UP TOAST) */}
+      <InPhoneMessageBanner
+        bookingId={booking.id}
+        currentUserId={activeDriverId || 'driver'}
+        isChatOpen={showChatModal}
+        onOpenChat={() => {
+          setShowChatModal(true);
+          setUnreadChatCount(0);
+        }}
       />
 
     </div>

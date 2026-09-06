@@ -40,6 +40,8 @@ import {
 import { setAppLanguage } from '../i18n/config';
 import { soundService } from '../services/soundNotificationService';
 import { InTripChatModal } from '../components/booking/InTripChatModal';
+import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
+import { subscribeToTripChat } from '../services/tripChatService';
 
 interface PassengerHomeProps {
   onOpenAuthModal?: () => void;
@@ -102,8 +104,19 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const [showPassengerCancelModal, setShowPassengerCancelModal] = useState<boolean>(false);
   const [isCancellingBooking, setIsCancellingBooking] = useState<boolean>(false);
 
-  // In-Trip Chat Modal State
+  // In-Trip Chat Modal & Notification State
   const [showChatModal, setShowChatModal] = useState<boolean>(false);
+  const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeBooking?.id) return;
+    const unsubscribe = subscribeToTripChat(activeBooking.id, (newMsg) => {
+      if (newMsg.senderId !== (user?.id || 'passenger') && !showChatModal) {
+        setUnreadChatCount((prev) => prev + 1);
+      }
+    });
+    return () => unsubscribe();
+  }, [activeBooking?.id, user?.id, showChatModal]);
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
@@ -698,11 +711,19 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setShowChatModal(true)}
-                    className="p-2.5 sm:p-3 rounded-xl bg-[#0052d1] text-white shadow-md hover:bg-[#003f9e] shrink-0 transition-transform active:scale-95 flex items-center justify-center cursor-pointer"
+                    onClick={() => {
+                      setShowChatModal(true);
+                      setUnreadChatCount(0);
+                    }}
+                    className="p-2.5 sm:p-3 rounded-xl bg-[#0052d1] text-white shadow-md hover:bg-[#003f9e] shrink-0 transition-transform active:scale-95 flex items-center justify-center cursor-pointer relative"
                     title="Mensahe sa Drayber"
                   >
                     <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    {unreadChatCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center animate-pulse shadow-sm">
+                        {unreadChatCount}
+                      </span>
+                    )}
                   </button>
                   {activeBooking.driver?.profile?.phone_number && (
                     <a
@@ -941,6 +962,19 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           currentUserName={user?.full_name || 'Pasahero'}
           otherPartyName={activeBooking.driver?.profile?.full_name ? `${activeBooking.driver.profile.full_name} (Body #${activeBooking.driver.body_number || 'Tricycle'})` : 'Tricycle Driver'}
           otherPartySubtitle={`${activeBooking.origin_name} ➔ ${activeBooking.destination_name}`}
+        />
+      )}
+
+      {/* 8. IN-PHONE MESSAGE NOTIFICATION BANNER (HEADS-UP TOAST) */}
+      {activeBooking && (
+        <InPhoneMessageBanner
+          bookingId={activeBooking.id}
+          currentUserId={user?.id || 'passenger'}
+          isChatOpen={showChatModal}
+          onOpenChat={() => {
+            setShowChatModal(true);
+            setUnreadChatCount(0);
+          }}
         />
       )}
 
