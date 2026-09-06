@@ -47,7 +47,11 @@ export const DriverDispatch: React.FC = () => {
     };
     loadDispatches();
 
-    const unsubscribe = subscribeToOpenDispatches(() => {
+    const unsubscribe = subscribeToOpenDispatches((detail) => {
+      if (detail?.id && detail.status && detail.status !== 'searching') {
+        setOpenDispatches(prev => prev.filter(b => b.id !== detail.id));
+        setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
+      }
       loadDispatches();
     });
 
@@ -58,7 +62,17 @@ export const DriverDispatch: React.FC = () => {
     };
   }, [user?.id]);
 
+  // Auto-dismiss preview modal if booking was cancelled by passenger or taken by another driver
+  useEffect(() => {
+    if (previewBooking && openDispatches.length > 0 && !openDispatches.some(b => b.id === previewBooking.id)) {
+      setPreviewBooking(null);
+    }
+  }, [openDispatches, previewBooking]);
+
   const handleAcceptBooking = async (booking: Booking) => {
+    // Immediately remove accepted booking from queue
+    setOpenDispatches(prev => prev.filter(b => b.id !== booking.id));
+    setPreviewBooking(null);
     setActiveTrip(booking);
     setTripState('assigned');
     await updateBookingStatus(booking.id, 'driver_assigned', driverProfile?.id || user?.id);

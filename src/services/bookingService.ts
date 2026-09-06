@@ -71,7 +71,7 @@ export const createBookingRequest = async (params: {
   }
 };
 
-export const subscribeToOpenDispatches = (onUpdate: () => void) => {
+export const subscribeToOpenDispatches = (onUpdate: (detail?: any) => void) => {
   const channel = supabase
     .channel('open-dispatches-live')
     .on(
@@ -81,22 +81,24 @@ export const subscribeToOpenDispatches = (onUpdate: () => void) => {
         schema: 'public',
         table: 'bookings'
       },
-      () => {
-        onUpdate();
+      (payload) => {
+        onUpdate(payload?.new || payload?.old);
       }
     )
     .subscribe();
 
-  const handleLocal = () => {
-    onUpdate();
+  const handleLocal = (e: any) => {
+    onUpdate(e?.detail);
   };
 
   window.addEventListener('pasada_new_dispatch', handleLocal);
+  window.addEventListener('pasada_booking_updated', handleLocal);
   window.addEventListener('storage', handleLocal);
 
   return () => {
     supabase.removeChannel(channel);
     window.removeEventListener('pasada_new_dispatch', handleLocal);
+    window.removeEventListener('pasada_booking_updated', handleLocal);
     window.removeEventListener('storage', handleLocal);
   };
 };
@@ -183,101 +185,115 @@ export const updateBookingStatus = async (
 
     let validDriverId: string | undefined = driverId;
 
-    // Check if driverId exists in Supabase drivers table to avoid 409 Conflict foreign key errors
-    if (validDriverId) {
-      const { data: driverRow } = await supabase
-        .from('drivers')
-        .select('id')
-        .eq('id', validDriverId)
-        .maybeSingle();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const isUuid = uuidRegex.test(bookingId);
 
-      if (!driverRow) {
-        // Look up any available driver in the DB as fallback
-        const { data: anyDriver } = await supabase
+    // Synchronize local storage dispatches queue immediately:
+    // If status is cancelled, driver_assigned, or completed, purge it from open queue so it disappears instantly!
+    try {
+      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+      let updatedQueue: Booking[];
+      if (status !== 'searching') {
+        updatedQueue = queue.filter((b: Booking) => b.id !== bookingId);
+      } else {
+        updatedQueue = queue.map((b: Booking) => b.id === bookingId ? { ...b, ...updates, driver_id: validDriverId || driverId } : b);
+      }
+      localStorage.setItem('pasada_open_queue', JSON.stringify(updatedQueue));
+      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
+      window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
+    } catch {}
+
+    // Check if driverId exists in Supabase drivers table to avoid foreign key errors
+    if (validDriverId && isUuid) {
+      try {
+        const { data: driverRow } = await supabase
           .from('drivers')
           .select('id')
-          .limit(1)
+          .eq('id', validDriverId)
           .maybeSingle();
 
-        if (anyDriver) {
-          validDriverId = anyDriver.id;
-        } else {
-          validDriverId = undefined;
+        if (!driverRow) {
+          const { data: anyDriver } = await supabase
+            .from('drivers')
+            .select('id')
+            .limit(1)
+            .maybeSingle();
+
+          if (anyDriver) {
+            validDriverId = anyDriver.id;
+          } else {
+            validDriverId = undefined;
+          }
         }
-      }
+      } catch {}
     }
 
     if (validDriverId) {
       updates.driver_id = validDriverId;
     }
 
-    let { error } = await supabase
-      .from('bookings')
-      .update(updates)
-      .eq('id', bookingId);
-
-    // If a foreign key constraint violation (409 Conflict / 23503) still occurs, retry safely without driver_id
-    if (error && (error.code === '23503' || (error as any).status === 409 || error.message?.includes('foreign key') || error.message?.includes('Conflict'))) {
-      const safeUpdates = { ...updates };
-      delete safeUpdates.driver_id;
-      const retry = await supabase
+    // Only attempt Supabase update if bookingId is a valid UUID
+    if (isUuid) {
+      let { error } = await supabase
         .from('bookings')
-        .update(safeUpdates)
+        .update(updates)
         .eq('id', bookingId);
-      error = retry.error;
-    }
 
-    if (error) throw error;
+      // If a foreign key constraint violation occurs, retry safely without driver_id
+      if (error && (error.code === '23503' || (error as any).status === 409 || error.message?.includes('foreign key') || error.message?.includes('Conflict'))) {
+        const safeUpdates = { ...updates };
+        delete safeUpdates.driver_id;
+        const retry = await supabase
+          .from('bookings')
+          .update(safeUpdates)
+          .eq('id', bookingId);
+        error = retry.error;
+      }
 
-    // Driver State Synchronization
-    if (validDriverId) {
-      if (status === 'driver_assigned') {
-        // Lock driver from receiving new calls while on trip
-        try {
-          await supabase
-            .from('drivers')
-            .update({ is_available: false })
-            .eq('id', validDriverId);
-        } catch {}
-      } else if (status === 'completed') {
-        // Restore driver availability and increment metrics
-        try {
-          const { data: driverData } = await supabase
-            .from('drivers')
-            .select('earnings_today, total_trips')
-            .eq('id', validDriverId)
-            .single();
+      if (error) {
+        console.warn('Booking status update note:', error.message);
+      }
 
-          const prevEarnings = Number(driverData?.earnings_today || 0);
-          const prevTrips = Number(driverData?.total_trips || 0);
-          const addedFare = Number(finalFare || 0);
-
-          await supabase
-            .from('drivers')
-            .update({
-              is_available: true,
-              earnings_today: prevEarnings + addedFare,
-              total_trips: prevTrips + 1
-            })
-            .eq('id', validDriverId);
-        } catch {
+      // Driver State Synchronization in DB
+      if (validDriverId) {
+        if (status === 'driver_assigned') {
           try {
             await supabase
               .from('drivers')
-              .update({ is_available: true })
+              .update({ is_available: false })
               .eq('id', validDriverId);
           } catch {}
+        } else if (status === 'completed') {
+          try {
+            const { data: driverData } = await supabase
+              .from('drivers')
+              .select('earnings_today, total_trips')
+              .eq('id', validDriverId)
+              .single();
+
+            const prevEarnings = Number(driverData?.earnings_today || 0);
+            const prevTrips = Number(driverData?.total_trips || 0);
+            const addedFare = Number(finalFare || 0);
+
+            await supabase
+              .from('drivers')
+              .update({
+                is_available: true,
+                earnings_today: prevEarnings + addedFare,
+                total_trips: prevTrips + 1
+              })
+              .eq('id', validDriverId);
+          } catch {
+            try {
+              await supabase
+                .from('drivers')
+                .update({ is_available: true })
+                .eq('id', validDriverId);
+            } catch {}
+          }
         }
       }
     }
-
-    // Also update local storage dispatches queue for instant same-browser testing tabs
-    try {
-      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
-      const updatedQueue = queue.map((b: Booking) => b.id === bookingId ? { ...b, ...updates, driver_id: validDriverId || driverId } : b);
-      localStorage.setItem('pasada_open_queue', JSON.stringify(updatedQueue));
-      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
-    } catch {}
 
     return { success: true };
   } catch (err: any) {
@@ -461,16 +477,27 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
       .order('created_at', { ascending: false });
 
     const serverBookings: Booking[] = (!error && data) ? (data as Booking[]) : [];
-    
+
     let localQueue: Booking[] = [];
     try {
       localQueue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]')
-        .filter((b: Booking) => b.status === 'searching');
+        .filter((b: Booking) => b && b.status === 'searching');
     } catch {}
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    // If Supabase returned results, any UUID-based booking not in serverBookings is no longer searching
+    if (!error && data) {
+      const serverIds = new Set(serverBookings.map(b => b.id));
+      localQueue = localQueue.filter(b => !uuidRegex.test(b.id) || serverIds.has(b.id));
+      try {
+        localStorage.setItem('pasada_open_queue', JSON.stringify(localQueue));
+      } catch {}
+    }
 
     const map = new Map<string, Booking>();
     [...serverBookings, ...localQueue].forEach(b => {
-      if (b && b.id && !map.has(b.id)) {
+      if (b && b.id && b.status === 'searching' && !map.has(b.id)) {
         map.set(b.id, b);
       }
     });

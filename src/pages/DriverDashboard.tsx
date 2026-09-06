@@ -55,7 +55,11 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
 
     loadDispatches();
 
-    const unsubscribe = subscribeToOpenDispatches(() => {
+    const unsubscribe = subscribeToOpenDispatches((detail) => {
+      if (detail?.id && detail.status && detail.status !== 'searching') {
+        setOpenDispatches(prev => prev.filter(b => b.id !== detail.id));
+        setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
+      }
       loadDispatches();
     });
 
@@ -65,6 +69,13 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       clearInterval(interval);
     };
   }, [user?.id]);
+
+  // Auto-dismiss preview modal if booking was cancelled by passenger or accepted by another driver
+  useEffect(() => {
+    if (previewBooking && openDispatches.length > 0 && !openDispatches.some(b => b.id === previewBooking.id)) {
+      setPreviewBooking(null);
+    }
+  }, [openDispatches, previewBooking]);
 
   if (!user || user.role !== 'driver') {
     return null;
@@ -322,6 +333,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
           onClose={() => setPreviewBooking(null)}
           onAccept={async (bk) => {
             setPreviewBooking(null);
+            setOpenDispatches(prev => prev.filter(b => b.id !== bk.id));
             await updateBookingStatus(bk.id, 'driver_assigned', driverProfile?.id || user?.id);
             if (setActiveTab) {
               setActiveTab('dispatch');

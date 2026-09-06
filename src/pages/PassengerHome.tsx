@@ -346,7 +346,15 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const handleConfirmCancelBooking = async () => {
     setIsCancellingBooking(true);
     if (activeBooking?.id) {
-      await updateBookingStatus(activeBooking.id, 'cancelled');
+      const cancelId = activeBooking.id;
+      try {
+        const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+        const filtered = queue.filter((b: Booking) => b.id !== cancelId);
+        localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+        window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: cancelId, status: 'cancelled' } }));
+        window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: cancelId, status: 'cancelled' } }));
+      } catch {}
+      await updateBookingStatus(cancelId, 'cancelled');
     }
     setIsCancellingBooking(false);
     setShowPassengerCancelModal(false);
