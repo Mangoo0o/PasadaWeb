@@ -12,10 +12,15 @@ import {
   Sparkles,
   AlertCircle,
   AlertTriangle,
-  LocateFixed
+  LocateFixed,
+  MessageSquare
 } from 'lucide-react';
 import { Booking } from '../types/database.types';
 import { updateBookingStatus } from '../services/bookingService';
+import { useAuth } from '../hooks/useAuth';
+import { broadcastDriverLocation } from '../services/driverTrackingService';
+import { soundService } from '../services/soundNotificationService';
+import { InTripChatModal } from '../components/booking/InTripChatModal';
 
 interface DriverTravelPageProps {
   booking: Booking;
@@ -139,6 +144,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   driverLng,
   onExitTravel,
 }) => {
+  const { user, driverProfile } = useAuth();
+  const activeDriverId = driverProfile?.id || booking.driver_id || user?.id;
+
   // 1. Initial coordinates with Bauang vicinity safety fallback
   const rawDriverLat = Number(driverLat) || 16.5333;
   const rawDriverLng = Number(driverLng) || 120.3333;
@@ -170,6 +178,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
           const lng = pos.coords.longitude;
           if (isBauangVicinity(lat, lng)) {
             setDriverCoords([lat, lng]);
+            if (activeDriverId) {
+              broadcastDriverLocation(activeDriverId, {
+                lat,
+                lng,
+                heading: pos.coords.heading,
+                speed: pos.coords.speed
+              });
+            }
           }
         },
         () => {},
@@ -181,7 +197,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, []);
+  }, [activeDriverId]);
 
   const [tripState, setTripState] = useState<'assigned' | 'arrived' | 'in_transit' | 'completed'>(() => {
     if (booking.status === 'driver_arrived') return 'arrived';
@@ -203,6 +219,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
   const [completedFare, setCompletedFare] = useState<number | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [focusKey, setFocusKey] = useState<number>(0);
 
@@ -251,6 +268,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     const fare = booking.estimated_fare;
     setTripState('completed');
     setCompletedFare(fare);
+    soundService.playTripCompletedAlert();
     await updateBookingStatus(booking.id, 'completed', booking.driver_id, fare);
   };
 
@@ -302,6 +320,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowChatModal(true)}
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0052d1] hover:bg-[#003f9e] text-white shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+                title="Mensahe sa Pasahero"
+              >
+                <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </button>
               {booking.passenger?.phone_number && (
                 <a
                   href={`tel:${booking.passenger.phone_number}`}
@@ -619,6 +645,18 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* 6. IN-TRIP CHAT MODAL */}
+      <InTripChatModal
+        isOpen={showChatModal}
+        onClose={() => setShowChatModal(false)}
+        bookingId={booking.id}
+        currentUserId={activeDriverId || 'driver'}
+        currentUserRole="driver"
+        currentUserName={driverProfile?.tricycle_model ? `Driver (${driverProfile.body_number || 'Tricycle'})` : 'Driver'}
+        otherPartyName={booking.passenger?.full_name || 'Pasahero'}
+        otherPartySubtitle={`${booking.origin_name} ➔ ${booking.destination_name}`}
+      />
 
     </div>
   );

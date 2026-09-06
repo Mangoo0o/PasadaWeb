@@ -63,7 +63,8 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       loadDispatches();
     });
 
-    const interval = setInterval(loadDispatches, 3000);
+    // Relaxed 30-second synchronization heartbeat instead of aggressive 3s polling
+    const interval = setInterval(loadDispatches, 30000);
     return () => {
       unsubscribe();
       clearInterval(interval);

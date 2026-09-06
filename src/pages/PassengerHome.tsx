@@ -15,7 +15,8 @@ import {
   MapPin,
   Sparkles,
   Navigation,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -37,6 +38,8 @@ import {
   submitPassengerRating
 } from '../services/bookingService';
 import { setAppLanguage } from '../i18n/config';
+import { soundService } from '../services/soundNotificationService';
+import { InTripChatModal } from '../components/booking/InTripChatModal';
 
 interface PassengerHomeProps {
   onOpenAuthModal?: () => void;
@@ -98,6 +101,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   // Cancel Confirmation Modal State
   const [showPassengerCancelModal, setShowPassengerCancelModal] = useState<boolean>(false);
   const [isCancellingBooking, setIsCancellingBooking] = useState<boolean>(false);
+
+  // In-Trip Chat Modal State
+  const [showChatModal, setShowChatModal] = useState<boolean>(false);
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
@@ -242,13 +248,27 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     const unsubscribe = subscribeToBooking(activeBooking.id, (updated) => {
       setActiveBooking(updated);
       if (updated.status === 'driver_assigned') {
-        setBookingState('assigned');
+        setBookingState((prev) => {
+          if (prev !== 'assigned') {
+            soundService.showDeviceNotification(
+              'May Drayber Na Ang Iyong Biyahe!',
+              `Papunta na si Manong Driver (Body #${updated.driver?.body_number || 'Tricycle'}).`
+            );
+          }
+          return 'assigned';
+        });
       } else if (updated.status === 'driver_arrived') {
-        setBookingState('arrived');
+        setBookingState((prev) => {
+          if (prev !== 'arrived') {
+            soundService.playDriverArrivedAlert(updated.driver?.profile?.full_name);
+          }
+          return 'arrived';
+        });
       } else if (updated.status === 'in_transit') {
         setBookingState('in_transit');
       } else if (updated.status === 'completed') {
         setBookingState('completed');
+        soundService.playTripCompletedAlert();
         setShowRatingModal(true);
       } else if (updated.status === 'cancelled') {
         setBookingState('idle');
@@ -675,15 +695,25 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   </div>
                 </div>
 
-                {activeBooking.driver?.profile?.phone_number && (
-                  <a
-                    href={`tel:${activeBooking.driver.profile.phone_number}`}
-                    className="p-2.5 sm:p-3 rounded-xl bg-emerald-600 text-white shadow-md hover:bg-emerald-700 shrink-0 transition-transform active:scale-95 flex items-center justify-center"
-                    title="Tawagan ang Driver"
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowChatModal(true)}
+                    className="p-2.5 sm:p-3 rounded-xl bg-[#0052d1] text-white shadow-md hover:bg-[#003f9e] shrink-0 transition-transform active:scale-95 flex items-center justify-center cursor-pointer"
+                    title="Mensahe sa Drayber"
                   >
-                    <PhoneCall className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </a>
-                )}
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                  {activeBooking.driver?.profile?.phone_number && (
+                    <a
+                      href={`tel:${activeBooking.driver.profile.phone_number}`}
+                      className="p-2.5 sm:p-3 rounded-xl bg-emerald-600 text-white shadow-md hover:bg-emerald-700 shrink-0 transition-transform active:scale-95 flex items-center justify-center"
+                      title="Tawagan ang Driver"
+                    >
+                      <PhoneCall className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </a>
+                  )}
+                </div>
               </div>
 
               <button
@@ -709,13 +739,23 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {i18n.language === 'en' ? `Please look out for Driver with Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).` : `Paki-abangan si Manong Driver na may Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).`}
               </p>
 
-              <button
-                onClick={handleCancelBooking}
-                className="w-full py-1.5 sm:py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
-              </button>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowChatModal(true)}
+                  className="flex-1 py-1.5 sm:py-2 rounded-xl bg-white text-[#0052d1] font-bold text-[11px] sm:text-xs shadow-sm hover:bg-sky-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe sa Driver'}</span>
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  className="py-1.5 sm:py-2 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kanselahin'}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -734,13 +774,23 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {i18n.language === 'en' ? 'Heading to:' : 'Patungong:'} {selectedLocationFare?.location_name || destinationName}
               </div>
 
-              <button
-                onClick={handleCancelBooking}
-                className="w-full py-1.5 sm:py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
-              </button>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowChatModal(true)}
+                  className="flex-1 py-1.5 sm:py-2 rounded-xl bg-sky-50 text-[#0052d1] dark:bg-sky-950/60 dark:text-sky-300 font-bold text-[11px] sm:text-xs border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe sa Driver'}</span>
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  className="py-1.5 sm:py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kanselahin'}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -878,6 +928,20 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             </div>
           </div>
         </div>
+      )}
+
+      {/* 7. IN-TRIP CHAT MODAL */}
+      {activeBooking && (
+        <InTripChatModal
+          isOpen={showChatModal}
+          onClose={() => setShowChatModal(false)}
+          bookingId={activeBooking.id}
+          currentUserId={user?.id || 'passenger'}
+          currentUserRole="passenger"
+          currentUserName={user?.full_name || 'Pasahero'}
+          otherPartyName={activeBooking.driver?.profile?.full_name ? `${activeBooking.driver.profile.full_name} (Body #${activeBooking.driver.body_number || 'Tricycle'})` : 'Tricycle Driver'}
+          otherPartySubtitle={`${activeBooking.origin_name} ➔ ${activeBooking.destination_name}`}
+        />
       )}
 
     </div>

@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Terminal, LocationFare } from '../../types/database.types';
 import { getLocationIconEmoji } from '../../services/fareService';
+import { subscribeToDriverLocation } from '../../services/driverTrackingService';
 
 // Custom SVG Icons
 const createTricycleIcon = () => {
@@ -234,9 +235,29 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const [roadRouteCoords, setRoadRouteCoords] = useState<[number, number][]>([]);
   const [driverToPickupRoute, setDriverToPickupRoute] = useState<[number, number][]>([]);
 
-  // Assigned driver coordinates
-  const rawAssignedLat = Number(assignedDriver?.current_lat) || 16.5333;
-  const rawAssignedLng = Number(assignedDriver?.current_lng) || 120.3333;
+  // Live moving coordinates state for assigned driver
+  const [liveDriverCoords, setLiveDriverCoords] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (!assignedDriver?.id) {
+      setLiveDriverCoords(null);
+      return;
+    }
+
+    const unsubscribe = subscribeToDriverLocation(assignedDriver.id, (coords) => {
+      if (coords.lat && coords.lng && isBauangVicinity(coords.lat, coords.lng)) {
+        setLiveDriverCoords([coords.lat, coords.lng]);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [assignedDriver?.id]);
+
+  // Assigned driver coordinates (prefers real-time moving coordinates if available)
+  const rawAssignedLat = liveDriverCoords ? liveDriverCoords[0] : (Number(assignedDriver?.current_lat) || 16.5333);
+  const rawAssignedLng = liveDriverCoords ? liveDriverCoords[1] : (Number(assignedDriver?.current_lng) || 120.3333);
   const assignedDriverCoords: [number, number] = [
     isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLat : 16.5333,
     isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLng : 120.3333,

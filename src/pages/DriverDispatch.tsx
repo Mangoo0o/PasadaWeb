@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Bike, 
@@ -11,11 +11,14 @@ import {
   Power,
   LogOut,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, updateBookingStatus, subscribeToOpenDispatches, fetchActiveTrip } from '../services/bookingService';
+import { soundService } from '../services/soundNotificationService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
 import { DriverTravelPage } from './DriverTravelPage';
@@ -30,6 +33,8 @@ export const DriverDispatch: React.FC = () => {
   const [tripState, setTripState] = useState<'idle' | 'assigned' | 'arrived' | 'in_transit' | 'completed'>('idle');
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [completedFare, setCompletedFare] = useState<number | null>(null);
+  const [isSoundOn, setIsSoundOn] = useState(() => soundService.isSoundEnabled());
+  const knownDispatchIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const loadDispatches = async () => {
@@ -44,6 +49,19 @@ export const DriverDispatch: React.FC = () => {
       }
       const dispatches = await fetchOpenDispatches();
       setOpenDispatches(dispatches);
+
+      // Play audio notification chime & device vibration on newly arrived dispatch
+      if (isOnline && !activeTrip) {
+        const freshDispatches = dispatches.filter(d => !knownDispatchIdsRef.current.has(d.id));
+        if (freshDispatches.length > 0 && knownDispatchIdsRef.current.size > 0) {
+          const newest = freshDispatches[0];
+          soundService.playDispatchAlert({
+            pickupName: newest.origin_name,
+            fare: newest.estimated_fare
+          });
+        }
+      }
+      knownDispatchIdsRef.current = new Set(dispatches.map(d => d.id));
     };
     loadDispatches();
 
@@ -55,12 +73,13 @@ export const DriverDispatch: React.FC = () => {
       loadDispatches();
     });
 
-    const interval = setInterval(loadDispatches, 2000);
+    // Relaxed 30-second synchronization heartbeat instead of aggressive 2s polling
+    const interval = setInterval(loadDispatches, 30000);
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [user?.id]);
+  }, [user?.id, isOnline, activeTrip]);
 
   // Auto-dismiss preview modal if booking was cancelled by passenger or taken by another driver
   useEffect(() => {
@@ -144,6 +163,23 @@ export const DriverDispatch: React.FC = () => {
 
         {/* Driver Quick Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              const next = soundService.toggleSound();
+              setIsSoundOn(next);
+              if (next) soundService.requestPermission();
+            }}
+            className={`p-1.5 sm:p-2 rounded-xl border transition-colors shadow-sm cursor-pointer shrink-0 ${
+              isSoundOn
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+            }`}
+            title={isSoundOn ? 'Naka-on ang Sound Alert' : 'Naka-mute ang Sound Alert'}
+          >
+            {isSoundOn ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+          </button>
+
           <button
             onClick={toggleDriverAvailability}
             className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-bold text-[10px] sm:text-xs shadow-sm transition-all active:scale-95 cursor-pointer ${
