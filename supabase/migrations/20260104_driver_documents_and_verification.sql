@@ -19,8 +19,11 @@ create table if not exists public.driver_documents (
 alter table public.drivers 
   add column if not exists rejection_reason text,
   add column if not exists documents_submitted_at timestamptz,
-  add column if not exists reviewed_by uuid references public.profiles(id),
+  add column if not exists reviewed_by uuid,
   add column if not exists reviewed_at timestamptz;
+
+-- Drop foreign key constraint on reviewed_by if it exists (allows mock super-admin or non-profile admin IDs)
+alter table public.drivers drop constraint if exists drivers_reviewed_by_fkey;
 
 -- 3. Set default verification_status in drivers to 'pending'
 alter table public.drivers alter column verification_status set default 'pending';

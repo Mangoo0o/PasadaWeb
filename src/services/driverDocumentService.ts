@@ -238,13 +238,26 @@ export async function updateDriverVerificationStatus(
       updatePayload.rejection_reason = null;
     }
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('drivers')
       .update(updatePayload)
       .eq('id', driverId);
 
+    // Fallback: if update fails (e.g. 409 Conflict due to foreign key on reviewed_by), retry without reviewed_by
+    if (error && updatePayload.reviewed_by) {
+      console.warn('Driver update failed with reviewed_by; retrying without reviewed_by:', error.message);
+      const fallbackPayload = { ...updatePayload };
+      delete fallbackPayload.reviewed_by;
+      const retry = await supabase
+        .from('drivers')
+        .update(fallbackPayload)
+        .eq('id', driverId);
+      error = retry.error;
+    }
+
     if (error) {
       console.warn('Error updating driver verification status in DB:', error.message);
+      return { success: false, error: error.message };
     }
 
     // Update document statuses
