@@ -93,8 +93,13 @@ export const App: React.FC = () => {
 
   if (isDriver && !isDriverApproved) {
     return (
-      <div className="min-h-screen min-h-[100dvh] w-full bg-[#f4faff] dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-y-auto antialiased flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 selection:bg-[#0052d1] selection:text-white">
-        <DriverVerificationGate />
+      <div 
+        className="fixed inset-0 w-full h-full overflow-y-auto overscroll-contain touch-pan-y bg-[#f4faff] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-[#0052d1] selection:text-white z-50 p-3 sm:p-6"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <div className="min-h-full w-full flex flex-col items-center justify-start py-2 sm:py-6">
+          <DriverVerificationGate />
+        </div>
       </div>
     );
   }

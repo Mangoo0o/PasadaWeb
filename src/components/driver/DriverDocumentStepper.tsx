@@ -186,7 +186,7 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
   const countAttached = REQUIRED_DRIVER_DOCUMENTS.filter(r => hasDocument(r.type)).length;
 
   return (
-    <div className="w-full max-w-lg mx-auto font-sans">
+    <div className="w-full max-w-lg mx-auto font-sans pb-16 sm:pb-20">
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden flex flex-col">
         
         {/* 1. Header Section */}

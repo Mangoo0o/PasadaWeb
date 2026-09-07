@@ -114,7 +114,7 @@ export const DriverVerificationGate: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto font-sans">
+    <div className="w-full max-w-lg mx-auto font-sans pb-16 sm:pb-20">
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden flex flex-col">
         
         {/* 1. Integrated Header Section */}
@@ -132,10 +132,6 @@ export const DriverVerificationGate: React.FC = () => {
               <span className="text-slate-400 font-normal">•</span>
               <span className="font-mono text-[11px]">
                 {driverProfile?.plate_number || 'Tricycle'} (#{driverProfile?.body_number || '0142'})
-              </span>
-              <span className="text-slate-400 font-normal">|</span>
-              <span className="text-[11px] text-[#0052d1] dark:text-sky-400 font-semibold truncate max-w-[130px]">
-                {driverProfile?.terminal_name || 'Bauang Central TODA'}
               </span>
             </div>
 
