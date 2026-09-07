@@ -351,7 +351,11 @@ const AdminContent: React.FC = () => {
   const handleUpdateDriverStatus = async (profileId: string, status: VerificationStatus, reason?: string) => {
     setDrivers(prev => prev.map(d => (d.profile_id === profileId || d.id === profileId) ? { ...d, verification_status: status, rejection_reason: reason } : d));
     
-    await updateDriverVerificationStatus(profileId, status, reason, user.id);
+    const res = await updateDriverVerificationStatus(profileId, status, reason, user.id);
+    if (!res.success) {
+      console.warn('Update driver verification status warning:', res.error);
+      throw new Error(res.error || 'Failed to update verification status');
+    }
 
     const driver = drivers.find(d => d.profile_id === profileId || d.id === profileId);
     const log: AdminAction = {

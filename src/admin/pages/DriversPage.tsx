@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Car, 
   CheckCircle, 
@@ -58,6 +58,17 @@ export const DriversPage: React.FC<DriversPageProps> = ({
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
   const [isExpandedPreview, setIsExpandedPreview] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+  // Synchronize selectedDriver when drivers prop updates from parent / realtime
+  useEffect(() => {
+    if (selectedDriver) {
+      const updated = drivers.find(d => (d.profile_id || d.id) === (selectedDriver.profile_id || selectedDriver.id));
+      if (updated && updated.verification_status !== selectedDriver.verification_status) {
+        setSelectedDriver(updated);
+      }
+    }
+  }, [drivers, selectedDriver]);
 
   const filteredDrivers = drivers.filter(d => {
     const matchesStatus = filterStatus === 'all' || d.verification_status === filterStatus;
@@ -83,27 +94,49 @@ export const DriversPage: React.FC<DriversPageProps> = ({
     setLoadingDocs(false);
   };
 
-  const handleApprove = (driverId: string) => {
-    onUpdateStatus(driverId, 'approved');
-    setActionSuccessMessage('Matagumpay na naaprubahan ang driver franchise!');
-    setTimeout(() => {
-      setIsDocModalOpen(false);
-      setActionSuccessMessage(null);
-    }, 1200);
+  const handleApprove = async (driverId: string) => {
+    setIsProcessingAction(true);
+    try {
+      await onUpdateStatus(driverId, 'approved');
+      if (selectedDriver) {
+        setSelectedDriver(prev => prev ? { ...prev, verification_status: 'approved' } : null);
+      }
+      setDriverDocs(prev => prev.map(d => ({ ...d, status: 'approved' as any })));
+      setActionSuccessMessage('Matagumpay na naaprubahan ang driver franchise!');
+      setTimeout(() => {
+        setIsDocModalOpen(false);
+        setActionSuccessMessage(null);
+        setIsProcessingAction(false);
+      }, 1000);
+    } catch (err: any) {
+      alert(`Error approving driver: ${err?.message || 'Failed'}`);
+      setIsProcessingAction(false);
+    }
   };
 
-  const handleConfirmReject = (driverId: string) => {
+  const handleConfirmReject = async (driverId: string) => {
     if (!rejectionReason.trim()) {
       alert('Paki-lagay ang dahilan ng pag-reject upang malaman ng driver ang dapat ayusin.');
       return;
     }
-    onUpdateStatus(driverId, 'rejected', rejectionReason.trim());
-    setActionSuccessMessage('Nai-record na ang rejection at feedback para sa driver.');
-    setTimeout(() => {
-      setIsDocModalOpen(false);
-      setIsRejecting(false);
-      setActionSuccessMessage(null);
-    }, 1200);
+    setIsProcessingAction(true);
+    try {
+      await onUpdateStatus(driverId, 'rejected', rejectionReason.trim());
+      if (selectedDriver) {
+        setSelectedDriver(prev => prev ? { ...prev, verification_status: 'rejected', rejection_reason: rejectionReason.trim() } : null);
+      }
+      setDriverDocs(prev => prev.map(d => ({ ...d, status: 'rejected' as any })));
+      setActionSuccessMessage('Nai-record na ang rejection at feedback para sa driver.');
+      setTimeout(() => {
+        setIsDocModalOpen(false);
+        setIsRejecting(false);
+        setActionSuccessMessage(null);
+        setIsProcessingAction(false);
+      }, 1000);
+    } catch (err: any) {
+      alert(`Error rejecting driver: ${err?.message || 'Failed'}`);
+      setIsProcessingAction(false);
+    }
   };
 
   const getStatusBadge = (status: VerificationStatus) => {
@@ -679,21 +712,35 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 {/* Right: Approval & Rejection Actions */}
                 {!isRejecting && (
                   <div className="flex items-center gap-2 ml-auto">
-                    <button
-                      onClick={() => setIsRejecting(true)}
-                      className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors active:scale-95"
-                    >
-                      <XCircle size={14} />
-                      <span>Reject Application</span>
-                    </button>
+                    {selectedDriver.verification_status === 'approved' ? (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black">
+                        <CheckCircle size={14} /> Naaprubahan na (Approved)
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setIsRejecting(true)}
+                          disabled={isProcessingAction}
+                          className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          <XCircle size={14} />
+                          <span>Reject Application</span>
+                        </button>
 
-                    <button
-                      onClick={() => handleApprove(selectedDriver.profile_id || selectedDriver.id || '')}
-                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
-                    >
-                      <CheckCircle size={14} />
-                      <span>Approve Documents & Account</span>
-                    </button>
+                        <button
+                          onClick={() => handleApprove(selectedDriver.profile_id || selectedDriver.id || '')}
+                          disabled={isProcessingAction}
+                          className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {isProcessingAction ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <CheckCircle size={14} />
+                          )}
+                          <span>{isProcessingAction ? 'Inaaprubahan...' : 'Approve Documents & Account'}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

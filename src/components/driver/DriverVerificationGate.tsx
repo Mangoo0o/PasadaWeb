@@ -24,7 +24,7 @@ import {
 import { DriverDocumentStepper } from './DriverDocumentStepper';
 
 export const DriverVerificationGate: React.FC = () => {
-  const { user, driverProfile, signOut } = useAuth();
+  const { user, driverProfile, signOut, refreshDriverProfile } = useAuth();
   const [documents, setDocuments] = useState<DriverDocument[]>(() => {
     if (user?.id) {
       try {
@@ -57,15 +57,23 @@ export const DriverVerificationGate: React.FC = () => {
 
   useEffect(() => {
     loadDocuments();
+    refreshDriverProfile?.();
+
+    // Auto-poll verification status every 3 seconds so the driver is instantly admitted upon admin approval
+    const interval = setInterval(() => {
+      refreshDriverProfile?.();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadDocuments();
-    // Reload page or force auth sync
-    setTimeout(() => {
-      window.location.reload();
-    }, 600);
+    await Promise.all([
+      refreshDriverProfile?.(),
+      loadDocuments()
+    ]);
+    setIsRefreshing(false);
   };
 
   const handleReupload = async (type: DriverDocumentType, file: File) => {

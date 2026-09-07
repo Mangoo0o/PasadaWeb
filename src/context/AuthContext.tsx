@@ -29,6 +29,7 @@ export interface AuthContextType {
   toggleDriverAvailability: () => Promise<void>;
   updateUserProfile: (updates: Partial<Profile>) => Promise<void>;
   setLanguage: (lang: 'en' | 'fil') => Promise<void>;
+  refreshDriverProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,8 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
+        const activeUserId = session?.user?.id || user?.id;
+        if (activeUserId) {
+          await loadUserProfile(activeUserId, session?.user);
         }
       } catch (err) {
         console.warn("Auth initialization note:", err);
@@ -420,6 +422,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setDriverProfile(regUser.driverProfile);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
           }
+          if (regUser.profile?.id) {
+            loadUserProfile(regUser.profile.id).catch(() => {});
+          }
           return {};
         }
       } catch {}
@@ -737,6 +742,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshDriverProfile = async () => {
+    const targetId = user?.id || driverProfile?.id;
+    if (!targetId) return;
+
+    try {
+      const { data: dProfile, error } = await supabase
+        .from('drivers')
+        .select('*, terminals(name)')
+        .eq('id', targetId)
+        .single();
+
+      if (!error && dProfile) {
+        const driverObj: DriverProfile = {
+          ...dProfile,
+          terminal_name: dProfile.terminals?.name || 'Bauang Central TODA'
+        };
+        setDriverProfile(driverObj);
+        localStorage.setItem('pasada_auth_driver', JSON.stringify(driverObj));
+
+        // Sync local registered users map if this driver was registered locally
+        try {
+          const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+          let changed = false;
+          for (const key of Object.keys(regMap)) {
+            if (regMap[key]?.profile?.id === targetId || regMap[key]?.driverProfile?.id === targetId) {
+              regMap[key].driverProfile = driverObj;
+              changed = true;
+            }
+          }
+          if (changed) {
+            localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+          }
+        } catch {}
+      }
+    } catch (err) {
+      console.warn("refreshDriverProfile note:", err);
+    }
+  };
+
+  // Realtime subscription for driver profile updates (e.g. admin approval/rejection)
+  useEffect(() => {
+    if (!user?.id || user.role !== 'driver') return;
+
+    const channel = supabase
+      .channel(`driver-profile-realtime-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'drivers',
+          filter: `id=eq.${user.id}`
+        },
+        () => {
+          refreshDriverProfile();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, user?.role]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -748,7 +817,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         toggleDriverAvailability,
         updateUserProfile,
-        setLanguage
+        setLanguage,
+        refreshDriverProfile
       }}
     >
       {children}

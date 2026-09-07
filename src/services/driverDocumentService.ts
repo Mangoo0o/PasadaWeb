@@ -289,6 +289,24 @@ export async function updateDriverVerificationStatus(
       }
     } catch {}
 
+    // Also update registered users cache if present
+    try {
+      const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+      let changed = false;
+      for (const k of Object.keys(regMap)) {
+        if (regMap[k]?.driverProfile?.id === driverId || regMap[k]?.profile?.id === driverId) {
+          if (regMap[k].driverProfile) {
+            regMap[k].driverProfile.verification_status = status;
+            regMap[k].driverProfile.rejection_reason = status === 'rejected' ? rejectionReason : undefined;
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+      }
+    } catch {}
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to update verification status' };
