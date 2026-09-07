@@ -16,14 +16,20 @@ import {
   MapPin,
   Clock,
   ThumbsUp,
-  MessageSquare
+  MessageSquare,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchDriverReviews } from '../services/bookingService';
 
 export const DriverProfile: React.FC = () => {
-  const { t } = useTranslation();
-  const { user, driverProfile, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, driverProfile, signOut, setLanguage } = useAuth();
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
+    setLanguage(nextLang);
+  };
   const [liveReviews, setLiveReviews] = useState<Array<{
     id: string;
     rating: number;
@@ -56,21 +62,33 @@ export const DriverProfile: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-black text-[#0052d1] dark:text-sky-400 truncate">
-              Driver Profile
+              {t('driver.profileTitle', 'Driver Profile')}
             </h1>
             <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">
-              Bauang MTFRB Licensing
+              {t('driver.profileSubtitle', 'Bauang MTFRB Licensing')}
             </p>
           </div>
         </div>
 
-        <button
-          onClick={signOut}
-          className="p-1.5 sm:p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer shrink-0"
-          title="Sign Out"
-        >
-          <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Functional Language Toggle */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-slate-100 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
+            title={t('driver.switchLanguage', 'Switch Language / Magpalit ng Wika')}
+          >
+            <Globe className="w-3.5 h-3.5 text-[#0052d1]" />
+            <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
+          </button>
+
+          <button
+            onClick={signOut}
+            className="p-1.5 sm:p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer shrink-0"
+            title={t('nav.signOut', 'Sign Out')}
+          >
+            <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
+        </div>
       </header>
 
       {/* 1. Driver Hero Section (Stitch Style) */}
@@ -97,11 +115,11 @@ export const DriverProfile: React.FC = () => {
         <div className="flex-1 space-y-1 z-10">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              Body #{driverProfile?.body_number || '0142'}
+              {t('driver.bodyNo', 'Body #')}{driverProfile?.body_number || '0142'}
             </span>
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              <span>LGU Verified Driver</span>
+              <span>{t('driver.lguVerified', 'LGU Verified Driver')}</span>
             </span>
           </div>
 
@@ -119,14 +137,14 @@ export const DriverProfile: React.FC = () => {
                 <Star className="w-3.5 h-3.5 fill-amber-400" />
                 <span>{driverProfile?.rating_avg ? driverProfile.rating_avg.toFixed(2) : '5.00'}</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Rating</span>
+              <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{t('driver.ratingLabel', 'Rating')}</span>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5">
               <div className="text-sm font-black text-[#003f87] dark:text-[#00C1FD]">
                 {driverProfile?.total_trips ?? 0}
               </div>
-              <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Biyahe</span>
+              <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{t('driver.completedTrips', 'Biyahe')}</span>
             </div>
           </div>
         </div>
@@ -139,19 +157,19 @@ export const DriverProfile: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
-            Rehistradong Tricycle
+            {t('driver.registeredVehicle', 'Registered Tricycle')}
           </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <div className="inline-block px-3 py-1 bg-[#003f87] dark:bg-[#0052d1] text-white font-mono font-black text-sm rounded-lg shadow-sm tracking-wider">
               {driverProfile?.plate_number || '1234-AB'}
             </div>
             <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700">
-              Body #{driverProfile?.body_number || '0142'}
+              {t('driver.bodyNo', 'Body #')}{driverProfile?.body_number || '0142'}
             </span>
           </div>
           <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
             <ShieldCheck className="w-3 h-3" />
-            <span>MTFRB Bauang Authorized Franchise</span>
+            <span>{t('driver.authorizedFranchise', 'MTFRB Bauang Authorized Franchise')}</span>
           </p>
         </div>
       </section>
@@ -161,7 +179,7 @@ export const DriverProfile: React.FC = () => {
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
             <MessageSquare className="w-3.5 h-3.5 text-[#003f87] dark:text-[#00C1FD]" />
-            <span>Komentaryo at Feedback ng Pasahero</span>
+            <span>{t('driver.passengerFeedback', 'Passenger Reviews & Feedback')}</span>
           </h3>
           <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1">
             <Star className="w-3 h-3 fill-amber-400" />
@@ -200,10 +218,10 @@ export const DriverProfile: React.FC = () => {
             <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center space-y-1.5">
               <MessageSquare className="w-7 h-7 mx-auto text-slate-300 dark:text-slate-600" />
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Wala pang natatanggap na feedback
+                {t('driver.noFeedback', 'No feedback received yet')}
               </p>
               <p className="text-[11px] text-slate-400">
-                Lalabas dito ang mga komento at rating mula sa mga nakasakay mong pasahero.
+                {t('driver.noFeedbackDesc', 'Ratings and comments from your passengers will appear here.')}
               </p>
             </div>
           )}
@@ -215,9 +233,9 @@ export const DriverProfile: React.FC = () => {
         <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
         <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
           <strong className="text-slate-900 dark:text-white block mb-0.5">
-            Bauang LGU Transport Board Accreditation
+            {t('driver.accreditationTitle', 'Bauang LGU Transport Board Accreditation')}
           </strong>
-          Ang iyong lisensya at prangkisa ay opisyal na rehistrado sa ilalim ng Bauang Municipal Tricycle Franchising &amp; Regulatory Board (MTFRB).
+          {t('driver.accreditationDesc', 'Ang iyong lisensya at prangkisa ay opisyal na rehistrado sa ilalim ng Bauang Municipal Tricycle Franchising & Regulatory Board (MTFRB).')}
         </div>
       </section>
 

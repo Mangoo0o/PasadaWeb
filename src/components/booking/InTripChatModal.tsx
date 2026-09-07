@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, Send, MessageSquare, Sparkles } from 'lucide-react';
-import { ChatMessage, sendTripMessage, subscribeToTripChat, getStoredTripMessages } from '../../services/tripChatService';
+import { ChatMessage, sendTripMessage, subscribeToTripChat, getStoredTripMessages, fetchTripMessages } from '../../services/tripChatService';
 import { soundService } from '../../services/soundNotificationService';
 
 interface InTripChatModalProps {
@@ -15,18 +16,32 @@ interface InTripChatModalProps {
   otherPartySubtitle?: string;
 }
 
-const PASSENGER_PRESETS = [
+const PASSENGER_PRESETS_FIL = [
   'Nandito na po ako sa labas 🙋‍♂️',
   'Nasa tapat po ako ng landmark 📍',
-  'Pakibilisan po konti kung pwede ⏱️',
-  'Salamat po! 🙏'
+  'Pakibilisan po kung maaari ⏱️',
+  'Maraming salamat po! 🙏'
 ];
 
-const DRIVER_PRESETS = [
+const PASSENGER_PRESETS_EN = [
+  "I'm already outside waiting 🙋‍♂️",
+  "I'm right beside the landmark 📍",
+  "Please hurry if possible ⏱️",
+  "Thank you very much! 🙏"
+];
+
+const DRIVER_PRESETS_FIL = [
   'Papunta na po 🛵',
-  'Nandito na po sa pickup location 📍',
-  'Medyo ma-traffic po ⏳',
+  'Nandito na po ako sa sakayan 📍',
+  'Medyo ma-traffic sa daan ⏳',
   'Sandali lang po ⏱️'
+];
+
+const DRIVER_PRESETS_EN = [
+  'On my way now 🛵',
+  "I've arrived at pickup point 📍",
+  'Traffic is heavy on the road ⏳',
+  'Just a moment please ⏱️'
 ];
 
 export const InTripChatModal: React.FC<InTripChatModalProps> = ({
@@ -39,6 +54,11 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
   otherPartyName,
   otherPartySubtitle
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language === 'en';
+  const presets = currentUserRole === 'passenger'
+    ? (isEnglish ? PASSENGER_PRESETS_EN : PASSENGER_PRESETS_FIL)
+    : (isEnglish ? DRIVER_PRESETS_EN : DRIVER_PRESETS_FIL);
   const [messages, setMessages] = useState<ChatMessage[]>(() => getStoredTripMessages(bookingId));
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -50,9 +70,16 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && bookingId) {
       setMessages(getStoredTripMessages(bookingId));
-      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 50);
+
+      fetchTripMessages(bookingId).then((fresh) => {
+        if (fresh && fresh.length > 0) {
+          setMessages(fresh);
+          setTimeout(scrollToBottom, 50);
+        }
+      });
     }
   }, [isOpen, bookingId]);
 
@@ -66,7 +93,11 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
       });
 
       // Play chime if message came from the other person
-      if (newMsg.senderId !== currentUserId) {
+      const isFromOther = newMsg.senderRole
+        ? newMsg.senderRole !== currentUserRole
+        : newMsg.senderId !== currentUserId;
+
+      if (isFromOther) {
         soundService.playMessagePop(newMsg.senderName, newMsg.text);
       }
 
@@ -76,7 +107,7 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [bookingId, currentUserId]);
+  }, [bookingId, currentUserId, currentUserRole]);
 
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -125,8 +156,6 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
 
   if (!isOpen) return null;
 
-  const presets = currentUserRole === 'passenger' ? PASSENGER_PRESETS : DRIVER_PRESETS;
-
   return createPortal(
     <div 
       className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
@@ -147,14 +176,14 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
                 {otherPartyName || (currentUserRole === 'passenger' ? 'Tricycle Driver' : 'Pasahero')}
               </h3>
               <p className="text-[11px] text-sky-100 font-medium">
-                {otherPartySubtitle || 'Live In-Trip Chat'}
+                {otherPartySubtitle || t('chat.inTripChat', 'Live In-Trip Chat')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Close Chat"
+            aria-label={t('chat.close', 'Close Chat')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -168,15 +197,15 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
                 <Sparkles className="w-6 h-6" />
               </div>
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Walang mensahe pa
+                {t('chat.emptyTitle', 'No messages yet')}
               </p>
               <p className="text-[11px] text-slate-400 max-w-[200px] mt-0.5">
-                Mag-click ng mabilis na mensahe sa ibaba o mag-type para makipag-ugnayan.
+                {t('chat.emptyDesc', 'Tap a quick message below or type to chat.')}
               </p>
             </div>
           ) : (
             messages.map((msg) => {
-              const isMine = msg.senderId === currentUserId;
+              const isMine = msg.senderRole ? msg.senderRole === currentUserRole : msg.senderId === currentUserId;
               return (
                 <div
                   key={msg.id}
@@ -223,14 +252,14 @@ export const InTripChatModal: React.FC<InTripChatModalProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Mag-type ng mensahe dito..."
+            placeholder={t('chat.placeholder', 'Type a message here...')}
             className="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0052d1]"
           />
           <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || isSending}
             className="p-2.5 bg-[#0052d1] hover:bg-[#003f9e] disabled:opacity-40 text-white rounded-xl shadow-md transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed shrink-0"
-            aria-label="Send Message"
+            aria-label={t('chat.send', 'Send Message')}
           >
             <Send className="w-4 h-4" />
           </button>

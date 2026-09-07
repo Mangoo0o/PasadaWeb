@@ -26,8 +26,8 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
     if (user?.role === 'driver') {
       return [
         { id: 'driver', label: t('nav.driverPortal', 'Dashboard'), icon: LayoutDashboard },
-        { id: 'dispatch', label: 'Dispatch', icon: Navigation },
-        { id: 'history', label: t('nav.history', 'History'), icon: History },
+        { id: 'dispatch', label: t('nav.dispatch', 'Dispatch'), icon: Navigation },
+        { id: 'history', label: t('nav.history', 'Trip History'), icon: History },
         { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
       ];
     }

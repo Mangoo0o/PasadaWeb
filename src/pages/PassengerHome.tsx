@@ -41,7 +41,7 @@ import { setAppLanguage } from '../i18n/config';
 import { soundService } from '../services/soundNotificationService';
 import { InTripChatModal } from '../components/booking/InTripChatModal';
 import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
-import { subscribeToTripChat } from '../services/tripChatService';
+import { subscribeToTripChat, fetchTripMessages } from '../services/tripChatService';
 
 interface PassengerHomeProps {
   onOpenAuthModal?: () => void;
@@ -110,8 +110,15 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
   useEffect(() => {
     if (!activeBooking?.id) return;
+    // Pre-fetch messages into cache
+    fetchTripMessages(activeBooking.id);
+
     const unsubscribe = subscribeToTripChat(activeBooking.id, (newMsg) => {
-      if (newMsg.senderId !== (user?.id || 'passenger') && !showChatModal) {
+      const isFromOther = newMsg.senderRole
+        ? newMsg.senderRole !== 'passenger'
+        : newMsg.senderId !== (user?.id || 'passenger');
+
+      if (isFromOther && !showChatModal) {
         setUnreadChatCount((prev) => prev + 1);
       }
     });
@@ -970,6 +977,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
         <InPhoneMessageBanner
           bookingId={activeBooking.id}
           currentUserId={user?.id || 'passenger'}
+          currentUserRole="passenger"
           isChatOpen={showChatModal}
           onOpenChat={() => {
             setShowChatModal(true);

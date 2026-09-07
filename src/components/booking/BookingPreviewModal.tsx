@@ -9,6 +9,7 @@ import {
   Clock,
   Navigation
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Booking } from '../../types/database.types';
 
 interface BookingPreviewModalProps {
@@ -150,6 +151,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
   onClose,
   onAccept,
 }) => {
+  const { t } = useTranslation();
   if (!booking) return null;
 
   const rawDriverLat = Number(driverLat) || 16.5333;
@@ -357,7 +359,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#00A3FF] ring-2 sm:ring-4 ring-[#00A3FF]/20 shrink-0 mt-0.5"></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
-                  Sakayan
+                  {t('driver.pickup', 'Sakayan')}
                 </span>
                 <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 truncate block mt-0.5">
                   {booking.origin_name}
@@ -373,7 +375,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF6B00] ring-2 sm:ring-4 ring-[#FF6B00]/20 shrink-0 mt-0.5"></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
-                  Babaan
+                  {t('driver.dropoff', 'Babaan')}
                 </span>
                 <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 truncate block mt-0.5">
                   {booking.destination_name}
@@ -386,10 +388,10 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
           <div className="flex items-center justify-between px-0.5">
             <div>
               <div className="text-[9px] sm:text-[10px] uppercase font-black text-slate-400 tracking-wider">
-                Regulated Fare (Taripa)
+                {t('driver.regulatedFare', 'Regulated Fare (Taripa)')}
               </div>
               <div className="text-[10px] sm:text-xs text-slate-500 font-medium">
-                {booking.estimated_distance_km} km • ~{booking.estimated_duration_min} min biyahe
+                {booking.estimated_distance_km} km • ~{booking.estimated_duration_min} min
               </div>
             </div>
 
@@ -407,7 +409,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               className="w-full py-2.5 sm:py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#003f87]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
-              <span>Tanggapin ang Biyahe</span>
+              <span>{t('driver.acceptModalBtn', 'Tanggapin ang Biyahe')}</span>
             </button>
           </div>
 

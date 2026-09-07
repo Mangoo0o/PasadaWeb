@@ -22,7 +22,8 @@ import { broadcastDriverLocation } from '../services/driverTrackingService';
 import { soundService } from '../services/soundNotificationService';
 import { InTripChatModal } from '../components/booking/InTripChatModal';
 import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
-import { subscribeToTripChat } from '../services/tripChatService';
+import { subscribeToTripChat, fetchTripMessages } from '../services/tripChatService';
+import { useTranslation } from 'react-i18next';
 
 interface DriverTravelPageProps {
   booking: Booking;
@@ -146,6 +147,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   driverLng,
   onExitTravel,
 }) => {
+  const { t, i18n } = useTranslation();
   const { user, driverProfile } = useAuth();
   const activeDriverId = driverProfile?.id || booking.driver_id || user?.id;
 
@@ -228,8 +230,15 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
   useEffect(() => {
     if (!booking?.id) return;
+    // Pre-fetch messages into cache
+    fetchTripMessages(booking.id);
+
     const unsubscribe = subscribeToTripChat(booking.id, (newMsg) => {
-      if (newMsg.senderId !== (activeDriverId || 'driver') && !showChatModal) {
+      const isFromOther = newMsg.senderRole
+        ? newMsg.senderRole !== 'driver'
+        : newMsg.senderId !== (activeDriverId || 'driver');
+
+      if (isFromOther && !showChatModal) {
         setUnreadChatCount((prev) => prev + 1);
       }
     });
@@ -323,7 +332,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             <div className="flex items-center gap-1.5 min-w-0">
               <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${isHeadingToPickup ? 'bg-[#00A3FF]' : 'bg-[#FF6B00]'} animate-pulse shrink-0`}></span>
               <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
-                {isHeadingToPickup ? '1. Pupunta sa Sakayan' : '2. Patungo sa Babaan'}
+                {isHeadingToPickup ? `1. ${t('driver.pickupStage', 'Sunduin sa Sakayan')}` : `2. ${t('driver.dropoffStage', 'Ihatid sa Destinasyon')}`}
               </span>
               {booking.passenger?.full_name && (
                 <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate hidden sm:inline">
@@ -340,7 +349,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   setUnreadChatCount(0);
                 }}
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0052d1] hover:bg-[#003f9e] text-white shadow-sm flex items-center justify-center transition-transform active:scale-95 cursor-pointer relative"
-                title="Mensahe sa Pasahero"
+                title={t('driver.chatPassenger', 'Chat Passenger')}
               >
                 <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 {unreadChatCount > 0 && (
@@ -353,7 +362,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 <a
                   href={`tel:${booking.passenger.phone_number}`}
                   className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95"
-                  title="Tawagan ang Pasahero"
+                  title={t('driver.callPassenger', 'Call Passenger')}
                 >
                   <PhoneCall className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </a>
@@ -375,7 +384,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               }`}></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
-                  SAKAYAN
+                  {t('driver.pickup', 'SAKAYAN')}
                 </span>
                 <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
@@ -395,7 +404,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               }`}></div>
               <div className="min-w-0 flex-1">
                 <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
-                  BABAAN
+                  {t('driver.dropoff', 'BABAAN')}
                 </span>
                 <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   !isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
@@ -486,7 +495,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         <button
           onClick={handleRecenterMap}
           className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-2xl border border-slate-200/90 dark:border-slate-800 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-          title="I-focus ang Mapa sa Kasalukuyang Ruta"
+          title={t('driver.recenterMap', 'Focus Map on Current Route')}
         >
           <LocateFixed className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-45 transition-transform" />
         </button>
@@ -511,7 +520,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   1
                 </span>
               )}
-              <span className="truncate">Sunduin sa Sakayan</span>
+              <span className="truncate">{t('driver.pickupStage', 'Sunduin sa Sakayan')}</span>
             </div>
 
             {/* Connecting Line */}
@@ -540,7 +549,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   2
                 </span>
               )}
-              <span className="truncate">Ihatid sa Destinasyon</span>
+              <span className="truncate">{t('driver.dropoffStage', 'Ihatid sa Destinasyon')}</span>
             </div>
           </div>
 
@@ -553,7 +562,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 className="px-3 py-2.5 sm:px-4 sm:py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] sm:text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>I-cancel</span>
+                <span>{t('driver.cancelTripBtn', 'I-cancel')}</span>
               </button>
             )}
 
@@ -565,7 +574,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
-                  <span>Nasa Sakayan Na</span>
+                  <span>{t('driver.arrivedBtn', 'Nasa Sakayan Na')}</span>
                 </button>
               )}
 
@@ -575,7 +584,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                  <span>Simulan ang Byahe</span>
+                  <span>{t('driver.startTripBtn', 'Simulan ang Byahe')}</span>
                 </button>
               )}
 
@@ -585,7 +594,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
-                  <span>Tapusin ang Byahe</span>
+                  <span>{t('driver.completeTripBtn', 'Tapusin ang Byahe')}</span>
                 </button>
               )}
             </div>
@@ -604,16 +613,16 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             
             <div className="space-y-1">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Matagumpay na Naitawid!
+                {t('driver.tripCompletedTitle', 'Matagumpay na Naitawid!')}
               </h3>
               <p className="text-xs text-slate-500">
-                Naihatid nang maayos ang pasahero sa destinasyon.
+                {t('driver.tripCompletedDesc', 'Naihatid nang maayos ang pasahero sa destinasyon.')}
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
               <span className="text-[10px] uppercase font-black text-emerald-800 dark:text-emerald-300">
-                Singiling Pamasahe (Cash)
+                {t('driver.collectFareCash', 'Singiling Pamasahe (Cash)')}
               </span>
               <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                 ₱{completedFare.toFixed(2)}
@@ -624,7 +633,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               onClick={onExitTravel}
               className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 active:scale-98 transition-all cursor-pointer"
             >
-              Bumalik sa Pila ng Terminal
+              {t('driver.backToTerminal', 'Return to Dashboard')}
             </button>
           </div>
         </div>
@@ -640,10 +649,10 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             
             <div className="space-y-1">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Kanselahin ang Biyahe?
+                {t('driver.cancelModalTitle', 'Cancel this Trip?')}
               </h3>
               <p className="text-xs text-slate-500">
-                Sigurado ka bang nais mong kanselahin ang biyahe na ito? Magiging bukas muli ang iyong linya sa ibang pasahero.
+                {t('driver.cancelModalDesc', 'Sigurado ka bang nais mong kanselahin ang biyahe na ito? Magiging bukas muli ang iyong linya sa ibang pasahero.')}
               </p>
             </div>
 
@@ -653,14 +662,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 onClick={handleConfirmCancelTrip}
                 className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
               >
-                {isCancelling ? 'Kinakansela...' : 'Oo, Kanselahin'}
+                {isCancelling ? t('driver.cancelling', 'Kinakansela...') : t('driver.confirmCancel', 'Oo, Kanselahin')}
               </button>
               <button
                 disabled={isCancelling}
                 onClick={() => setShowCancelModal(false)}
                 className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
               >
-                Huwag Kanselahin (Bumalik sa Biyahe)
+                {t('driver.keepTrip', 'Huwag Kanselahin (Bumalik sa Biyahe)')}
               </button>
             </div>
           </div>
@@ -683,6 +692,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       <InPhoneMessageBanner
         bookingId={booking.id}
         currentUserId={activeDriverId || 'driver'}
+        currentUserRole="driver"
         isChatOpen={showChatModal}
         onOpenChat={() => {
           setShowChatModal(true);

@@ -13,7 +13,8 @@ import {
   Sparkles,
   AlertCircle,
   Volume2,
-  VolumeX
+  VolumeX,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
@@ -24,8 +25,13 @@ import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
 import { DriverTravelPage } from './DriverTravelPage';
 
 export const DriverDispatch: React.FC = () => {
-  const { t } = useTranslation();
-  const { user, driverProfile, toggleDriverAvailability, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, driverProfile, toggleDriverAvailability, signOut, setLanguage } = useAuth();
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
+    setLanguage(nextLang);
+  };
 
   const isOnline = driverProfile?.is_available ?? true;
   const [openDispatches, setOpenDispatches] = useState<Booking[]>([]);
@@ -153,16 +159,26 @@ export const DriverDispatch: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] truncate">
-              Live Dispatch
+              {t('driver.liveQueue', 'Live Dispatch')}
             </h1>
             <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">
-              Bauang TODA Queue
+              {driverProfile?.terminal_name || t('driver.terminalQueue', 'Bauang TODA Queue')}
             </p>
           </div>
         </div>
 
         {/* Driver Quick Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Functional Language Toggle */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-slate-100 dark:bg-slate-800 text-[#003f87] dark:text-sky-300 hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
+            title={t('driver.switchLanguage', 'Switch Language / Magpalit ng Wika')}
+          >
+            <Globe className="w-3.5 h-3.5 text-[#003f87] dark:text-sky-400" />
+            <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -175,7 +191,7 @@ export const DriverDispatch: React.FC = () => {
                 ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
             }`}
-            title={isSoundOn ? 'Naka-on ang Sound Alert' : 'Naka-mute ang Sound Alert'}
+            title={isSoundOn ? t('driver.soundOn', 'Sound Alert: ON') : t('driver.soundMuted', 'Sound Alert: MUTED')}
           >
             {isSoundOn ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
@@ -189,13 +205,13 @@ export const DriverDispatch: React.FC = () => {
             }`}
           >
             <Power className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+            <span>{isOnline ? t('driver.online', 'ONLINE') : t('driver.offline', 'OFFLINE')}</span>
           </button>
 
           <button
             onClick={signOut}
             className="p-1.5 sm:p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer shrink-0"
-            title="Sign Out"
+            title={t('nav.signOut', 'Sign Out')}
           >
             <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
@@ -215,14 +231,16 @@ export const DriverDispatch: React.FC = () => {
               }`}>
                 <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
                 <span>
-                  {tripState === 'assigned' && 'PAPUNTA SA SAKAYAN'}
-                  {tripState === 'arrived' && 'NASA SAKAYAN NA'}
-                  {tripState === 'in_transit' && 'KASALUKUYANG BUMIBIYAHE'}
+                  {tripState === 'assigned' && t('driver.headingToPickup', 'PAPUNTA SA SAKAYAN')}
+                  {tripState === 'arrived' && t('driver.atPickup', 'NASA SAKAYAN NA')}
+                  {tripState === 'in_transit' && t('driver.inTransit', 'KASALUKUYANG BUMIBIYAHE')}
                 </span>
               </span>
 
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Regulated Fare</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                  {t('driver.regulatedFare', 'Regulated Fare')}
+                </span>
                 <div className="text-xl font-black text-[#003f87] dark:text-[#00C1FD]">
                   ₱{activeTrip.estimated_fare.toFixed(2)}
                 </div>
@@ -242,7 +260,9 @@ export const DriverDispatch: React.FC = () => {
               <div className="flex items-start gap-2.5">
                 <div className="w-3.5 h-3.5 rounded-full bg-[#00A3FF] mt-0.5 shrink-0 border-2 border-white shadow-sm"></div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-black text-slate-400">Sakayan (Pickup)</div>
+                  <div className="text-[10px] uppercase font-black text-slate-400">
+                    {t('driver.pickup', 'Sakayan')}
+                  </div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white truncate">{activeTrip.origin_name}</div>
                 </div>
               </div>
@@ -252,7 +272,9 @@ export const DriverDispatch: React.FC = () => {
               <div className="flex items-start gap-2.5">
                 <div className="w-3.5 h-3.5 rounded-full bg-[#FF6B00] mt-0.5 shrink-0 border-2 border-white shadow-sm"></div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-black text-slate-400">Babaan (Destination)</div>
+                  <div className="text-[10px] uppercase font-black text-slate-400">
+                    {t('driver.dropoff', 'Babaan')}
+                  </div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white truncate">{activeTrip.destination_name}</div>
                 </div>
               </div>
@@ -266,7 +288,7 @@ export const DriverDispatch: React.FC = () => {
                   className="w-full py-4 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <Navigation className="w-4 h-4 text-[#00C1FD]" />
-                  <span>Nakarating na sa Sakayan (Arrived)</span>
+                  <span>{t('driver.arrivedBtn', 'Nasa Sakayan Na')}</span>
                 </button>
               )}
 
@@ -276,7 +298,7 @@ export const DriverDispatch: React.FC = () => {
                   className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <Bike className="w-4 h-4 text-white" />
-                  <span>Simulan ang Byahe (Start Trip)</span>
+                  <span>{t('driver.startTripBtn', 'Simulan ang Biyahe')}</span>
                 </button>
               )}
 
@@ -286,7 +308,7 @@ export const DriverDispatch: React.FC = () => {
                   className="w-full py-4 rounded-xl bg-gradient-to-r from-[#003f87] to-[#0056b3] hover:from-[#002f66] hover:to-[#003f87] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
-                  <span>Tapusin at Singilin (₱{activeTrip.estimated_fare.toFixed(2)})</span>
+                  <span>{t('driver.completeTripBtn', 'Tapusin ang Biyahe')} (₱{activeTrip.estimated_fare.toFixed(2)})</span>
                 </button>
               )}
             </div>
@@ -296,10 +318,10 @@ export const DriverDispatch: React.FC = () => {
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-black text-sm text-slate-800 dark:text-slate-200">
-                Bukas na Kahilingan sa Bauang ({openDispatches.length})
+                {t('driver.liveQueue', 'Live Dispatch Queue')} ({openDispatches.length})
               </h4>
               <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
-                {isOnline ? 'Nakaabang sa Pila' : 'Naka-offline'}
+                {isOnline ? t('driver.online', 'ONLINE') : t('driver.offline', 'OFFLINE')}
               </span>
             </div>
 
@@ -316,7 +338,7 @@ export const DriverDispatch: React.FC = () => {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
                         <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
-                          Bagong Tawag • {bk.estimated_distance_km} km
+                          {t('driver.incomingRequest', 'New Passenger Request!')} • {bk.estimated_distance_km} km
                         </span>
                       </div>
                       <div className="text-right shrink-0">
@@ -332,7 +354,7 @@ export const DriverDispatch: React.FC = () => {
                         <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#00A3FF] ring-2 sm:ring-4 ring-[#00A3FF]/20 shrink-0 mt-0.5"></div>
                         <div className="min-w-0 flex-1">
                           <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#00A3FF] block tracking-wider leading-none">
-                            SAKAYAN
+                            {t('driver.pickup', 'SAKAYAN')}
                           </span>
                           <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white truncate block mt-0.5">
                             {bk.origin_name}
@@ -346,7 +368,7 @@ export const DriverDispatch: React.FC = () => {
                         <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF6B00] ring-2 sm:ring-4 ring-[#FF6B00]/20 shrink-0 mt-0.5"></div>
                         <div className="min-w-0 flex-1">
                           <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
-                            BABAAN
+                            {t('driver.dropoff', 'BABAAN')}
                           </span>
                           <span className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white truncate block mt-0.5">
                             {bk.destination_name}
@@ -366,7 +388,7 @@ export const DriverDispatch: React.FC = () => {
                         className="flex-1 py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-[11px] sm:text-xs border border-slate-200 dark:border-slate-600 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                       >
                         <Navigation className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#003f87] dark:text-[#00C1FD]" />
-                        <span>Tingnan ang Mapa</span>
+                        <span>{t('driver.viewRoute', 'View Route')}</span>
                       </button>
 
                       <button
@@ -378,7 +400,7 @@ export const DriverDispatch: React.FC = () => {
                         className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-[11px] sm:text-xs rounded-xl shadow-md shadow-[#003f87]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Bike className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#00C1FD]" />
-                        <span>Tanggapin</span>
+                        <span>{t('driver.acceptRide', 'Tanggapin')}</span>
                       </button>
                     </div>
                   </div>
@@ -387,7 +409,7 @@ export const DriverDispatch: React.FC = () => {
             ) : (
               <div className="text-center py-10 text-xs text-slate-400 flex flex-col items-center gap-2">
                 <Clock className="w-6 h-6 text-slate-300 dark:text-slate-600" />
-                <span className="font-medium">Walang nakabinbing tawag sa kasalukuyan. Nakaabang sa pila ng terminal...</span>
+                <span className="font-medium">{t('driver.noDispatches', 'No passenger requests at the moment. Waiting in queue...')}</span>
               </div>
             )}
           </div>
@@ -404,16 +426,16 @@ export const DriverDispatch: React.FC = () => {
             
             <div className="space-y-1">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Matagumpay na Naitawid!
+                {t('driver.tripCompletedTitle', 'Trip Completed Successfully!')}
               </h3>
               <p className="text-xs text-slate-500">
-                Naihatid nang maayos ang pasahero sa destinasyon.
+                {t('driver.tripCompletedDesc', 'Passenger safely delivered to destination.')}
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
               <span className="text-[10px] uppercase font-black text-emerald-800 dark:text-emerald-300">
-                Singiling Pamasahe (Cash)
+                {t('driver.collectFareCash', 'Singiling Pamasahe (Cash)')}
               </span>
               <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                 ₱{completedFare.toFixed(2)}
@@ -424,7 +446,7 @@ export const DriverDispatch: React.FC = () => {
               onClick={handleDismissCompleted}
               className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 active:scale-98 transition-all cursor-pointer"
             >
-              Bumalik sa Pila ng Terminal
+              {t('driver.backToTerminal', 'Return to Dashboard')}
             </button>
           </div>
         </div>

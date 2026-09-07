@@ -7,6 +7,7 @@ import { soundService } from '../../services/soundNotificationService';
 interface InPhoneMessageBannerProps {
   bookingId?: string;
   currentUserId: string;
+  currentUserRole?: 'passenger' | 'driver';
   isChatOpen: boolean;
   onOpenChat: () => void;
 }
@@ -14,6 +15,7 @@ interface InPhoneMessageBannerProps {
 export const InPhoneMessageBanner: React.FC<InPhoneMessageBannerProps> = ({
   bookingId,
   currentUserId,
+  currentUserRole,
   isChatOpen,
   onOpenChat
 }) => {
@@ -29,7 +31,11 @@ export const InPhoneMessageBanner: React.FC<InPhoneMessageBannerProps> = ({
 
     const unsubscribe = subscribeToTripChat(bookingId, (newMsg) => {
       // Only show banner if message was sent by the OTHER person
-      if (newMsg.senderId !== currentUserId) {
+      const isFromOther = currentUserRole
+        ? newMsg.senderRole !== currentUserRole
+        : newMsg.senderId !== currentUserId;
+
+      if (isFromOther) {
         // Play device notification & sound
         soundService.playMessagePop(newMsg.senderName, newMsg.text);
 
@@ -43,7 +49,7 @@ export const InPhoneMessageBanner: React.FC<InPhoneMessageBannerProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [bookingId, currentUserId, isChatOpen]);
+  }, [bookingId, currentUserId, currentUserRole, isChatOpen]);
 
   // Auto-dismiss banner after 5.5 seconds
   useEffect(() => {
