@@ -581,6 +581,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           return {};
         }
+
+        if (
+          error.message.toLowerCase().includes('already registered') || 
+          error.message.toLowerCase().includes('already exists') ||
+          (error as any).status === 409
+        ) {
+          return { error: 'Mayroon nang nakarehistrong account gamit ang email na ito. Maaari ka nang mag-log in gamit ang iyong password.' };
+        }
         throw error;
       }
 
