@@ -23,6 +23,7 @@ import { soundService } from '../services/soundNotificationService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
 import { DriverTravelPage } from './DriverTravelPage';
+import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
 
 export const DriverDispatch: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -134,6 +135,12 @@ export const DriverDispatch: React.FC = () => {
 
   if (!user || user.role !== 'driver') {
     return null;
+  }
+
+  // Verification Gate: Drivers who are pending, rejected, or suspended cannot view live dispatch
+  const isApproved = driverProfile?.verification_status === 'approved' || driverProfile?.verification_status === 'verified';
+  if (!isApproved) {
+    return <DriverVerificationGate />;
   }
 
   // When a booking is active, render dedicated Full-Screen Driver Travel Page (maps, paths, cancel/arrive/start/complete only)

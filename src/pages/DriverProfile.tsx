@@ -117,10 +117,22 @@ export const DriverProfile: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               {t('driver.bodyNo', 'Body #')}{driverProfile?.body_number || '0142'}
             </span>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              <span>{t('driver.lguVerified', 'LGU Verified Driver')}</span>
-            </span>
+            {driverProfile?.verification_status === 'approved' || driverProfile?.verification_status === 'verified' ? (
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>{t('driver.lguVerified', 'LGU Verified Driver')}</span>
+              </span>
+            ) : driverProfile?.verification_status === 'rejected' ? (
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-rose-600" />
+                <span>Needs Correction / Rejected</span>
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-amber-600" />
+                <span>Pending MTFRB Review</span>
+              </span>
+            )}
           </div>
 
           <h2 className="text-2xl font-black text-[#071e27] dark:text-slate-100 tracking-tight">

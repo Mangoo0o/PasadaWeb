@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Profile, DriverProfile, UserRole } from '../types/database.types';
+import { Profile, DriverProfile, UserRole, DriverDocumentType } from '../types/database.types';
 import { supabase } from '../api/supabaseClient';
 import { setAppLanguage } from '../i18n/config';
+import { uploadDriverDocument } from '../services/driverDocumentService';
 
 export interface SignUpData {
   role: UserRole;
@@ -15,6 +16,7 @@ export interface SignUpData {
   plateNumber?: string;
   bodyNumber?: string;
   terminalId?: string;
+  documents?: Partial<Record<DriverDocumentType, File>>;
 }
 
 export interface AuthContextType {
@@ -138,22 +140,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setDriverProfile(driverObj);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(driverObj));
           } else {
-            // Create and persist verified driver profile if table record not created yet
+            // Create driver profile if table record not created yet
+            const isDemoDriver = userId === '00000000-0000-0000-0000-000000000002';
             const defaultDriver: DriverProfile = {
               id: userId,
               terminal_name: 'Bauang Central TODA',
               tricycle_model: 'Honda TMX 125',
               plate_number: '1234-AB',
               body_number: '0142',
-              verification_status: 'verified',
-              is_available: true,
+              verification_status: isDemoDriver ? 'approved' : 'pending',
+              is_available: isDemoDriver,
               rating_avg: 4.95,
-              total_trips: 18,
-              earnings_today: 320,
+              total_trips: isDemoDriver ? 18 : 0,
+              earnings_today: isDemoDriver ? 320 : 0,
               updated_at: new Date().toISOString()
             };
             try {
-              await supabase.from('drivers').upsert(defaultDriver);
+              const { terminal_name, ...dbDriver } = defaultDriver;
+              await supabase.from('drivers').upsert(dbDriver);
             } catch {}
             setDriverProfile(defaultDriver);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
@@ -180,21 +184,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (metaRole === 'driver') {
           localStorage.setItem('pasada_active_tab', 'driver');
+          const isDemoDriver = userId === '00000000-0000-0000-0000-000000000002';
           const defaultDriver: DriverProfile = {
             id: userId,
             terminal_name: 'Bauang Central TODA',
             tricycle_model: authUser.user_metadata.tricycle_model || 'Honda TMX 125',
             plate_number: authUser.user_metadata.plate_number || '1234-AB',
             body_number: authUser.user_metadata.body_number || '0142',
-            verification_status: 'verified',
-            is_available: true,
+            verification_status: isDemoDriver ? 'approved' : 'pending',
+            is_available: isDemoDriver,
             rating_avg: 4.95,
-            total_trips: 18,
-            earnings_today: 320,
+            total_trips: isDemoDriver ? 18 : 0,
+            earnings_today: isDemoDriver ? 320 : 0,
             updated_at: new Date().toISOString()
           };
           try {
-            await supabase.from('drivers').upsert(defaultDriver);
+            const { terminal_name, ...dbDriver } = defaultDriver;
+            await supabase.from('drivers').upsert(dbDriver);
           } catch {}
           setDriverProfile(defaultDriver);
           localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
@@ -536,18 +542,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               tricycle_model: data.tricycleModel || 'Honda TMX 125',
               plate_number: data.plateNumber || 'ABC 1234',
               body_number: data.bodyNumber || '0142',
-              verification_status: 'verified',
-              is_available: true,
+              verification_status: 'pending',
+              is_available: false,
               rating_avg: 5.00,
               total_trips: 0,
               earnings_today: 0,
               updated_at: new Date().toISOString()
             };
             try {
-              await supabase.from('drivers').upsert(fallbackDriver);
+              const { terminal_name, ...dbFallback } = fallbackDriver;
+              await supabase.from('drivers').upsert(dbFallback);
             } catch (e) {
               console.warn("Drivers local upsert note:", e);
             }
+
+            if (data.documents) {
+              for (const [docType, file] of Object.entries(data.documents)) {
+                if (file) {
+                  await uploadDriverDocument(demoUserId, docType as DriverDocumentType, file);
+                }
+              }
+            }
+
             setDriverProfile(fallbackDriver);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(fallbackDriver));
           }
@@ -599,8 +615,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             tricycle_model: data.tricycleModel || 'Honda TMX 125',
             plate_number: data.plateNumber || 'ABC 1234',
             body_number: data.bodyNumber || '0142',
-            verification_status: 'verified',
-            is_available: true,
+            verification_status: 'pending',
+            is_available: false,
             current_lat: 16.5333,
             current_lng: 120.3333,
             rating_avg: 5.00,
@@ -610,9 +626,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
 
           try {
-            await supabase.from('drivers').upsert(newDriver);
+            const { terminal_name, ...dbDriver } = newDriver;
+            await supabase.from('drivers').upsert(dbDriver);
           } catch (e) {
             console.warn("Drivers upsert note:", e);
+          }
+
+          if (data.documents) {
+            for (const [docType, file] of Object.entries(data.documents)) {
+              if (file) {
+                await uploadDriverDocument(authData.user.id, docType as DriverDocumentType, file);
+              }
+            }
           }
 
           setDriverProfile(newDriver);

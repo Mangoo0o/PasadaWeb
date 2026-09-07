@@ -15,6 +15,7 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 
 import { supabase } from '../api/supabaseClient';
 import { fetchLocationFares, saveLocationFare, deleteLocationFare } from '../services/fareService';
+import { updateDriverVerificationStatus } from '../services/driverDocumentService';
 import type { 
   Terminal, Driver, FareMatrix, LocationFare, Booking, Complaint, TouristSpot, AdminAction, 
   VerificationStatus, ComplaintStatus, Profile, NotificationItem 
@@ -347,14 +348,10 @@ const AdminContent: React.FC = () => {
     }
   };
 
-  const handleUpdateDriverStatus = async (profileId: string, status: VerificationStatus) => {
-    setDrivers(prev => prev.map(d => (d.profile_id === profileId || d.id === profileId) ? { ...d, verification_status: status } : d));
+  const handleUpdateDriverStatus = async (profileId: string, status: VerificationStatus, reason?: string) => {
+    setDrivers(prev => prev.map(d => (d.profile_id === profileId || d.id === profileId) ? { ...d, verification_status: status, rejection_reason: reason } : d));
     
-    try {
-      await supabase.from('drivers').update({ verification_status: status }).eq('id', profileId);
-    } catch (e) {
-      console.error('Error updating driver status in DB:', e);
-    }
+    await updateDriverVerificationStatus(profileId, status, reason, user.id);
 
     const driver = drivers.find(d => d.profile_id === profileId || d.id === profileId);
     const log: AdminAction = {
@@ -363,7 +360,12 @@ const AdminContent: React.FC = () => {
       action_type: status === 'approved' ? 'APPROVE_DRIVER' : status === 'suspended' ? 'SUSPEND_DRIVER' : 'REJECT_DRIVER',
       target_table: 'drivers',
       target_id: profileId,
-      details_json: { driver_name: driver?.profile?.full_name, plate_number: driver?.plate_number, new_status: status },
+      details_json: { 
+        driver_name: driver?.profile?.full_name, 
+        plate_number: driver?.plate_number, 
+        new_status: status,
+        rejection_reason: reason 
+      },
       created_at: new Date().toISOString(),
       admin: user
     };

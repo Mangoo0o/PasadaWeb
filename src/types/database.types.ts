@@ -12,7 +12,26 @@ export type PaymentMethod = 'cash' | 'digital_wallet';
 
 export type ComplaintStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 
-export type VerificationStatus = 'pending' | 'verified' | 'rejected';
+export type VerificationStatus = 'pending' | 'verified' | 'approved' | 'rejected' | 'suspended';
+
+export type DriverDocumentType = 
+  | 'license' 
+  | 'or_cr' 
+  | 'mtop' 
+  | 'barangay_clearance' 
+  | 'police_clearance';
+
+export interface DriverDocument {
+  id: string;
+  driver_id: string;
+  document_type: DriverDocumentType;
+  file_url: string;
+  file_name: string;
+  file_size?: number;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string;
+  uploaded_at: string;
+}
 
 export interface Profile {
   id: string;
@@ -39,6 +58,11 @@ export interface DriverProfile {
   rating_avg: number;
   total_trips?: number;
   earnings_today?: number;
+  rejection_reason?: string;
+  documents_submitted_at?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  documents?: DriverDocument[];
   updated_at: string;
   profile?: Profile;
 }

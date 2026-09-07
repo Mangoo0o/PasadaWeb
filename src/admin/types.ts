@@ -1,5 +1,5 @@
 export type UserRole = 'passenger' | 'driver' | 'admin' | 'super_admin';
-export type VerificationStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+export type VerificationStatus = 'pending' | 'approved' | 'verified' | 'rejected' | 'suspended';
 export type BookingStatus = 'searching' | 'driver_assigned' | 'driver_arrived' | 'in_transit' | 'completed' | 'cancelled' | 'requested' | 'accepted' | 'ongoing';
 export type ComplaintCategory = 'overcharging' | 'refusal' | 'refusal_of_service' | 'reckless_driving' | 'rude_behavior' | 'lost_item' | 'other';
 export type ComplaintStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
@@ -30,6 +30,25 @@ export interface Terminal {
   description?: string;
 }
 
+export type DriverDocumentType = 
+  | 'license' 
+  | 'or_cr' 
+  | 'mtop' 
+  | 'barangay_clearance' 
+  | 'police_clearance';
+
+export interface DriverDocument {
+  id: string;
+  driver_id: string;
+  document_type: DriverDocumentType;
+  file_url: string;
+  file_name: string;
+  file_size?: number;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string;
+  uploaded_at: string;
+}
+
 export interface Driver {
   profile_id: string;
   id?: string;
@@ -47,6 +66,11 @@ export interface Driver {
   rating_avg?: number;
   total_trips?: number;
   earnings_today?: number;
+  rejection_reason?: string;
+  documents_submitted_at?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  documents?: DriverDocument[];
 }
 
 export interface FareMatrix {

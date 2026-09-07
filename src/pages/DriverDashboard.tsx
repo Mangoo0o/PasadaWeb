@@ -23,6 +23,8 @@ import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 
+import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
+
 interface DriverDashboardProps {
   setActiveTab?: (tab: string) => void;
 }
@@ -80,6 +82,12 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
 
   if (!user || user.role !== 'driver') {
     return null;
+  }
+
+  // Verification Gate: Drivers who are pending, rejected, or suspended cannot view live dispatch dashboard
+  const isApproved = driverProfile?.verification_status === 'approved' || driverProfile?.verification_status === 'verified';
+  if (!isApproved) {
+    return <DriverVerificationGate />;
   }
 
   return (

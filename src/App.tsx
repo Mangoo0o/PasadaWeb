@@ -11,9 +11,10 @@ import { DriverProfile } from './pages/DriverProfile';
 import { AdminPortal } from './pages/AdminPortal';
 import { HistoryAndReceipts } from './pages/HistoryAndReceipts';
 import { TouristSpot } from './types/database.types';
+import { DriverVerificationGate } from './components/driver/DriverVerificationGate';
 
 export const App: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, driverProfile, isLoading } = useAuth();
   const [selectedSpotForRide, setSelectedSpotForRide] = useState<TouristSpot | null>(null);
 
   const getRoleDefaultTab = (role?: string) => {
@@ -85,7 +86,20 @@ export const App: React.FC = () => {
     return <AuthPage />;
   }
 
-  // 2. Authenticated App Experience
+  // 2. Driver Compliance Gate: Unapproved drivers are locked into the document stepper and verification flow
+  const isDriver = user.role === 'driver';
+  const isDemoDriver = user.id === '00000000-0000-0000-0000-000000000002';
+  const isDriverApproved = isDriver && (driverProfile?.verification_status === 'approved' || (isDemoDriver && driverProfile?.verification_status === 'verified'));
+
+  if (isDriver && !isDriverApproved) {
+    return (
+      <div className="min-h-screen min-h-[100dvh] w-full bg-[#f4faff] dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-y-auto antialiased flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 selection:bg-[#0052d1] selection:text-white">
+        <DriverVerificationGate />
+      </div>
+    );
+  }
+
+  // 3. Authenticated App Experience
   const renderActiveView = () => {
     // Role guard: if user is driver and on passenger-only tabs, render DriverDashboard
     if (user?.role === 'driver' && (activeTab === 'home' || activeTab === 'pasada')) {

@@ -126,6 +126,14 @@ export const AuthPage: React.FC = () => {
         return;
       }
 
+      if (role === 'driver') {
+        if (!regPlate.trim()) {
+          setErrorMsg('Paki-lagay ang iyong Tricycle Plate Number.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const res = await signUp({
         role: role as UserRole,
         email: regEmail.trim(),
@@ -140,12 +148,16 @@ export const AuthPage: React.FC = () => {
       if (res.error) {
         setErrorMsg(res.error);
       } else {
-        setSuccessMsg('Matagumpay ang pagpaparehistro! Maaari ka nang mag-login.');
+        if (role === 'driver') {
+          setSuccessMsg('Matagumpay ang pagpaparehistro! Mag-login upang makumpleto ang 5-step franchise documents upload.');
+        } else {
+          setSuccessMsg('Matagumpay ang pagpaparehistro! Maaari ka nang mag-login.');
+        }
         setTimeout(() => {
           setView('login');
           setLoginEmail(regEmail);
           setSuccessMsg(null);
-        }, 1500);
+        }, 1800);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'May naganap na error sa pagpaparehistro.');
@@ -552,7 +564,7 @@ export const AuthPage: React.FC = () => {
                       <span>Creating Account...</span>
                     </div>
                   ) : (
-                    <span>Register</span>
+                    <span>Register Account</span>
                   )}
                 </button>
               </form>
