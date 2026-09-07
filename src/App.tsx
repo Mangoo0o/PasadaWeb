@@ -88,8 +88,9 @@ export const App: React.FC = () => {
 
   // 2. Driver Compliance Gate: Unapproved drivers are locked into the document stepper and verification flow
   const isDriver = user.role === 'driver';
-  const isDemoDriver = user.id === '00000000-0000-0000-0000-000000000002';
-  const isDriverApproved = isDriver && (driverProfile?.verification_status === 'approved' || (isDemoDriver && driverProfile?.verification_status === 'verified'));
+  const localDriverStatus = user?.id ? localStorage.getItem(`pasada_driver_status_${user.id}`) : null;
+  const currentStatus = driverProfile?.verification_status || localDriverStatus;
+  const isDriverApproved = isDriver && (currentStatus === 'approved' || currentStatus === ('verified' as any));
 
   if (isDriver && !isDriverApproved) {
     return (

@@ -21,6 +21,7 @@ import {
   uploadDriverDocument,
   hasDriverSubmittedAllDocuments
 } from '../../services/driverDocumentService';
+import { supabase } from '../../api/supabaseClient';
 import { DriverDocumentStepper } from './DriverDocumentStepper';
 
 export const DriverVerificationGate: React.FC = () => {
@@ -43,7 +44,8 @@ export const DriverVerificationGate: React.FC = () => {
   const [reuploadError, setReuploadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const status = driverProfile?.verification_status || 'pending';
+  const localSavedStatus = user?.id ? (localStorage.getItem(`pasada_driver_status_${user.id}`) as any) : null;
+  const status = localSavedStatus || driverProfile?.verification_status || 'pending';
   const isRejected = status === 'rejected';
   const isSuspended = status === 'suspended';
 
@@ -59,13 +61,51 @@ export const DriverVerificationGate: React.FC = () => {
     loadDocuments();
     refreshDriverProfile?.();
 
-    // Auto-poll verification status every 3 seconds so the driver is instantly admitted upon admin approval
+    // 1. Auto-poll verification status every 2.5 seconds
     const interval = setInterval(() => {
       refreshDriverProfile?.();
-    }, 3000);
+    }, 2500);
 
-    return () => clearInterval(interval);
-  }, [user?.id]);
+    // 2. Listen to custom status changed events in current browser window
+    const handleStatusChanged = (e: any) => {
+      const { driverId, status: newStatus } = e.detail || {};
+      if (driverId && driverId === user?.id) {
+        refreshDriverProfile?.();
+        if (newStatus === 'approved') {
+          loadDocuments();
+        }
+      }
+    };
+    window.addEventListener('pasada_driver_status_changed', handleStatusChanged);
+
+    // 3. Supabase Realtime channel for instant push on drivers table update
+    let channel: any = null;
+    if (user?.id) {
+      channel = supabase
+        .channel(`driver-approval-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'drivers',
+            filter: `id=eq.${user.id}`
+          },
+          () => {
+            refreshDriverProfile?.();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pasada_driver_status_changed', handleStatusChanged);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [user?.id, refreshDriverProfile]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

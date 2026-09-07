@@ -92,6 +92,9 @@ const AdminContent: React.FC = () => {
 
       rawDrivers.forEach(d => {
         const pId = d.profile_id || d.id;
+        const localStatus = (localStorage.getItem(`pasada_driver_status_${pId}`) || localStorage.getItem(`pasada_driver_status_${d.id}`)) as VerificationStatus | null;
+        const localRejection = localStorage.getItem(`pasada_driver_rejection_${pId}`) || localStorage.getItem(`pasada_driver_rejection_${d.id}`) || d.rejection_reason;
+
         driverMap.set(pId, {
           profile_id: pId,
           id: d.id,
@@ -99,7 +102,8 @@ const AdminContent: React.FC = () => {
           plate_number: d.plate_number || 'ABC 1234',
           body_number: d.body_number,
           tricycle_model: d.tricycle_model || 'Standard Tricycle',
-          verification_status: (d.verification_status as VerificationStatus) || 'pending',
+          verification_status: localStatus || (d.verification_status as VerificationStatus) || 'pending',
+          rejection_reason: localRejection || undefined,
           rating: d.rating_avg || d.rating || 5.0,
           total_trips: d.total_trips || 0,
           current_lat: d.current_lat,
@@ -112,6 +116,9 @@ const AdminContent: React.FC = () => {
 
       // Merge any driver who registered in profiles
       driverProfiles.forEach(p => {
+        const localStatus = localStorage.getItem(`pasada_driver_status_${p.id}`) as VerificationStatus | null;
+        const localRejection = localStorage.getItem(`pasada_driver_rejection_${p.id}`);
+
         if (!driverMap.has(p.id)) {
           const generatedPlate = `BG-${Math.abs(p.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 37 % 90000 + 10000)}`;
           driverMap.set(p.id, {
@@ -120,7 +127,8 @@ const AdminContent: React.FC = () => {
             terminal_id: null,
             plate_number: generatedPlate,
             tricycle_model: 'Standard Tricycle',
-            verification_status: 'pending',
+            verification_status: localStatus || 'pending',
+            rejection_reason: localRejection || undefined,
             rating: 5.0,
             total_trips: 0,
             profile: p,
@@ -131,8 +139,41 @@ const AdminContent: React.FC = () => {
           if (!existing.profile) {
             existing.profile = p;
           }
+          if (localStatus && existing.verification_status !== localStatus) {
+            existing.verification_status = localStatus;
+          }
         }
       });
+
+      // Merge any driver in pasada_registered_users cache
+      try {
+        const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+        for (const k of Object.keys(regMap)) {
+          const item = regMap[k];
+          if (item?.profile?.role === 'driver' && item.profile?.id) {
+            const pId = item.profile.id;
+            const localSavedStatus = (localStorage.getItem(`pasada_driver_status_${pId}`) as VerificationStatus) || item.driverProfile?.verification_status || 'pending';
+            if (!driverMap.has(pId)) {
+              driverMap.set(pId, {
+                profile_id: pId,
+                id: pId,
+                terminal_id: null,
+                plate_number: item.driverProfile?.plate_number || 'BG-99999',
+                body_number: item.driverProfile?.body_number || '0000',
+                tricycle_model: item.driverProfile?.tricycle_model || 'Standard Tricycle',
+                verification_status: localSavedStatus,
+                rating: item.driverProfile?.rating_avg || 5.0,
+                total_trips: item.driverProfile?.total_trips || 0,
+                profile: item.profile,
+                terminal: undefined
+              });
+            } else if (localSavedStatus === 'approved') {
+              const existing = driverMap.get(pId)!;
+              existing.verification_status = 'approved';
+            }
+          }
+        }
+      } catch {}
 
       setDrivers(Array.from(driverMap.values()));
 

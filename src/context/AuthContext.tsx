@@ -34,6 +34,15 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const MOCK_PRESET_IDS = new Set([
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000004',
+  '00000000-0000-0000-0000-000000000005',
+  '00000000-0000-0000-0000-000000000006',
+]);
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(() => {
     const cached = localStorage.getItem('pasada_auth_user');
@@ -69,9 +78,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const activeUserId = session?.user?.id || (user?.id && !user.id.startsWith('00000000-0000-0000-0000-') ? user.id : undefined);
-        if (activeUserId && !activeUserId.startsWith('00000000-0000-0000-0000-')) {
+        const activeUserId = session?.user?.id || user?.id;
+
+        if (activeUserId && !MOCK_PRESET_IDS.has(activeUserId)) {
           await loadUserProfile(activeUserId, session?.user);
+        } else if (activeUserId) {
+          // For local or mock presets, check dedicated local status override
+          const localStatus = localStorage.getItem(`pasada_driver_status_${activeUserId}`) as any;
+          if (localStatus && driverProfile && driverProfile.verification_status !== localStatus) {
+            const updated = { ...driverProfile, verification_status: localStatus };
+            setDriverProfile(updated);
+            localStorage.setItem('pasada_auth_driver', JSON.stringify(updated));
+          }
         }
       } catch (err) {
         console.warn("Auth initialization note:", err);
@@ -90,10 +108,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pasada_admin_profile');
     };
 
+    const handleDriverStatusChanged = (e: any) => {
+      const { driverId, status, rejectionReason } = e.detail || {};
+      const currentDriverId = user?.id || driverProfile?.id;
+      if (driverId && driverId === currentDriverId) {
+        setDriverProfile(prev => {
+          if (!prev) return null;
+          const updated = {
+            ...prev,
+            verification_status: status,
+            rejection_reason: status === 'rejected' ? rejectionReason : undefined
+          };
+          localStorage.setItem('pasada_auth_driver', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    };
+
     window.addEventListener('pasada_logout', handleForcedLogout);
+    window.addEventListener('pasada_driver_status_changed', handleDriverStatusChanged);
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user && !session.user.id.startsWith('00000000-0000-0000-0000-')) {
+      if (session?.user && !MOCK_PRESET_IDS.has(session.user.id)) {
         await loadUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -107,11 +143,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       authListener.subscription.unsubscribe();
       window.removeEventListener('pasada_logout', handleForcedLogout);
+      window.removeEventListener('pasada_driver_status_changed', handleDriverStatusChanged);
     };
   }, []);
 
   const loadUserProfile = async (userId: string, authUser?: any) => {
-    if (!userId || userId.startsWith('00000000-0000-0000-0000-')) {
+    if (!userId || MOCK_PRESET_IDS.has(userId)) {
       return;
     }
     try {
@@ -137,13 +174,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('id', userId)
             .maybeSingle();
 
+          const localOverride = localStorage.getItem(`pasada_driver_status_${userId}`) as any;
+
           if (dProfile) {
             const driverObj: DriverProfile = {
               ...dProfile,
+              verification_status: localOverride || (dProfile.verification_status as any) || 'pending',
               terminal_name: dProfile.terminals?.name || 'Bauang Central TODA'
             };
             setDriverProfile(driverObj);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(driverObj));
+
+            // Sync registered users cache
+            try {
+              const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+              for (const k of Object.keys(regMap)) {
+                if (regMap[k]?.profile?.id === userId || regMap[k]?.driverProfile?.id === userId) {
+                  regMap[k].driverProfile = driverObj;
+                }
+              }
+              localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+            } catch {}
           } else {
             // Create driver profile if table record not created yet
             const isDemoDriver = userId === '00000000-0000-0000-0000-000000000002';
@@ -153,8 +204,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               tricycle_model: 'Honda TMX 125',
               plate_number: '1234-AB',
               body_number: '0142',
-              verification_status: isDemoDriver ? 'approved' : 'pending',
-              is_available: isDemoDriver,
+              verification_status: localOverride || (isDemoDriver ? 'approved' : 'pending'),
+              is_available: isDemoDriver || localOverride === 'approved',
               rating_avg: 4.95,
               total_trips: isDemoDriver ? 18 : 0,
               earnings_today: isDemoDriver ? 320 : 0,
@@ -422,6 +473,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(regUser.profile);
           localStorage.setItem('pasada_auth_user', JSON.stringify(regUser.profile));
           if (regUser.driverProfile) {
+            const pId = regUser.profile?.id || regUser.driverProfile?.id;
+            const localSavedStatus = pId ? (localStorage.getItem(`pasada_driver_status_${pId}`) as any) : null;
+            if (localSavedStatus) {
+              regUser.driverProfile.verification_status = localSavedStatus;
+            }
             setDriverProfile(regUser.driverProfile);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
           }
@@ -451,6 +507,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(regUser.profile);
             localStorage.setItem('pasada_auth_user', JSON.stringify(regUser.profile));
             if (regUser.driverProfile) {
+              const pId = regUser.profile?.id || regUser.driverProfile?.id;
+              const localSavedStatus = pId ? (localStorage.getItem(`pasada_driver_status_${pId}`) as any) : null;
+              if (localSavedStatus) {
+                regUser.driverProfile.verification_status = localSavedStatus;
+              }
               setDriverProfile(regUser.driverProfile);
               localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
             }
@@ -468,6 +529,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setUser(cachedUser.profile);
               localStorage.setItem('pasada_auth_user', JSON.stringify(cachedUser.profile));
               if (cachedUser.driverProfile) {
+                const pId = cachedUser.profile?.id || cachedUser.driverProfile?.id;
+                const localSavedStatus = pId ? (localStorage.getItem(`pasada_driver_status_${pId}`) as any) : null;
+                if (localSavedStatus) {
+                  cachedUser.driverProfile.verification_status = localSavedStatus;
+                }
                 setDriverProfile(cachedUser.driverProfile);
                 localStorage.setItem('pasada_auth_driver', JSON.stringify(cachedUser.driverProfile));
               }
@@ -747,7 +813,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshDriverProfile = async () => {
     const targetId = user?.id || driverProfile?.id;
-    if (!targetId || targetId.startsWith('00000000-0000-0000-0000-')) return;
+    if (!targetId) return;
+
+    // Check local status override first (instant response)
+    const localOverride = localStorage.getItem(`pasada_driver_status_${targetId}`) as any;
+    if (localOverride && driverProfile && driverProfile.verification_status !== localOverride) {
+      const updated = {
+        ...driverProfile,
+        verification_status: localOverride,
+        rejection_reason: localOverride === 'rejected' ? localStorage.getItem(`pasada_driver_rejection_${targetId}`) || undefined : undefined
+      };
+      setDriverProfile(updated);
+      localStorage.setItem('pasada_auth_driver', JSON.stringify(updated));
+    }
+
+    if (MOCK_PRESET_IDS.has(targetId)) return;
 
     try {
       const { data: dProfile, error } = await supabase
@@ -759,7 +839,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!error && dProfile) {
         const driverObj: DriverProfile = {
           ...dProfile,
-          terminal_name: dProfile.terminals?.name || 'Bauang Central TODA'
+          verification_status: localOverride || (dProfile.verification_status as any) || 'pending',
+          terminal_name: dProfile.terminals?.name || driverProfile?.terminal_name || 'Bauang Central TODA'
         };
         setDriverProfile(driverObj);
         localStorage.setItem('pasada_auth_driver', JSON.stringify(driverObj));
@@ -780,7 +861,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {}
       }
     } catch (err) {
-      console.warn("refreshDriverProfile note:", err);
+      console.warn("Driver profile refresh note:", err);
     }
   };
 

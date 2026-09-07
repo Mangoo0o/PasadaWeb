@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load active session from Supabase
   const refreshUserProfile = async (userId: string, email?: string) => {
-    if (!userId || userId.startsWith('00000000-0000-0000-0000-')) {
+    if (!userId || userId === '00000000-0000-0000-0000-000000000001') {
       return null;
     }
     try {

@@ -238,10 +238,11 @@ export async function updateDriverVerificationStatus(
       updatePayload.rejection_reason = null;
     }
 
-    let { error } = await supabase
+    let { data: updatedRows, error } = await supabase
       .from('drivers')
       .update(updatePayload)
-      .eq('id', driverId);
+      .eq('id', driverId)
+      .select();
 
     // Fallback: if update fails (e.g. 409 Conflict due to foreign key on reviewed_by), retry without reviewed_by
     if (error && updatePayload.reviewed_by) {
@@ -251,14 +252,49 @@ export async function updateDriverVerificationStatus(
       const retry = await supabase
         .from('drivers')
         .update(fallbackPayload)
-        .eq('id', driverId);
+        .eq('id', driverId)
+        .select();
       error = retry.error;
+      updatedRows = retry.data;
+    }
+
+    // If update returned 0 rows (driver row not in DB yet), upsert record into drivers
+    if (!error && (!updatedRows || updatedRows.length === 0)) {
+      console.log('Driver row missing in drivers table, upserting for driverId:', driverId);
+      const upsertPayload: any = {
+        id: driverId,
+        verification_status: status,
+        plate_number: 'BG-' + (driverId.slice(0, 5).toUpperCase()),
+        body_number: driverId.slice(0, 4),
+        tricycle_model: 'Standard Tricycle',
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_available: status === 'approved',
+        ...(adminId && !adminId.startsWith('00000000-') ? { reviewed_by: adminId } : {}),
+        ...(status === 'rejected' && rejectionReason ? { rejection_reason: rejectionReason } : {})
+      };
+
+      const upsertRes = await supabase.from('drivers').upsert(upsertPayload).select();
+      if (upsertRes.error) {
+        delete upsertPayload.reviewed_by;
+        await supabase.from('drivers').upsert(upsertPayload);
+      }
     }
 
     if (error) {
       console.warn('Error updating driver verification status in DB:', error.message);
       return { success: false, error: error.message };
     }
+
+    // Save dedicated local status override to ensure persistence across all tabs and refreshes
+    try {
+      localStorage.setItem(`pasada_driver_status_${driverId}`, status);
+      if (status === 'rejected' && rejectionReason) {
+        localStorage.setItem(`pasada_driver_rejection_${driverId}`, rejectionReason);
+      } else if (status === 'approved') {
+        localStorage.removeItem(`pasada_driver_rejection_${driverId}`);
+      }
+    } catch {}
 
     // Update document statuses
     const docStatus = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'pending';
@@ -305,6 +341,13 @@ export async function updateDriverVerificationStatus(
       if (changed) {
         localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
       }
+    } catch {}
+
+    // Broadcast status change event for real-time reactivity in current window
+    try {
+      window.dispatchEvent(new CustomEvent('pasada_driver_status_changed', {
+        detail: { driverId, status, rejectionReason }
+      }));
     } catch {}
 
     return { success: true };
