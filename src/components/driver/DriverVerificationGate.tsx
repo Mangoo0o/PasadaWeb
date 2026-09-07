@@ -10,8 +10,7 @@ import {
   CheckCircle2, 
   UploadCloud, 
   Bike,
-  Info,
-  PhoneCall
+  Info
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { 
@@ -194,7 +193,7 @@ export const DriverVerificationGate: React.FC = () => {
                     {isRejected ? 'Kailangan ng Pagwawasto' : isSuspended ? 'Suspended' : 'Nasa Pagsusuri Pa'}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400">
-                    MTFRB Bauang
+                    Bauang
                   </span>
                 </div>
 
@@ -203,15 +202,15 @@ export const DriverVerificationGate: React.FC = () => {
                     ? 'Kailangan ng Pagwawasto ang Dokumento' 
                     : isSuspended
                     ? 'Kasalukuyang Nakasuspinde ang Account'
-                    : 'Sinusuri ang Iyong Franchise Documents'}
+                    : 'Sinusuri ang Iyong Documents'}
                 </h1>
 
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed font-medium">
                   {isRejected
                     ? 'Suriin ang puna ng Admin sa ibaba. Palitan ang tinukoy na PDF document bago muling suriin.'
                     : isSuspended
-                    ? 'Makipag-ugnayan sa Bauang MTFRB para sa re-activation ng iyong prangkisa.'
-                    : 'Kasalukuyang sinusuri ng MTFRB Admin ang iyong LTO License, OR/CR, MTOP, Barangay at Police Clearance. Awtomatikong mabubuksan ang online dispatch kapag naaprubahan.'}
+                    ? 'Makipag-ugnayan sa Admin para sa re-activation ng iyong account.'
+                    : 'Kasalukuyang sinusuri ng Admin ang iyong LTO License, OR/CR, MTOP, Barangay at Police Clearance. Awtomatikong mabubuksan ang online dispatch kapag naaprubahan.'}
                 </p>
               </div>
             </div>
@@ -241,7 +240,7 @@ export const DriverVerificationGate: React.FC = () => {
                 <span>Naisumiteng mga Dokumento (PDF)</span>
               </h3>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                5 opisyal na dokumento para sa franchise verification
+                5 opisyal na dokumento para sa verification
               </p>
             </div>
             
@@ -347,17 +346,6 @@ export const DriverVerificationGate: React.FC = () => {
               })}
             </div>
           )}
-        </div>
-
-        {/* 3. LGU Assistance Footer */}
-        <div className="p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 text-center space-y-0.5">
-          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5">
-            <PhoneCall className="w-3 h-3 text-[#0052d1]" />
-            <span>Kailangan ng tulong sa verification?</span>
-          </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-            Bisitahin ang Bauang MTFRB Licensing Division sa Municipal Hall o tumawag sa (072) 607-1234.
-          </p>
         </div>
 
       </div>

@@ -224,10 +224,10 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
           {/* Title and description */}
           <div>
             <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
-              Franchise Compliance Documents
+              Compliance Documents
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Kinakailangang i-upload ang 5 opisyal na PDF bago maaprubahan ang prangkisa.
+              Kinakailangang i-upload ang 5 opisyal na PDF bago maaprubahan ang account.
             </p>
           </div>
 
@@ -454,7 +454,7 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
                   Pagsusuri ng mga Dokumento Bago Isumite
                 </h2>
                 <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  Mangyaring suriin kung kumpleto ang 5 kinakailangang PDF bago isumite sa Bauang MTFRB.
+                  Mangyaring suriin kung kumpleto ang 5 kinakailangang PDF bago isumite sa Admin.
                 </p>
               </div>
 
@@ -515,7 +515,7 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
                   className="mt-0.5 rounded text-[#0052d1] focus:ring-[#0052d1]"
                 />
                 <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                  Pinatutunayan ko na ang lahat ng na-upload na PDF documents ay totoo, opisyal, at alinsunod sa mga patakaran ng Bauang MTFRB at LTO.
+                  Pinatutunayan ko na ang lahat ng na-upload na PDF documents ay totoo, opisyal, at alinsunod sa mga patakaran ng LTO at lokal na pamahalaan.
                 </span>
               </label>
             </div>
@@ -567,12 +567,12 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 size={15} className="animate-spin" />
-                  <span>Isinusumite sa MTFRB...</span>
+                  <span>Isinusumite sa Admin...</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck size={15} />
-                  <span>Isumite sa MTFRB Admin</span>
+                  <span>Isumite sa Admin</span>
                 </>
               )}
             </button>
