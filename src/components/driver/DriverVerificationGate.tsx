@@ -120,21 +120,21 @@ export const DriverVerificationGate: React.FC = () => {
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-3">
           
           {/* Top Metadata Row: Vehicle Tag, Refresh, Sign Out */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-0 shrink">
               <div className="w-5 h-5 rounded-full bg-[#0052d1] text-white flex items-center justify-center shrink-0">
                 <Bike className="w-3 h-3 text-[#fcd400]" />
               </div>
-              <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate">
                 {user?.full_name || 'Driver'}
               </span>
-              <span className="text-slate-400 font-normal">•</span>
-              <span className="font-mono text-[11px]">
+              <span className="text-slate-400 font-normal shrink-0">•</span>
+              <span className="font-mono text-[11px] shrink-0">
                 {driverProfile?.plate_number || 'Tricycle'} (#{driverProfile?.body_number || '0142'})
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
@@ -147,7 +147,7 @@ export const DriverVerificationGate: React.FC = () => {
 
               <button
                 onClick={signOut}
-                className="p-1.5 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold active:scale-95"
+                className="p-1.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold active:scale-95 shrink-0"
                 title="Mag-sign out"
               >
                 <LogOut className="w-3.5 h-3.5" />

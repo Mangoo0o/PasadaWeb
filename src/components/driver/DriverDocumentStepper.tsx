@@ -192,28 +192,28 @@ export const DriverDocumentStepper: React.FC<DriverDocumentStepperProps> = ({
         {/* 1. Header Section */}
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-3">
           {/* Top metadata row: Driver Plate Pill, Status Badge, Sign Out */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-0 shrink">
               <div className="w-5 h-5 rounded-full bg-[#0052d1] text-white flex items-center justify-center shrink-0">
                 <Bike className="w-3 h-3 text-[#fcd400]" />
               </div>
-              <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate">
                 {user?.full_name || 'Driver'}
               </span>
-              <span className="text-slate-400 font-normal">•</span>
-              <span className="font-mono text-[11px]">
+              <span className="text-slate-400 font-normal shrink-0">•</span>
+              <span className="font-mono text-[11px] shrink-0">
                 {driverProfile?.plate_number || 'Tricycle'} (#{driverProfile?.body_number || '0142'})
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shrink-0">
                 Action Required
               </span>
               <button
                 type="button"
                 onClick={signOut}
-                className="p-1.5 rounded-lg hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
                 title="Sign Out to continue later"
               >
                 <LogOut size={15} />
