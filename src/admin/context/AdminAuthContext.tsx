@@ -18,12 +18,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load active session from Supabase
   const refreshUserProfile = async (userId: string, email?: string) => {
+    if (!userId || userId.startsWith('00000000-0000-0000-0000-')) {
+      return null;
+    }
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         const fullProfile: Profile = {

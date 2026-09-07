@@ -69,8 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const activeUserId = session?.user?.id || user?.id;
-        if (activeUserId) {
+        const activeUserId = session?.user?.id || (user?.id && !user.id.startsWith('00000000-0000-0000-0000-') ? user.id : undefined);
+        if (activeUserId && !activeUserId.startsWith('00000000-0000-0000-0000-')) {
           await loadUserProfile(activeUserId, session?.user);
         }
       } catch (err) {
@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.addEventListener('pasada_logout', handleForcedLogout);
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+      if (session?.user && !session.user.id.startsWith('00000000-0000-0000-0000-')) {
         await loadUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -111,12 +111,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loadUserProfile = async (userId: string, authUser?: any) => {
+    if (!userId || userId.startsWith('00000000-0000-0000-0000-')) {
+      return;
+    }
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profile && !error) {
         setUser(profile as Profile);
@@ -132,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('drivers')
             .select('*, terminals(name)')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
           if (dProfile) {
             const driverObj: DriverProfile = {
@@ -744,14 +747,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshDriverProfile = async () => {
     const targetId = user?.id || driverProfile?.id;
-    if (!targetId) return;
+    if (!targetId || targetId.startsWith('00000000-0000-0000-0000-')) return;
 
     try {
       const { data: dProfile, error } = await supabase
         .from('drivers')
         .select('*, terminals(name)')
         .eq('id', targetId)
-        .single();
+        .maybeSingle();
 
       if (!error && dProfile) {
         const driverObj: DriverProfile = {
