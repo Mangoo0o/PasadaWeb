@@ -28,9 +28,9 @@ export const REQUIRED_DRIVER_DOCUMENTS: DocumentTypeConfig[] = [
   },
   {
     type: 'mtop',
-    title: 'MTOP Franchise Permit',
-    tagalogTitle: 'Tricycle Franchise / MTOP',
-    description: 'Motorized Tricycle Operator’s Permit issued by Bauang MTFRB / LGU.',
+    title: 'MTOP Permit',
+    tagalogTitle: 'Tricycle Operator Permit (MTOP)',
+    description: 'Motorized Tricycle Operator’s Permit issued by LGU.',
     required: true,
   },
   {

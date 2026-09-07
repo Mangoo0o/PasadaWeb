@@ -277,18 +277,18 @@ export const DriverVerificationGate: React.FC = () => {
                 return (
                   <div
                     key={reqDoc.type}
-                    className="p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all hover:border-slate-300"
+                    className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col gap-2.5 transition-all hover:border-slate-300"
                   >
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 shadow-2xs flex items-center justify-center mt-0.5 shrink-0 border border-slate-100 dark:border-slate-700">
+                      <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 shadow-2xs flex items-center justify-center mt-0.5 shrink-0 border border-slate-100 dark:border-slate-700">
                         <FileText className="w-4 h-4" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                             {reqDoc.title}
                           </span>
-                          <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 shrink-0">
+                          <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 shrink-0">
                             PDF
                           </span>
                         </div>
@@ -297,38 +297,38 @@ export const DriverVerificationGate: React.FC = () => {
                         </div>
 
                         {doc ? (
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 mt-0.5 truncate">
-                            <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 mt-1 truncate">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                             <span className="truncate">{doc.file_name}</span>
                           </div>
                         ) : (
-                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 mt-0.5">
-                            <Clock className="w-3 h-3 shrink-0" />
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 mt-1">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
                             <span>Kulang pa / Hindi pa na-upload</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Actions: View PDF & Re-upload */}
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                    {/* Actions: Balanced 2-Column Button Bar */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
                       {doc?.file_url && (
                         <a
                           href={doc.file_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0052d1] text-[#0052d1] dark:text-sky-400 text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs"
+                          className="w-full py-2 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0052d1] text-[#0052d1] dark:text-sky-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs hover:bg-sky-50/50 active:scale-95 text-center"
                         >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Tingnan</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Tingnan PDF</span>
                         </a>
                       )}
 
-                      <label className={`px-2.5 py-1.5 rounded-lg bg-[#0052d1] hover:bg-[#003f87] text-white text-[11px] font-bold flex items-center gap-1 transition-all shadow-2xs cursor-pointer ${
-                        isUploadingThis ? 'opacity-50 pointer-events-none' : ''
-                      }`}>
-                        <UploadCloud className="w-3 h-3" />
-                        <span>{isUploadingThis ? 'Nag-a-upload...' : 'Palitan'}</span>
+                      <label className={`w-full py-2 px-3 rounded-xl bg-[#0052d1] hover:bg-[#003f87] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95 text-center ${
+                        !doc?.file_url ? 'col-span-2' : ''
+                      } ${isUploadingThis ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>{isUploadingThis ? 'Nag-a-upload...' : 'Palitan PDF'}</span>
                         <input
                           type="file"
                           accept="application/pdf,.pdf"
