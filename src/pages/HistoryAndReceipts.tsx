@@ -18,6 +18,7 @@ import { Modal } from '../components/common/Modal';
 import { Booking } from '../types/database.types';
 import { fetchUserBookings } from '../services/bookingService';
 import { submitComplaint } from '../services/complaintService';
+import { getPassengerTypeInfo, isDiscountEligibleType } from '../services/fareService';
 
 interface HistoryAndReceiptsProps {
   onOpenAuthModal?: () => void;
@@ -181,6 +182,11 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
           filteredBookings.map((b) => {
             const isExpanded = expandedId === b.id;
             const fareAmount = Number(b.final_fare || b.estimated_fare || 20);
+            const pType = b.passenger?.passenger_type || (user?.role === 'passenger' ? user.passenger_type : undefined);
+            const isDiscounted = isDiscountEligibleType(pType) || (fareAmount % 4 === 0 && fareAmount < 20) || (fareAmount === 16 || fareAmount === 24 || fareAmount === 28 || fareAmount === 32 || fareAmount === 36 || fareAmount === 40);
+            const typeInfo = getPassengerTypeInfo(pType || 'student');
+            const standardSubtotal = isDiscounted ? Math.round(fareAmount / 0.8) : (fareAmount > 20 ? fareAmount : 20);
+            const discountDeduction = isDiscounted ? (standardSubtotal - fareAmount) : 0;
             const dateFormatted = new Date(b.created_at).toLocaleDateString('fil-PH', {
               month: 'short',
               day: 'numeric',
@@ -222,6 +228,11 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                       <div className="font-black text-xs sm:text-sm text-[#0052d1] dark:text-sky-400">
                         ₱{fareAmount.toFixed(2)}
                       </div>
+                      {isDiscounted && (
+                        <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 block -mt-0.5">
+                          -20% {typeInfo.label}
+                        </span>
+                      )}
                       <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${
                         b.status === 'completed' 
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400' 
@@ -246,16 +257,33 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                     
                     {/* Taripa Breakdown */}
                     <div className="space-y-1 text-slate-600 dark:text-slate-400">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span>Base Taripa Fare (Unang 2.0 km)</span>
-                        <span className="font-semibold text-slate-900 dark:text-slate-200">₱20.00</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span>Distansya ({b.estimated_distance_km} km)</span>
-                        <span className="font-semibold text-slate-900 dark:text-slate-200">
-                          ₱{Math.max(0, fareAmount - 20).toFixed(2)}
-                        </span>
-                      </div>
+                      {isDiscounted ? (
+                        <>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span>Regulated Taripa Subtotal</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-200">₱{standardSubtotal.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                            <span>Diskwento (20% {typeInfo.label})</span>
+                            <span>-₱{discountDeduction.toFixed(2)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span>Base Taripa Fare (Unang 2.0 km)</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-200">₱20.00</span>
+                          </div>
+                          {fareAmount > 20 && (
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Karagdagang Distansya / Lokasyon ({b.estimated_distance_km} km)</span>
+                              <span className="font-semibold text-slate-900 dark:text-slate-200">
+                                ₱{(fareAmount - 20).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
                       <div className="flex justify-between items-center pt-1.5 border-t border-slate-200 dark:border-slate-700 font-bold text-xs">
                         <span className="text-slate-900 dark:text-slate-100">Kabuuang Bayad</span>
                         <span className="text-[#0052d1] dark:text-sky-400 font-black text-sm">₱{fareAmount.toFixed(2)}</span>

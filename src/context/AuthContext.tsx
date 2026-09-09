@@ -159,8 +159,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (profile && !error) {
-        setUser(profile as Profile);
-        localStorage.setItem('pasada_auth_user', JSON.stringify(profile));
+        const localSavedDiscount = localStorage.getItem('pasada_discount_type') as any;
+        const resolvedPassengerType = (profile.passenger_type && profile.passenger_type !== 'regular')
+          ? profile.passenger_type
+          : (authUser?.user_metadata?.passenger_type || localSavedDiscount || profile.passenger_type || 'regular');
+
+        const resolvedProfile: Profile = {
+          ...profile,
+          passenger_type: resolvedPassengerType
+        };
+
+        setUser(resolvedProfile);
+        localStorage.setItem('pasada_auth_user', JSON.stringify(resolvedProfile));
+        if (resolvedPassengerType) {
+          localStorage.setItem('pasada_discount_type', resolvedPassengerType);
+        }
 
         if (profile.language_pref) {
           setAppLanguage(profile.language_pref as 'en' | 'fil');
@@ -782,9 +795,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUserProfile = async (updates: Partial<Profile>) => {
+    if (updates.passenger_type) {
+      localStorage.setItem('pasada_discount_type', updates.passenger_type);
+      window.dispatchEvent(new CustomEvent('pasada_discount_changed', { detail: updates.passenger_type }));
+    }
+
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
+    localStorage.setItem('pasada_auth_user', JSON.stringify(updated));
+
+    // Sync local registered users map if applicable
+    try {
+      const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
+      let changed = false;
+      for (const k of Object.keys(regMap)) {
+        if (regMap[k]?.profile?.id === user.id) {
+          regMap[k].profile = updated;
+          changed = true;
+        }
+      }
+      if (changed) {
+        localStorage.setItem('pasada_registered_users', JSON.stringify(regMap));
+      }
+    } catch {}
 
     try {
       await supabase

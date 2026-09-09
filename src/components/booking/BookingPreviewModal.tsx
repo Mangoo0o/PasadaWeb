@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Booking } from '../../types/database.types';
+import { getPassengerTypeInfo, isDiscountEligibleType } from '../../services/fareService';
 
 interface BookingPreviewModalProps {
   booking: Booking | null;
@@ -153,6 +154,10 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
 }) => {
   const { t } = useTranslation();
   if (!booking) return null;
+
+  const passengerType = booking?.passenger?.passenger_type || (booking as any)?.passenger_type;
+  const hasDiscount = isDiscountEligibleType(passengerType);
+  const typeInfo = getPassengerTypeInfo(passengerType);
 
   const rawDriverLat = Number(driverLat) || 16.5333;
   const rawDriverLng = Number(driverLng) || 120.3333;
@@ -399,8 +404,23 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               <div className="text-xl sm:text-2xl font-black text-[#003f87] dark:text-[#00C1FD]">
                 ₱{booking.estimated_fare.toFixed(2)}
               </div>
+              {hasDiscount && (
+                <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded-md inline-block">
+                  -20% {typeInfo.label}
+                </span>
+              )}
             </div>
           </div>
+
+          {/* Verification Notice if Commuter has Special Discount */}
+          {hasDiscount && (
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-2">
+              <span className="shrink-0 text-xs">🪪</span>
+              <span>
+                Pakitingnan ang {typeInfo.label} ID ng pasahero sa pagsakay para sa 20% taripa discount.
+              </span>
+            </div>
+          )}
 
           {/* Action CTA Button */}
           <div>

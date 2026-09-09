@@ -24,6 +24,7 @@ import { InTripChatModal } from '../components/booking/InTripChatModal';
 import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
 import { subscribeToTripChat, fetchTripMessages } from '../services/tripChatService';
 import { useTranslation } from 'react-i18next';
+import { getPassengerTypeInfo, isDiscountEligibleType } from '../services/fareService';
 
 interface DriverTravelPageProps {
   booking: Booking;
@@ -368,9 +369,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 </a>
               )}
               <div className="text-right">
-                <span className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD]">
+                <span className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] block">
                   ₱{booking.estimated_fare.toFixed(2)}
                 </span>
+                {isDiscountEligibleType(booking.passenger?.passenger_type || (booking as any)?.passenger_type) && (
+                  <span className="text-[8px] sm:text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded inline-block">
+                    -20% {getPassengerTypeInfo(booking.passenger?.passenger_type || (booking as any)?.passenger_type).label}
+                  </span>
+                )}
               </div>
             </div>
           </div>

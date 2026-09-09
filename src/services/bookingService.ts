@@ -1,8 +1,10 @@
 import { supabase } from '../api/supabaseClient';
-import { Booking, BookingStatus, PaymentMethod } from '../types/database.types';
+import { Booking, BookingStatus, PaymentMethod, Profile } from '../types/database.types';
 
 export const createBookingRequest = async (params: {
   passengerId: string;
+  passenger?: Profile | null;
+  passengerType?: string;
   originName: string;
   originLat: number;
   originLng: number;
@@ -39,7 +41,7 @@ export const createBookingRequest = async (params: {
     const { data, error } = await supabase
       .from('bookings')
       .insert(newBooking)
-      .select('*')
+      .select('*, passenger:profiles(id, full_name, phone_number, passenger_type)')
       .single();
 
     if (error) {
@@ -47,6 +49,8 @@ export const createBookingRequest = async (params: {
       const fallbackBooking: Booking = {
         id: `bk-${Date.now()}`,
         ...newBooking,
+        passenger_name: params.passenger?.full_name || 'Ka-Pasada Commuter',
+        passenger: params.passenger || (params.passengerType ? ({ id: params.passengerId, role: 'passenger', full_name: 'Ka-Pasada Commuter', passenger_type: params.passengerType as any, language_pref: 'fil', created_at: new Date().toISOString() } as Profile) : undefined),
         created_at: new Date().toISOString()
       };
       // Store in local storage queue for multi-tab fallback
@@ -59,13 +63,18 @@ export const createBookingRequest = async (params: {
       return { data: fallbackBooking };
     }
 
+    const returnedBooking: Booking = {
+      ...(data as Booking),
+      passenger: (data as any)?.passenger || params.passenger || undefined
+    };
+
     try {
       const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
-      queue.unshift(data);
+      queue.unshift(returnedBooking);
       localStorage.setItem('pasada_open_queue', JSON.stringify(queue.slice(0, 20)));
     } catch {}
-    window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: data }));
-    return { data: data as Booking };
+    window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: returnedBooking }));
+    return { data: returnedBooking };
   } catch (err: any) {
     return { error: err.message || 'Failed to create booking' };
   }
@@ -110,7 +119,7 @@ export const subscribeToBooking = (
   const fetchLatest = async () => {
     let { data, error } = await supabase
       .from('bookings')
-      .select('*, driver:drivers(*, profile:profiles(*))')
+      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles(*)')
       .eq('id', bookingId)
       .single();
 
@@ -470,13 +479,22 @@ export const fetchUserBookings = async (userId: string, isDriver = false): Promi
 
 export const fetchOpenDispatches = async (): Promise<Booking[]> => {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select('*, passenger:profiles(id, full_name, phone_number, passenger_type)')
       .eq('status', 'searching')
       .order('created_at', { ascending: false });
 
-    const serverBookings: Booking[] = (!error && data) ? (data as Booking[]) : [];
+    if (error || !data) {
+      const fallbackQuery = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('status', 'searching')
+        .order('created_at', { ascending: false });
+      data = fallbackQuery.data;
+    }
+
+    const serverBookings: Booking[] = data ? (data as Booking[]) : [];
 
     let localQueue: Booking[] = [];
     try {

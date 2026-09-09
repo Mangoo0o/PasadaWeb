@@ -16,7 +16,8 @@ import {
   Sparkles,
   Navigation,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Percent
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -27,7 +28,10 @@ import {
   fetchLocationFares, 
   findMatchingLocationByProximity, 
   ProximityMatchResult,
-  getLocationIconEmoji
+  getLocationIconEmoji,
+  calculateFare,
+  getPassengerTypeInfo,
+  isDiscountEligibleType
 } from '../services/fareService';
 import { 
   createBookingRequest, 
@@ -50,7 +54,7 @@ interface PassengerHomeProps {
 
 export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, preselectedSpot }) => {
   const { t, i18n } = useTranslation();
-  const { user, signOut, setLanguage } = useAuth();
+  const { user, signOut, setLanguage, updateUserProfile } = useAuth();
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
@@ -62,7 +66,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const [activeDrivers, setActiveDrivers] = useState<Array<{ id: string; lat: number; lng: number; bodyNumber?: string }>>([]);
   
   const [selectedLocationFare, setSelectedLocationFare] = useState<LocationFare | null>(null);
-  const [, setProximityResult] = useState<ProximityMatchResult | null>(null);
+  const [proximityResult, setProximityResult] = useState<ProximityMatchResult | null>(null);
 
   // 1. ORIGIN: Current Passenger / Live GPS Pickup Location
   const [originLat, setOriginLat] = useState<number>(16.5333);
@@ -127,19 +131,57 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
   const hasSelectedDestination = Boolean(selectedLocationFare || (destLat !== undefined && destLng !== undefined));
 
-  // 20% Discount for Student, Senior Citizen, or PWD
-  const isDiscountEligible = Boolean(
-    user?.passenger_type && user.passenger_type !== 'regular'
+  // Commuter discount preference synchronization (Guest + Auth fallback)
+  const [localDiscountType, setLocalDiscountType] = useState<string>(() => {
+    return user?.passenger_type || (typeof window !== 'undefined' ? localStorage.getItem('pasada_discount_type') : null) || 'regular';
+  });
+
+  useEffect(() => {
+    const handleDiscountEvent = (e: any) => {
+      if (e?.detail) {
+        setLocalDiscountType(e.detail);
+      } else {
+        setLocalDiscountType(user?.passenger_type || localStorage.getItem('pasada_discount_type') || 'regular');
+      }
+    };
+    window.addEventListener('pasada_discount_changed', handleDiscountEvent);
+    window.addEventListener('storage', handleDiscountEvent);
+    return () => {
+      window.removeEventListener('pasada_discount_changed', handleDiscountEvent);
+      window.removeEventListener('storage', handleDiscountEvent);
+    };
+  }, [user?.passenger_type]);
+
+  const effectivePassengerType = (user?.passenger_type && user.passenger_type !== 'regular')
+    ? user.passenger_type
+    : (localDiscountType || user?.passenger_type || 'regular');
+
+  const isDiscountEligible = isDiscountEligibleType(effectivePassengerType);
+  const passengerTypeInfo = getPassengerTypeInfo(effectivePassengerType);
+
+  // Standard tariff amount for current location or proximity match
+  const currentStandardFare = Number(
+    selectedLocationFare?.standard_fare || proximityResult?.standardFare || 20
   );
 
-  const getPassengerTypeLabel = () => {
-    switch (user?.passenger_type) {
-      case 'student': return 'Estudyante (-20%)';
-      case 'senior': return 'Senior Citizen (-20%)';
-      case 'pwd': return 'PWD (-20%)';
-      default: return 'Fixed Tariff';
+  // Automatically recalculate currentFare whenever destination, proximity result, or discount status updates
+  useEffect(() => {
+    if (selectedLocationFare) {
+      const calc = calculateFare(
+        Number(selectedLocationFare.standard_fare),
+        isDiscountEligible,
+        selectedLocationFare.discounted_fare
+      );
+      setCurrentFare(calc.finalFare);
+    } else if (proximityResult) {
+      const calc = calculateFare(
+        Number(proximityResult.standardFare),
+        isDiscountEligible,
+        proximityResult.discountedFare
+      );
+      setCurrentFare(calc.finalFare);
     }
-  };
+  }, [isDiscountEligible, selectedLocationFare, proximityResult]);
 
   // Resolve Price via Location Proximity
   const resolveLocationFare = useCallback((
@@ -154,10 +196,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
     if (match) {
       setSelectedLocationFare(match.matchedLocation);
-      const computedFare = isDiscountEligible 
-        ? Number(match.discountedFare || Math.round(Number(match.standardFare) * 0.8))
-        : Number(match.standardFare);
-      setCurrentFare(computedFare);
+      const calc = calculateFare(Number(match.standardFare), isDiscountEligible, match.discountedFare);
+      setCurrentFare(calc.finalFare);
     }
   }, [isDiscountEligible]);
 
@@ -311,10 +351,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     setSearchQuery(loc.location_name);
     setIsSearchFocused(false);
     
-    const fareToCharge = isDiscountEligible
-      ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8))
-      : Number(loc.standard_fare);
-    setCurrentFare(fareToCharge);
+    const calc = calculateFare(Number(loc.standard_fare), isDiscountEligible, loc.discounted_fare);
+    setCurrentFare(calc.finalFare);
   };
 
   // Select Destination Terminal
@@ -357,6 +395,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     setBookingState('searching');
     const res = await createBookingRequest({
       passengerId: user.id,
+      passenger: user,
+      passengerType: effectivePassengerType,
       originName,
       originLat,
       originLng,
@@ -555,9 +595,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {locationFares
                   .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
                   .map((loc) => {
-                    const price = isDiscountEligible 
-                      ? Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)) 
-                      : Number(loc.standard_fare);
+                    const calc = calculateFare(Number(loc.standard_fare), isDiscountEligible, loc.discounted_fare);
+                    const price = calc.finalFare;
 
                     return (
                       <button
@@ -585,7 +624,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                           </div>
                           {isDiscountEligible ? (
                             <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block leading-tight">
-                              -20%
+                              -20% {passengerTypeInfo.label}
                             </span>
                           ) : (
                             <span className="text-[9px] text-slate-400 block leading-tight">
@@ -629,8 +668,23 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           {bookingState === 'idle' && (
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-2 sm:p-2.5 px-3 sm:px-4 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="px-3 py-1 rounded-full bg-[#0052d1] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-sm shrink-0">
-                  ₱{currentFare}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className={`px-3 py-1 rounded-full text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-sm ${
+                    isDiscountEligible ? 'bg-emerald-600' : 'bg-[#0052d1]'
+                  }`}>
+                    ₱{currentFare}
+                  </div>
+                  {isDiscountEligible && (
+                    <div className="flex flex-col text-left">
+                      <span className="text-[10px] line-through text-slate-400 font-bold leading-none">
+                        ₱{currentStandardFare}
+                      </span>
+                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight leading-tight flex items-center gap-0.5">
+                        <span>-20%</span>
+                        <span>{passengerTypeInfo.label}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <div className="text-[9px] sm:text-[10px] uppercase font-bold text-[#0052d1] dark:text-sky-400 tracking-wider truncate">
@@ -666,8 +720,14 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                     {i18n.language === 'en' ? 'Searching for Driver in Bauang...' : 'Naghahanap ng Driver sa Bauang...'}
                   </h4>
-                  <p className="text-[11px] sm:text-xs text-slate-500 truncate">
-                    {selectedLocationFare?.location_name || destinationName} • <strong>₱{currentFare}.00</strong>
+                  <p className="text-[11px] sm:text-xs text-slate-500 truncate flex items-center gap-1.5 flex-wrap">
+                    <span>{selectedLocationFare?.location_name || destinationName} •</span>
+                    <strong>₱{currentFare}.00</strong>
+                    {isDiscountEligible && (
+                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                        -20% {passengerTypeInfo.label}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -689,9 +749,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <Sparkles className="w-3 h-3 text-[#fcd400]" />
                   <span>{i18n.language === 'en' ? 'DRIVER EN ROUTE TO PICKUP' : 'PAPUNTA NA SI MANONG DRIVER'}</span>
                 </span>
-                <span className="text-[11px] sm:text-xs font-black text-emerald-600">
-                  ₱{Number(activeBooking.estimated_fare).toFixed(2)}
-                </span>
+                <div className="text-right">
+                  <span className="text-[11px] sm:text-xs font-black text-emerald-600 block">
+                    ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                  </span>
+                  {isDiscountEligible && (
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block -mt-0.5">
+                      -20% {passengerTypeInfo.label}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2.5 sm:gap-3">
@@ -794,9 +861,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
                   {i18n.language === 'en' ? 'TRIP IN PROGRESS' : 'KASALUKUYANG BUMIBIYAHE'}
                 </span>
-                <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400">
-                  ₱{Number(activeBooking.estimated_fare).toFixed(2)}
-                </span>
+                <div className="text-right">
+                  <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400 block">
+                    ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                  </span>
+                  {isDiscountEligible && (
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block -mt-0.5">
+                      -20% {passengerTypeInfo.label}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                 {i18n.language === 'en' ? 'Heading to:' : 'Patungong:'} {selectedLocationFare?.location_name || destinationName}

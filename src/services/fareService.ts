@@ -531,3 +531,112 @@ export const findMatchingLocationByProximity = (
     proximityStatusText: `Nearest Location: ${nearest.location.location_name} (~${kmDist} km)`
   };
 };
+
+export interface PassengerTypeInfo {
+  id: 'regular' | 'student' | 'senior' | 'pwd';
+  label: string;
+  tag: string;
+  badge: string;
+  discountPercent: number;
+  hasDiscount: boolean;
+  requiresId: boolean;
+}
+
+export const isDiscountEligibleType = (passengerType?: string | null): boolean => {
+  if (!passengerType) return false;
+  const t = passengerType.toLowerCase().trim();
+  return t === 'student' || t === 'senior' || t === 'pwd';
+};
+
+export const getPassengerTypeInfo = (type?: string | null): PassengerTypeInfo => {
+  const norm = (type || '').toLowerCase().trim();
+  switch (norm) {
+    case 'student':
+      return {
+        id: 'student',
+        label: 'Estudyante',
+        tag: 'Student (-20%)',
+        badge: '20% OFF',
+        discountPercent: 20,
+        hasDiscount: true,
+        requiresId: true,
+      };
+    case 'senior':
+      return {
+        id: 'senior',
+        label: 'Senior Citizen',
+        tag: 'Senior (-20%)',
+        badge: '20% OFF',
+        discountPercent: 20,
+        hasDiscount: true,
+        requiresId: true,
+      };
+    case 'pwd':
+      return {
+        id: 'pwd',
+        label: 'PWD',
+        tag: 'PWD (-20%)',
+        badge: '20% OFF',
+        discountPercent: 20,
+        hasDiscount: true,
+        requiresId: true,
+      };
+    case 'regular':
+    default:
+      return {
+        id: 'regular',
+        label: 'Regular Passenger',
+        tag: 'Taripa',
+        badge: 'Regular',
+        discountPercent: 0,
+        hasDiscount: false,
+        requiresId: false,
+      };
+  }
+};
+
+export interface FareCalculationResult {
+  standardFare: number;
+  finalFare: number;
+  discountAmount: number;
+  isDiscounted: boolean;
+  passengerType: string;
+}
+
+export const calculateFare = (
+  standardFare: number,
+  passengerTypeOrEligible?: string | boolean | null,
+  customDiscountedFare?: number
+): FareCalculationResult => {
+  const std = Math.max(0, Number(standardFare) || 20);
+  const isEligible = typeof passengerTypeOrEligible === 'boolean' 
+    ? passengerTypeOrEligible 
+    : isDiscountEligibleType(passengerTypeOrEligible);
+  const pType = typeof passengerTypeOrEligible === 'string' ? passengerTypeOrEligible : (isEligible ? 'student' : 'regular');
+
+  if (!isEligible) {
+    return {
+      standardFare: std,
+      finalFare: std,
+      discountAmount: 0,
+      isDiscounted: false,
+      passengerType: 'regular'
+    };
+  }
+
+  // If a preset discounted tariff exists (e.g. 16 for 20), use it; otherwise compute official 20% discount
+  const computedDisc = customDiscountedFare !== undefined && customDiscountedFare > 0
+    ? Number(customDiscountedFare)
+    : Math.round(std * 0.8);
+
+  const discountAmount = Math.max(0, std - computedDisc);
+
+  return {
+    standardFare: std,
+    finalFare: computedDisc,
+    discountAmount,
+    isDiscounted: true,
+    passengerType: pType
+  };
+};
+

@@ -24,6 +24,7 @@ import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { DriverActiveTripMap } from '../components/booking/DriverActiveTripMap';
 import { DriverTravelPage } from './DriverTravelPage';
 import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
+import { getPassengerTypeInfo, isDiscountEligibleType } from '../services/fareService';
 
 export const DriverDispatch: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -251,6 +252,11 @@ export const DriverDispatch: React.FC = () => {
                 <div className="text-xl font-black text-[#003f87] dark:text-[#00C1FD]">
                   ₱{activeTrip.estimated_fare.toFixed(2)}
                 </div>
+                {isDiscountEligibleType(activeTrip.passenger?.passenger_type || (activeTrip as any)?.passenger_type) && (
+                  <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded-md inline-block">
+                    -20% {getPassengerTypeInfo(activeTrip.passenger?.passenger_type || (activeTrip as any)?.passenger_type).label}
+                  </span>
+                )}
               </div>
             </div>
 

@@ -15,11 +15,17 @@ import {
   ChevronRight,
   Clock,
   MessageSquareWarning,
-  MapPin
+  MapPin,
+  Edit3,
+  Scale
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
 import { fetchUserBookings } from '../services/bookingService';
+import { EditProfileModal } from '../components/profile/EditProfileModal';
+import { getPassengerTypeInfo } from '../services/fareService';
+import { WatermelonAccordion } from '../components/ui/WatermelonAccordion';
+import { cn } from '../lib/utils';
 
 interface PassengerProfileProps {
   setActiveTab?: (tab: string) => void;
@@ -27,12 +33,27 @@ interface PassengerProfileProps {
 
 export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab }) => {
   const { t, i18n } = useTranslation();
-  const { user, signOut, setLanguage } = useAuth();
+  const { user, signOut, setLanguage, updateUserProfile } = useAuth();
   
-  // Local state for commuter discount simulation & preferences
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Single source of truth: user.passenger_type with localStorage fallback
   const [discountType, setDiscountType] = useState<string>(() => {
-    return localStorage.getItem('pasada_discount_type') || 'regular';
+    return user?.passenger_type || localStorage.getItem('pasada_discount_type') || 'regular';
   });
+
+  useEffect(() => {
+    if (user?.passenger_type) {
+      setDiscountType(user.passenger_type);
+      localStorage.setItem('pasada_discount_type', user.passenger_type);
+    }
+    const handleDiscountUpdate = (e: any) => {
+      const updatedType = e.detail || localStorage.getItem('pasada_discount_type');
+      if (updatedType) setDiscountType(updatedType);
+    };
+    window.addEventListener('pasada_discount_changed', handleDiscountUpdate);
+    return () => window.removeEventListener('pasada_discount_changed', handleDiscountUpdate);
+  }, [user?.passenger_type]);
 
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -54,11 +75,6 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
     };
     loadRecentHistory();
   }, [user?.id]);
-
-  const handleSetDiscount = (type: string) => {
-    setDiscountType(type);
-    localStorage.setItem('pasada_discount_type', type);
-  };
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
@@ -133,10 +149,14 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               {t('profile.verifiedCommuter')}
             </span>
-            {isDiscountEligible && (
+            {isDiscountEligible ? (
               <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-0.5">
                 <Percent className="w-2.5 h-2.5" />
-                {t('profile.discountBadge')}
+                {getPassengerTypeInfo(discountType).label} (-20%)
+              </span>
+            ) : (
+              <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                Regular Taripa
               </span>
             )}
           </div>
@@ -151,6 +171,19 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
             {t('profile.memberSince')}: {new Date(user.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </p>
         </div>
+
+        {/* Edit Profile Action Button */}
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className={cn(
+            'h-9 px-3 sm:px-3.5 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 z-10',
+            'bg-[#0052d1]/10 hover:bg-[#0052d1]/20 text-[#0052d1] dark:text-sky-300 border border-[#0052d1]/20 active:scale-95'
+          )}
+          title={t('profile.editProfile', 'I-edit ang Profile')}
+        >
+          <Edit3 className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400" />
+          <span className="hidden xs:inline">{t('profile.editProfile', 'Edit Profile')}</span>
+        </button>
       </section>
 
       {/* 3. Merged Recent Trip History Preview with "See More" */}
@@ -243,58 +276,122 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
         )}
       </section>
 
-      {/* 4. Special 20% Taripa Discount Settings */}
-      <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2.5">
+      {/* 4. Commuter Classification & Municipal Tariff Status Card */}
+      <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Percent className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              'w-8 h-8 rounded-xl flex items-center justify-center',
+              isDiscountEligible
+                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+                : 'bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400'
+            )}>
+              <Percent className="w-4 h-4" />
+            </div>
             <div>
               <h3 className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-white">
-                {t('profile.discountsTitle')}
+                {t('profile.currentTariffStatus', 'Kasalukuyang Katayuan sa Taripa')}
               </h3>
               <p className="text-[10px] text-slate-500">
-                {t('profile.discountsSub')}
+                {t('profile.ordinanceSubtitle', 'Batas Republika 10754, 9994, 10687')}
               </p>
             </div>
           </div>
 
-          {isDiscountEligible && (
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold">
-              {t('profile.active')}
-            </span>
-          )}
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="text-xs font-bold text-[#0052d1] hover:text-[#206afa] dark:text-sky-400 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0052d1]/10 hover:bg-[#0052d1]/15 dark:bg-sky-500/10 cursor-pointer transition-colors border border-[#0052d1]/20 active:scale-95"
+            title={t('profile.editProfile', 'I-edit ang Profile at Diskwento')}
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>{t('profile.editProfile', 'I-edit')}</span>
+          </button>
         </div>
 
-        {/* Discount Selector Pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
-          {[
-            { id: 'regular', label: t('profile.regular'), desc: 'Taripa' },
-            { id: 'student', label: t('profile.student'), desc: '20% Off' },
-            { id: 'senior', label: t('profile.senior'), desc: '20% Off' },
-            { id: 'pwd', label: t('profile.pwd'), desc: '20% Off' }
-          ].map((type) => {
-            const isSelected = discountType === type.id;
-            return (
-              <button
-                key={type.id}
-                onClick={() => handleSetDiscount(type.id)}
-                className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#0052d1] text-white border-[#0052d1] shadow-sm shadow-[#0052d1]/20'
-                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black">{type.label}</span>
-                  {isSelected && <CheckCircle2 className="w-3 h-3 text-[#fcd400]" />}
-                </div>
-                <span className={`text-[9px] block ${isSelected ? 'text-sky-100' : 'text-slate-400'}`}>
-                  {type.desc}
+        {/* Current Active Status Card */}
+        <div className={cn(
+          'p-3 rounded-xl border flex items-center justify-between gap-3',
+          isDiscountEligible
+            ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+            : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700'
+        )}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={cn(
+              'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white font-bold',
+              isDiscountEligible ? 'bg-emerald-600 shadow-sm' : 'bg-[#0052d1] shadow-sm'
+            )}>
+              {isDiscountEligible ? <CheckCircle2 className="w-4 h-4 text-[#fcd400]" /> : <User className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                  {getPassengerTypeInfo(discountType).label}
                 </span>
-              </button>
-            );
-          })}
+                {isDiscountEligible ? (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-600 text-white">
+                    -20% OFF
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    Standard Tariff
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                {isDiscountEligible
+                  ? (i18n.language === 'en' ? 'Statutory 20% municipal tariff discount active' : 'Aktibong 20% diskwento sa taripa ng munisipyo')
+                  : (i18n.language === 'en' ? 'Standard municipal fare rate' : 'Standard na taripa ng munisipyo')}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="text-[11px] font-bold text-[#0052d1] dark:text-sky-400 hover:underline shrink-0 cursor-pointer"
+          >
+            {i18n.language === 'en' ? 'Change' : 'Palitan'} →
+          </button>
         </div>
+
+        {/* Watermelon UI Animated Accordion for Ordinance & ID Inspection Rules */}
+        <WatermelonAccordion
+          items={[
+            {
+              id: 'ordinance-rules',
+              title: i18n.language === 'en' ? 'Municipal Ordinance & Discount Rules' : 'Ordinansa sa Taripa at Alituntunin sa Diskwento',
+              subtitle: i18n.language === 'en' ? 'Legal statutory discounts for Bauang commuters' : 'Opisyal na diskwento ayon sa batas ng munisipyo',
+              icon: Scale,
+              badge: 'LEGAL',
+              content: (
+                <div className="space-y-1.5 text-[11px]">
+                  <p>
+                    {i18n.language === 'en'
+                      ? 'In accordance with Republic Acts 10754 (Persons with Disabilities), 9994 (Expanded Senior Citizens Act), and 10687 (Student Fare Discount Act), eligible commuters are entitled to a 20% discount on tricycle tariffs in the Municipality of Bauang.'
+                      : 'Alinsunod sa Batas Republika 10754 (PWD), 9994 (Senior Citizens), at 10687 (Student Fare), ang mga kwalipikadong pasahero ay may 20% diskwento sa taripa ng traysikel sa Bauang.'}
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px]">
+                    {t('profile.manageDiscountInEdit', 'Upang palitan ang iyong uri ng taripa, i-click ang I-edit ang Profile sa itaas upang makumpleto ang kinakailangang beripikasyon.')}
+                  </p>
+                </div>
+              ),
+            },
+            {
+              id: 'id-inspection',
+              title: i18n.language === 'en' ? 'Driver Physical ID Inspection Protocol' : 'Protokol sa Pagpapakita ng ID kay Driver',
+              subtitle: i18n.language === 'en' ? 'Accepted IDs upon boarding' : 'Mga tinatanggap na valid ID',
+              icon: ShieldCheck,
+              badge: 'REQUIRED',
+              content: (
+                <ul className="list-disc pl-4 space-y-1 text-[10px] text-slate-600 dark:text-slate-300">
+                  <li><strong>{i18n.language === 'en' ? 'Students:' : 'Estudyante:'}</strong> {i18n.language === 'en' ? 'Valid school/university ID for the current semester.' : 'Kasalukuyang School ID para sa aktibong school year/semester.'}</li>
+                  <li><strong>{i18n.language === 'en' ? 'Senior Citizens:' : 'Senior Citizen:'}</strong> {i18n.language === 'en' ? 'Official OSCA identification card.' : 'Opisyal na OSCA ID Card mula sa LGU.'}</li>
+                  <li><strong>{i18n.language === 'en' ? 'PWDs:' : 'May Kapansanan (PWD):'}</strong> {i18n.language === 'en' ? 'Valid DOH / NCDA / LGU PWD identification card.' : 'Opisyal na PWD ID Card mula sa Munisipyo / PDAO.'}</li>
+                  <li className="text-emerald-700 dark:text-emerald-400 font-medium">{i18n.language === 'en' ? 'Note: Drivers have the right to request full fare if no valid ID can be presented upon request.' : 'Paalala: May karapatan si Manong Driver na maningil ng regular na taripa kung walang maipakitang valid ID.'}</li>
+                </ul>
+              ),
+            },
+          ]}
+        />
       </section>
 
       {/* 5. Sign Out Button */}
@@ -307,6 +404,12 @@ export const PassengerProfile: React.FC<PassengerProfileProps> = ({ setActiveTab
           <span>{t('profile.signOut')}</span>
         </button>
       </div>
+
+      {/* Edit Profile & Commuter Classification Modal */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
 
     </div>
   );
