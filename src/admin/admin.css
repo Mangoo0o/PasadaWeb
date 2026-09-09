@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 /* PasadaGuide Admin Dashboard CSS */
 :root {
   /* Mobile App Brand Color Tokens */
@@ -7,57 +9,57 @@
   --color-pasada-teal: #006947;
 
   /* Light Theme Variables */
-  --bg-primary: #f7f9fb;
+  --bg-primary: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.95);
   --bg-card: #ffffff;
-  --border-color: #e0e3e5;
-  --border-glow: rgba(0, 82, 209, 0.25);
+  --border-color: #e2e8f0;
+  --border-glow: rgba(0, 82, 209, 0.15);
   
-  --text-main: #191c1e;
-  --text-muted: #424751;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
   --text-inverse: #ffffff;
 
   --accent-primary: #0052d1;
   --accent-primary-hover: #206afa;
   --accent-gradient: #0052d1;
-  --accent-glow: rgba(0, 82, 209, 0.18);
+  --accent-glow: rgba(0, 82, 209, 0.12);
 
   --success: #10b981;
-  --success-bg: #e6f7f2;
+  --success-bg: #ecfdf5;
   --warning: #f59e0b;
-  --warning-bg: #fef6e7;
-  --danger: #ba1a1a;
-  --danger-bg: #fde8e8;
-  --info: #006688;
-  --info-bg: #e6f4f8;
+  --warning-bg: #fffbeb;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --info: #0284c7;
+  --info-bg: #f0f9ff;
 
   --sidebar-width: 260px;
   --header-height: 64px;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 14px -2px rgba(0, 52, 111, 0.06);
-  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
-  --ambient-shadow: 0px 10px 25px -5px rgba(15, 23, 42, 0.05);
-  --shadow-glow: 0 0 20px rgba(39, 110, 254, 0.25);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.06);
+  --ambient-shadow: 0px 4px 16px -2px rgba(15, 23, 42, 0.04);
+  --shadow-glow: 0 0 18px rgba(39, 110, 254, 0.15);
 }
 
 .dark {
-  --bg-primary: #08101e;
-  --bg-surface: #0f1c30;
-  --bg-glass: rgba(15, 28, 48, 0.9);
-  --bg-card: #12223a;
-  --border-color: #1f3352;
-  --border-glow: rgba(0, 193, 253, 0.35);
+  --bg-primary: #0b1329;
+  --bg-surface: #111c38;
+  --bg-glass: rgba(17, 28, 56, 0.9);
+  --bg-card: #152244;
+  --border-color: #1e293b;
+  --border-glow: rgba(0, 193, 253, 0.25);
 
-  --text-main: #f1f5f9;
+  --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --text-inverse: #08101e;
+  --text-inverse: #0f172a;
 
   --accent-primary: #38bdf8;
   --accent-primary-hover: #7dd3fc;
   --accent-gradient: #0284c7;
-  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-glow: rgba(56, 189, 248, 0.2);
 
   --success: #34d399;
   --success-bg: rgba(52, 211, 153, 0.15);
@@ -68,10 +70,10 @@
   --info: #38bdf8;
   --info-bg: rgba(56, 189, 248, 0.15);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 25px rgba(0, 193, 253, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 25px rgba(0, 193, 253, 0.2);
 }
 
 /* App Layout Structure */
@@ -79,6 +81,11 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.admin-app-root * {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .admin-app-root .app-container {

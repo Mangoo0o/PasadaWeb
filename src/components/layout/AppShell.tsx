@@ -1,5 +1,7 @@
 import React from 'react';
+import { Smartphone } from 'lucide-react';
 import { MobileNavbar } from './MobileNavbar';
+import { cn } from '../../lib/utils';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -13,7 +15,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   activeTab,
   setActiveTab,
 }) => {
-  const isMapCentric = activeTab === 'pasada' || activeTab === 'dispatch';
+  const isMapCentric = activeTab === 'pasada';
   const isAdminView = activeTab === 'admin';
   const isDiscoveryHome = activeTab === 'home';
 
@@ -29,10 +31,14 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={() => setActiveTab('home')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0052d1] text-white font-bold text-xs shadow-xl hover:bg-[#206afa] border border-sky-400/40 transition-all active:scale-95 cursor-pointer"
+            className={cn(
+              'flex items-center gap-2 h-9 px-4 rounded-md font-bold text-xs shadow-lg transition-all active:scale-95 cursor-pointer',
+              'bg-[#0052d1] hover:bg-[#206afa] text-white border border-sky-400/40 shadow-[#0052d1]/30 backdrop-blur-md'
+            )}
             title="Switch to Passenger View"
           >
-            <span>🚶 Switch to Passenger App</span>
+            <Smartphone size={15} />
+            <span>Switch to Passenger App</span>
           </button>
         </div>
       </div>
@@ -78,8 +84,8 @@ export const AppShell: React.FC<AppShellProps> = ({
           isMapCentric 
             ? '' 
             : isDiscoveryHome 
-              ? 'flex-1 overflow-y-auto w-full bg-[#dbe9f4] min-h-full pb-32 sm:pb-36' 
-              : 'flex-1 overflow-y-auto pb-32 sm:pb-36 px-3 sm:px-5 md:px-8 w-full max-w-4xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full'
+              ? 'flex-1 min-h-0 overflow-y-auto w-full bg-[#dbe9f4] min-h-full pb-36 sm:pb-40' 
+              : 'flex-1 min-h-0 overflow-y-auto pb-36 sm:pb-40 px-3 sm:px-5 md:px-8 w-full max-w-4xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full'
         }
       >
         {children}

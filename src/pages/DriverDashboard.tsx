@@ -58,11 +58,25 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
     loadDispatches();
 
     const unsubscribe = subscribeToOpenDispatches((detail) => {
-      if (detail?.id && detail.status && detail.status !== 'searching') {
+      if (!detail?.id) {
+        loadDispatches();
+        return;
+      }
+
+      if (detail.status && detail.status !== 'searching') {
         setOpenDispatches(prev => prev.filter(b => b.id !== detail.id));
         setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
+        try {
+          const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+          const filtered = queue.filter((b: any) => b.id !== detail.id);
+          localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+        } catch {}
+        return;
       }
-      loadDispatches();
+
+      if (detail.status === 'searching') {
+        loadDispatches();
+      }
     });
 
     // Relaxed 30-second synchronization heartbeat instead of aggressive 3s polling
@@ -345,6 +359,11 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
           onAccept={async (bk) => {
             setPreviewBooking(null);
             setOpenDispatches(prev => prev.filter(b => b.id !== bk.id));
+            try {
+              const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+              const filtered = queue.filter((b: any) => b.id !== bk.id);
+              localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+            } catch {}
             await updateBookingStatus(bk.id, 'driver_assigned', driverProfile?.id || user?.id);
             if (setActiveTab) {
               setActiveTab('dispatch');

@@ -55,7 +55,7 @@ const AdminContent: React.FC = () => {
         supabase.from('drivers').select('*, profile:profiles(*), terminals(*)'),
         supabase.from('profiles').select('*'),
         supabase.from('fare_matrix').select('*, terminals(*)'),
-        supabase.from('bookings').select('*, passenger:profiles(*), driver:drivers(*, profile:profiles(*))'),
+        supabase.from('bookings').select('*, passenger:profiles!bookings_passenger_id_fkey(*), driver:drivers(*, profile:profiles(*))'),
         supabase.from('complaints').select('*').order('created_at', { ascending: false }),
         supabase.from('tourist_spots').select('*'),
         fetchLocationFares()

@@ -53,7 +53,8 @@ export const submitComplaint = async (params: {
 
     // 3. Validate booking_id against public.bookings (set to null if not found)
     let validBookingId: string | null = null;
-    if (params.bookingId) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (params.bookingId && uuidRegex.test(params.bookingId)) {
       try {
         const { data: bRow } = await supabase
           .from('bookings')

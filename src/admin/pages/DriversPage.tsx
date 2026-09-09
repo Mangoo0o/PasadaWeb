@@ -12,7 +12,7 @@ import {
   FileBadge, 
   AlertCircle,
   Clock,
-  Sparkles,
+  Search,
   Maximize2,
   Minimize2,
   Download,
@@ -57,6 +57,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [isExpandedPreview, setIsExpandedPreview] = useState(false);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
@@ -109,17 +110,18 @@ export const DriversPage: React.FC<DriversPageProps> = ({
         setIsProcessingAction(false);
       }, 1000);
     } catch (err: any) {
-      alert(`Error approving driver: ${err?.message || 'Failed'}`);
+      setActionErrorMessage(`Hindi naaprubahan: ${err?.message || 'Failed'}`);
       setIsProcessingAction(false);
     }
   };
 
   const handleConfirmReject = async (driverId: string) => {
     if (!rejectionReason.trim()) {
-      alert('Paki-lagay ang dahilan ng pag-reject upang malaman ng driver ang dapat ayusin.');
+      setActionErrorMessage('Paki-lagay ang dahilan ng pag-reject upang malaman ng driver ang dapat ayusin.');
       return;
     }
     setIsProcessingAction(true);
+    setActionErrorMessage(null);
     try {
       await onUpdateStatus(driverId, 'rejected', rejectionReason.trim());
       if (selectedDriver) {
@@ -134,7 +136,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
         setIsProcessingAction(false);
       }, 1000);
     } catch (err: any) {
-      alert(`Error rejecting driver: ${err?.message || 'Failed'}`);
+      setActionErrorMessage(`Hindi nai-record ang rejection: ${err?.message || 'Failed'}`);
       setIsProcessingAction(false);
     }
   };
@@ -144,25 +146,25 @@ export const DriversPage: React.FC<DriversPageProps> = ({
       case 'approved': 
       case 'verified' as any:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             <CheckCircle size={12} /> Approved
           </span>
         );
       case 'pending': 
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
             <AlertTriangle size={12} /> Pending Review
           </span>
         );
       case 'rejected': 
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
             <XCircle size={12} /> Rejected
           </span>
         );
       case 'suspended': 
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200 border border-rose-300 dark:border-rose-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200 border border-rose-300 dark:border-rose-800">
             <Shield size={12} /> Suspended
           </span>
         );
@@ -180,19 +182,20 @@ export const DriversPage: React.FC<DriversPageProps> = ({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <Car size={24} />
             </span>
-            <span>Driver Franchise & Document Verification</span>
+            <span>Driver Franchise &amp; Document Verification</span>
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            Suriin ang 5 kinakailangang PDF documents (License, OR/CR, MTOP, Barangay & Police Clearances) bago aprubahan ang prangkisa.
+            Suriin ang 5 kinakailangang PDF documents (License, OR/CR, MTOP, Barangay &amp; Police Clearances) bago aprubahan ang prangkisa.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+
+          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
               {pendingCount}
             </div>
             <div>
@@ -207,69 +210,69 @@ export const DriversPage: React.FC<DriversPageProps> = ({
         </div>
       </div>
 
-      {/* Content Container: Tabs, Filters, Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
-        {/* Tabs */}
-        <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-6 pt-3 bg-slate-50/50 dark:bg-slate-800/40 overflow-x-auto gap-2">
-          {[
-            { id: 'all', label: 'All Applications', count: drivers.length },
-            { id: 'pending', label: 'Pending Review', count: pendingCount },
-            { id: 'approved', label: 'Approved', count: activeDriversCount },
-            { id: 'suspended', label: 'Suspended', count: drivers.filter(d => d.verification_status === 'suspended').length },
-            { id: 'rejected', label: 'Rejected', count: drivers.filter(d => d.verification_status === 'rejected').length },
-          ].map((tab) => {
-            const isTabActive = filterStatus === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setFilterStatus(tab.id)}
-                className={`px-4 py-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  isTabActive
-                    ? 'border-[#0052d1] text-[#0052d1] dark:text-sky-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    tab.id === 'pending' && tab.count > 0 
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filters */}
-        <div className="p-4 px-6 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between flex-wrap gap-4 bg-slate-50/20 dark:bg-slate-800/20">
-          <div className="flex items-center gap-3 flex-wrap">
-            <select
-              aria-label="Filter by terminal"
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold px-3 py-2 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#0052d1]/20"
-            >
-              <option>All TODA Terminals</option>
-              {terminals.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-
-            <span className="text-xs text-slate-400">
-              Showing {filteredDrivers.length} matching drivers
-            </span>
+      {/* Content Container: Unified Filter Row & Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+        {/* Unified Top Filter Row: Tabs on Left, Search on Right */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
+          {/* Tabs */}
+          <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
+            {[
+              { id: 'all', label: 'All Applications', count: drivers.length },
+              { id: 'pending', label: 'Pending Review', count: pendingCount },
+              { id: 'approved', label: 'Approved', count: activeDriversCount },
+              { id: 'suspended', label: 'Suspended', count: drivers.filter(d => d.verification_status === 'suspended').length },
+              { id: 'rejected', label: 'Rejected', count: drivers.filter(d => d.verification_status === 'rejected').length },
+            ].map((tab) => {
+              const isTabActive = filterStatus === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterStatus(tab.id)}
+                  className={`px-3.5 py-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isTabActive
+                      ? 'border-[#0052d1] text-[#0052d1] dark:text-sky-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                      tab.id === 'pending' && tab.count > 0 
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
+                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search driver name or plate..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-64 h-9 pl-4 pr-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-medium outline-none focus:border-[#0052d1] focus:ring-2 focus:ring-[#0052d1]/20 transition-all"
-            />
+          {/* Right: Search Input & Match Counter */}
+          <div className="flex items-center gap-3 py-2 shrink-0">
+            <span className="hidden md:inline text-xs text-slate-400 font-medium">
+              Showing {filteredDrivers.length} {filteredDrivers.length === 1 ? 'driver' : 'drivers'}
+            </span>
+            <div className="relative w-64 max-w-full">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search driver name or plate..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium outline-none focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1]/20 transition-all text-slate-800 dark:text-slate-100 shadow-xs placeholder:text-slate-400"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -303,7 +306,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     <tr key={driverId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="py-3.5 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 font-extrabold flex items-center justify-center text-xs shrink-0">
+                          <div className="w-9 h-9 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 font-extrabold flex items-center justify-center text-xs shrink-0">
                             {initials}
                           </div>
                           <div>
@@ -341,7 +344,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           {/* Inspect Documents Modal Trigger */}
                           <button
                             onClick={() => handleOpenDocModal(d)}
-                            className="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/60 text-[#0052d1] dark:text-sky-300 font-bold text-[11px] transition-colors border border-sky-200 dark:border-sky-800 cursor-pointer flex items-center gap-1.5 shadow-xs"
+                            className="h-8 px-3 rounded-md bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/60 text-[#0052d1] dark:text-sky-300 font-bold text-[11px] transition-colors border border-sky-200 dark:border-sky-800 cursor-pointer flex items-center gap-1.5 shadow-xs"
                             title="Inspect 5 Submitted Franchise PDFs"
                           >
                             <FileText size={13} />
@@ -352,14 +355,14 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                             <>
                               <button
                                 onClick={() => handleApprove(driverId)}
-                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                                className="h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer flex items-center gap-1"
                                 title="Approve Franchise"
                               >
                                 <CheckCircle size={12} /> Approve
                               </button>
                               <button
                                 onClick={() => handleOpenDocModal(d, true)}
-                                className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors border border-rose-200 cursor-pointer flex items-center gap-1"
+                                className="h-8 px-3 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors border border-rose-200 cursor-pointer flex items-center gap-1"
                                 title="Reject with Reason Note"
                               >
                                 <XCircle size={12} /> Reject
@@ -370,7 +373,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           {(d.verification_status === 'approved' || d.verification_status === ('verified' as any)) && (
                             <button
                               onClick={() => onUpdateStatus(driverId, 'suspended')}
-                              className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors border border-rose-200 cursor-pointer flex items-center gap-1"
+                              className="h-8 px-3 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors border border-rose-200 cursor-pointer flex items-center gap-1"
                               title="Suspend Franchise"
                             >
                               <Shield size={12} /> Suspend
@@ -380,9 +383,10 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           {d.verification_status === 'suspended' && (
                             <button
                               onClick={() => onUpdateStatus(driverId, 'approved')}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                              className="h-8 px-3 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition-colors border border-emerald-200 cursor-pointer flex items-center gap-1"
+                              title="Reinstate Franchise"
                             >
-                              <CheckCircle size={12} /> Re-activate
+                              <CheckCircle size={12} /> Reinstate
                             </button>
                           )}
                         </div>
@@ -417,7 +421,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
             onClick={() => setIsDocModalOpen(false)}
           >
             <div 
-              className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-5xl xl:max-w-6xl overflow-hidden flex flex-col transition-all ${
+              className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-5xl xl:max-w-6xl overflow-hidden flex flex-col transition-all ${
                 isExpandedPreview ? 'h-[96vh]' : 'h-[92vh] max-h-[920px]'
               }`}
               onClick={(e) => e.stopPropagation()}
@@ -425,7 +429,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
               {/* Modal Top Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/60 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-2xl bg-[#0052d1] text-white flex items-center justify-center font-black shadow-md shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#0052d1] text-white flex items-center justify-center font-black shadow-md shrink-0">
                     <Car className="w-5 h-5 text-[#fcd400]" />
                   </div>
                   <div className="min-w-0">
@@ -434,7 +438,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         {selectedDriver.profile?.full_name}
                       </h3>
                       {getStatusBadge(selectedDriver.verification_status)}
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-sky-50 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 border border-sky-200 dark:border-slate-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-sky-50 dark:bg-slate-800 text-[#0052d1] dark:text-sky-300 border border-sky-200 dark:border-slate-700">
                         {attachedCount}/5 Naisumiteng PDF
                       </span>
                     </div>
@@ -447,7 +451,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setIsExpandedPreview(!isExpandedPreview)}
-                    className="hidden sm:flex p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    className="hidden sm:flex p-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                     title={isExpandedPreview ? "I-minimize ang preview" : "I-expand ang preview"}
                   >
                     {isExpandedPreview ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -456,7 +460,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                   <button 
                     onClick={() => setIsDocModalOpen(false)} 
-                    className="w-9 h-9 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
+                    className="w-9 h-9 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
                     title="Close"
                   >
                     <X size={18} />
@@ -472,6 +476,19 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 </div>
               )}
 
+              {/* Error Notification Banner */}
+              {actionErrorMessage && (
+                <div className="p-3 bg-rose-50 border-b border-rose-200 text-rose-800 font-bold text-xs flex items-center justify-between px-4 shrink-0 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={15} className="text-rose-600" />
+                    <span>{actionErrorMessage}</span>
+                  </div>
+                  <button onClick={() => setActionErrorMessage(null)} className="text-rose-500 hover:text-rose-700">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               {/* 5-Document Tabs Ribbon */}
               <div className="p-3 sm:px-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -483,7 +500,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                       <button
                         key={config.type}
                         onClick={() => setActiveDocType(config.type)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[58px] ${
+                        className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[58px] ${
                           isSelected
                             ? 'bg-sky-50 dark:bg-sky-950/60 border-[#0052d1] ring-2 ring-[#0052d1]/20 shadow-xs'
                             : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-100/50'
@@ -520,7 +537,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
               <div className="flex-1 overflow-y-auto p-3 sm:p-5 flex flex-col min-h-0 space-y-3">
                 
                 {/* Active Document Subheader / Toolbar */}
-                <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <FileBadge className="w-4 h-4 text-[#0052d1] shrink-0" />
@@ -560,7 +577,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         href={currentActiveDoc.file_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                         title="Buksan sa bagong tab para sa buong laki"
                       >
                         <ExternalLink size={13} />
@@ -572,7 +589,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         download={currentActiveDoc.file_name || 'document.pdf'}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-[#0052d1] hover:bg-[#003f87] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-[#0052d1] hover:bg-[#003f87] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                         title="I-download ang orihinal na PDF"
                       >
                         <Download size={13} />
@@ -584,12 +601,12 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                 {/* PDF Viewer Frame */}
                 {loadingDocs ? (
-                  <div className="flex-1 min-h-[360px] flex flex-col items-center justify-center text-xs font-bold text-slate-400 gap-2 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex-1 min-h-[360px] flex flex-col items-center justify-center text-xs font-bold text-slate-400 gap-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="w-8 h-8 border-2 border-[#0052d1] border-t-transparent rounded-full animate-spin" />
                     <span>Kinukuha ang dokumento mula sa secure storage...</span>
                   </div>
                 ) : currentActiveDoc?.file_url ? (
-                  <div className="flex-1 min-h-[460px] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-950 flex flex-col relative shadow-inner">
+                  <div className="flex-1 min-h-[460px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-950 flex flex-col relative shadow-inner">
                     <iframe
                       src={`${currentActiveDoc.file_url}#view=FitH&toolbar=1`}
                       title={`PDF Preview - ${currentDocConfig.title}`}
@@ -597,8 +614,8 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     />
                   </div>
                 ) : (
-                  <div className="flex-1 min-h-[300px] rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col items-center justify-center gap-2 text-center p-6">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
+                  <div className="flex-1 min-h-[300px] rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col items-center justify-center gap-2 text-center p-6">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <div className="text-sm font-black text-amber-900 dark:text-amber-200">
@@ -612,7 +629,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                 {/* Rejection Feedback Box */}
                 {isRejecting && (
-                  <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-3 shrink-0 animate-in fade-in">
+                  <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-3 shrink-0 animate-in fade-in">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-black text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
                         <AlertCircle className="w-4 h-4 text-rose-600" />
@@ -636,7 +653,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           key={r}
                           type="button"
                           onClick={() => setRejectionReason(r)}
-                          className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-[10px] font-semibold text-rose-800 dark:text-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-[10px] font-semibold text-rose-800 dark:text-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
                         >
                           + {r}
                         </button>
@@ -648,19 +665,19 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                       placeholder="Ilagay ang detalyadong dahilan ng rejection dito..."
-                      className="w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-xl p-3 text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-rose-500/20"
+                      className="w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-lg p-3 text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-rose-500/20"
                     />
 
                     <div className="flex justify-end gap-2 pt-1">
                       <button
                         onClick={() => setIsRejecting(false)}
-                        className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                        className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
                       >
                         Bumalik
                       </button>
                       <button
                         onClick={() => handleConfirmReject(selectedDriver.profile_id || selectedDriver.id || '')}
-                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
                       >
                         <XCircle size={14} />
                         <span>Kumpirmahin ang Rejection</span>
@@ -677,7 +694,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setIsDocModalOpen(false)} 
-                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-100 shadow-xs"
+                    className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-100 shadow-xs flex items-center justify-center"
                   >
                     Close
                   </button>
@@ -688,7 +705,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         if (hasPrevDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex - 1].type);
                       }}
                       disabled={!hasPrevDoc}
-                      className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Tingnan ang nakaraang dokumento"
                     >
                       <ChevronLeft size={14} />
@@ -700,7 +717,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         if (hasNextDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex + 1].type);
                       }}
                       disabled={!hasNextDoc}
-                      className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Tingnan ang susunod na dokumento"
                     >
                       <span className="hidden sm:inline">Next Doc</span>
@@ -713,7 +730,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 {!isRejecting && (
                   <div className="flex items-center gap-2 ml-auto">
                     {selectedDriver.verification_status === 'approved' ? (
-                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black">
+                      <span className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black">
                         <CheckCircle size={14} /> Naaprubahan na (Approved)
                       </span>
                     ) : (
@@ -721,7 +738,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         <button
                           onClick={() => setIsRejecting(true)}
                           disabled={isProcessingAction}
-                          className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50"
+                          className="h-9 px-4 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50"
                         >
                           <XCircle size={14} />
                           <span>Reject Application</span>
@@ -730,7 +747,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         <button
                           onClick={() => handleApprove(selectedDriver.profile_id || selectedDriver.id || '')}
                           disabled={isProcessingAction}
-                          className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+                          className="h-9 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
                         >
                           {isProcessingAction ? (
                             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

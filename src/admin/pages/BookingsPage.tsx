@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { History, Receipt } from 'lucide-react';
+import { History, Receipt, Printer, X } from 'lucide-react';
 import type { Booking } from '../types';
+import { cn } from '../../lib/utils';
 
 interface BookingsPageProps {
   bookings: Booking[];
@@ -17,40 +18,40 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
     switch (status) {
       case 'completed': 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200">
             Completed
           </span>
         );
       case 'ongoing':
       case 'in_transit': 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200">
             In Transit
           </span>
         );
       case 'accepted':
       case 'driver_assigned': 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200">
             Driver Assigned
           </span>
         );
       case 'requested':
       case 'searching': 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200">
             Searching
           </span>
         );
       case 'cancelled': 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200">
             Cancelled
           </span>
         );
       default: 
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
             {status}
           </span>
         );
@@ -72,30 +73,53 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
             Track real-time trip lifecycles, inspect computed fare receipts, and audit completed rides.
           </p>
         </div>
+
+
       </div>
 
-      {/* Stitch Filter Tabs */}
-      <div className="bg-white dark:bg-slate-900 rounded-[24px] p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center gap-2 overflow-x-auto">
-        {['all', 'searching', 'driver_assigned', 'in_transit', 'completed', 'cancelled'].map(status => {
-          const isActive = filterStatus === status;
-          return (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap capitalize ${
-                isActive
-                  ? 'bg-[#0052d1] text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              {status.replace('_', ' ')}
-            </button>
-          );
-        })}
-      </div>
+      {/* Bookings Data Table Card with Unified Top Filter Row */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+        {/* Unified Top Filter Row: Tabs on Left */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
+          <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
+            {[
+              { id: 'all', label: 'All Rides', count: bookings.length },
+              { id: 'searching', label: 'Searching', count: bookings.filter(b => b.status === 'searching' || b.status === 'requested').length },
+              { id: 'driver_assigned', label: 'Driver Assigned', count: bookings.filter(b => b.status === 'driver_assigned' || b.status === 'accepted').length },
+              { id: 'in_transit', label: 'In Transit', count: bookings.filter(b => b.status === 'in_transit' || b.status === 'ongoing').length },
+              { id: 'completed', label: 'Completed', count: bookings.filter(b => b.status === 'completed').length },
+              { id: 'cancelled', label: 'Cancelled', count: bookings.filter(b => b.status === 'cancelled').length },
+            ].map((tab) => {
+              const isTabActive = filterStatus === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterStatus(tab.id)}
+                  className={`px-3.5 py-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isTabActive
+                      ? 'border-[#0052d1] text-[#0052d1] dark:text-sky-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                      tab.id === 'searching' && tab.count > 0
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Bookings Data Table Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+          <span className="text-xs text-slate-400 font-medium py-2 hidden sm:inline shrink-0">
+            Showing {filtered.length} {filtered.length === 1 ? 'ride' : 'rides'}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -150,7 +174,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                     <td className="py-3.5 px-6 text-right">
                       <button
                         onClick={() => { setSelectedBooking(b); setIsModalOpen(true); }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                        className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#0052d1] dark:text-sky-400 font-bold text-xs transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
                       >
                         <Receipt size={13} /> Receipt
                       </button>
@@ -166,10 +190,16 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
       {/* Digital Fare Receipt Modal */}
       {isModalOpen && selectedBooking && (
         <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Official Digital Fare Receipt</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">×</button>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs">
@@ -209,10 +239,16 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
             </div>
 
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2">
-              <button onClick={() => window.print()} className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer">
-                Print
+              <button 
+                onClick={() => window.print()} 
+                className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+              >
+                <Printer size={14} /> Print
               </button>
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[#0052d1] text-white font-bold text-xs cursor-pointer">
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+              >
                 Close
               </button>
             </div>

@@ -74,11 +74,28 @@ export const DriverDispatch: React.FC = () => {
     loadDispatches();
 
     const unsubscribe = subscribeToOpenDispatches((detail) => {
-      if (detail?.id && detail.status && detail.status !== 'searching') {
+      if (!detail?.id) {
+        loadDispatches();
+        return;
+      }
+
+      // If booking was cancelled, accepted by another driver, or completed:
+      if (detail.status && detail.status !== 'searching') {
         setOpenDispatches(prev => prev.filter(b => b.id !== detail.id));
         setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
+        knownDispatchIdsRef.current.delete(detail.id);
+        try {
+          const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+          const filtered = queue.filter((b: any) => b.id !== detail.id);
+          localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+        } catch {}
+        return;
       }
-      loadDispatches();
+
+      // If new booking was requested or restored to searching:
+      if (detail.status === 'searching') {
+        loadDispatches();
+      }
     });
 
     // Relaxed 30-second synchronization heartbeat instead of aggressive 2s polling
@@ -97,9 +114,16 @@ export const DriverDispatch: React.FC = () => {
   }, [openDispatches, previewBooking]);
 
   const handleAcceptBooking = async (booking: Booking) => {
-    // Immediately remove accepted booking from queue
+    // Immediately remove accepted booking from queue and local storage
     setOpenDispatches(prev => prev.filter(b => b.id !== booking.id));
     setPreviewBooking(null);
+    knownDispatchIdsRef.current.delete(booking.id);
+    try {
+      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+      const filtered = queue.filter((b: any) => b.id !== booking.id);
+      localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+    } catch {}
+
     setActiveTrip(booking);
     setTripState('assigned');
     await updateBookingStatus(booking.id, 'driver_assigned', driverProfile?.id || user?.id);
@@ -157,33 +181,33 @@ export const DriverDispatch: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-4 pt-1 pb-4 font-sans">
+    <div className="w-full max-w-xl mx-auto space-y-4 pt-1 pb-8 font-sans">
       
       {/* Top Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2 sm:gap-3">
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#003f87] text-white flex items-center justify-center shadow-md shrink-0 aspect-square">
             <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-[#00C1FD]" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] truncate">
+            <h1 className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] whitespace-nowrap truncate">
               {t('driver.liveQueue', 'Live Dispatch')}
             </h1>
-            <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">
+            <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium whitespace-nowrap truncate">
               {driverProfile?.terminal_name || t('driver.terminalQueue', 'Bauang TODA Queue')}
             </p>
           </div>
         </div>
 
         {/* Driver Quick Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Functional Language Toggle */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-slate-100 dark:bg-slate-800 text-[#003f87] dark:text-sky-300 hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-slate-100 dark:bg-slate-800 text-[#003f87] dark:text-sky-300 hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 shrink-0"
             title={t('driver.switchLanguage', 'Switch Language / Magpalit ng Wika')}
           >
-            <Globe className="w-3.5 h-3.5 text-[#003f87] dark:text-sky-400" />
+            <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#003f87] dark:text-sky-400 shrink-0" />
             <span>{i18n.language === 'fil' ? 'FIL' : 'ENG'}</span>
           </button>
 
@@ -201,18 +225,18 @@ export const DriverDispatch: React.FC = () => {
             }`}
             title={isSoundOn ? t('driver.soundOn', 'Sound Alert: ON') : t('driver.soundMuted', 'Sound Alert: MUTED')}
           >
-            {isSoundOn ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+            {isSoundOn ? <Volume2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <VolumeX className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
           </button>
 
           <button
             onClick={toggleDriverAvailability}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-bold text-[10px] sm:text-xs shadow-sm transition-all active:scale-95 cursor-pointer ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-bold text-[10px] sm:text-xs shadow-sm transition-all active:scale-95 cursor-pointer shrink-0 whitespace-nowrap ${
               isOnline
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 : 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
-            <Power className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <Power className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
             <span>{isOnline ? t('driver.online', 'ONLINE') : t('driver.offline', 'OFFLINE')}</span>
           </button>
 
@@ -221,7 +245,7 @@ export const DriverDispatch: React.FC = () => {
             className="p-1.5 sm:p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-sm cursor-pointer shrink-0"
             title={t('nav.signOut', 'Sign Out')}
           >
-            <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </button>
         </div>
       </header>
@@ -298,42 +322,42 @@ export const DriverDispatch: React.FC = () => {
               {tripState === 'assigned' && (
                 <button
                   onClick={handleArrivePickup}
-                  className="w-full py-4 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="w-full h-11 sm:h-12 rounded-xl bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap px-3"
                 >
-                  <Navigation className="w-4 h-4 text-[#00C1FD]" />
-                  <span>{t('driver.arrivedBtn', 'Nasa Sakayan Na')}</span>
+                  <Navigation className="w-4 h-4 text-[#00C1FD] shrink-0" />
+                  <span className="truncate">{t('driver.arrivedBtn', 'Nasa Sakayan Na')}</span>
                 </button>
               )}
 
               {tripState === 'arrived' && (
                 <button
                   onClick={handleStartTrip}
-                  className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="w-full h-11 sm:h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap px-3"
                 >
-                  <Bike className="w-4 h-4 text-white" />
-                  <span>{t('driver.startTripBtn', 'Simulan ang Biyahe')}</span>
+                  <Bike className="w-4 h-4 text-white shrink-0" />
+                  <span className="truncate">{t('driver.startTripBtn', 'Simulan ang Biyahe')}</span>
                 </button>
               )}
 
               {tripState === 'in_transit' && (
                 <button
                   onClick={handleCompleteTrip}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#003f87] to-[#0056b3] hover:from-[#002f66] hover:to-[#003f87] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="w-full h-11 sm:h-12 rounded-xl bg-gradient-to-r from-[#003f87] to-[#0056b3] hover:from-[#002f66] hover:to-[#003f87] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap px-3"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#00C1FD]" />
-                  <span>{t('driver.completeTripBtn', 'Tapusin ang Biyahe')} (₱{activeTrip.estimated_fare.toFixed(2)})</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#00C1FD] shrink-0" />
+                  <span className="truncate">{t('driver.completeTripBtn', 'Tapusin ang Biyahe')} (₱{activeTrip.estimated_fare.toFixed(2)})</span>
                 </button>
               )}
             </div>
           </div>
         ) : (
           /* Available Queue Requests */
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3.5 sm:space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-black text-sm text-slate-800 dark:text-slate-200">
+              <h4 className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
                 {t('driver.liveQueue', 'Live Dispatch Queue')} ({openDispatches.length})
               </h4>
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 sm:px-2.5 py-0.5 rounded-full">
                 {isOnline ? t('driver.online', 'ONLINE') : t('driver.offline', 'OFFLINE')}
               </span>
             </div>
@@ -391,17 +415,17 @@ export const DriverDispatch: React.FC = () => {
                     </div>
 
                     {/* Action Buttons: Preview Map & Accept Booking */}
-                    <div className="flex items-center gap-2 pt-0.5">
+                    <div className="grid grid-cols-2 gap-2 pt-0.5">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPreviewBooking(bk);
                         }}
-                        className="flex-1 py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-[11px] sm:text-xs border border-slate-200 dark:border-slate-600 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                        className="w-full h-9 sm:h-10 px-2 sm:px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-[10px] min-[360px]:text-[11px] sm:text-xs border border-slate-200 dark:border-slate-600 flex items-center justify-center gap-1 sm:gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm whitespace-nowrap min-w-0"
                       >
-                        <Navigation className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#003f87] dark:text-[#00C1FD]" />
-                        <span>{t('driver.viewRoute', 'View Route')}</span>
+                        <Navigation className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#003f87] dark:text-[#00C1FD] shrink-0" />
+                        <span className="truncate">{t('driver.viewRoute', 'View Route')}</span>
                       </button>
 
                       <button
@@ -410,10 +434,10 @@ export const DriverDispatch: React.FC = () => {
                           e.stopPropagation();
                           handleAcceptBooking(bk);
                         }}
-                        className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-[11px] sm:text-xs rounded-xl shadow-md shadow-[#003f87]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full h-9 sm:h-10 px-2 sm:px-3 bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-[10px] min-[360px]:text-[11px] sm:text-xs rounded-xl shadow-md shadow-[#003f87]/20 active:scale-95 transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap min-w-0"
                       >
-                        <Bike className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#00C1FD]" />
-                        <span>{t('driver.acceptRide', 'Tanggapin')}</span>
+                        <Bike className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#00C1FD] shrink-0" />
+                        <span className="truncate">{t('driver.acceptRide', 'Tanggapin')}</span>
                       </button>
                     </div>
                   </div>

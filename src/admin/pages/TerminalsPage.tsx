@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Edit, Check, Crosshair } from 'lucide-react';
+import { MapPin, Plus, Edit, Check, Crosshair, X } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Terminal } from '../types';
@@ -164,7 +164,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
 
         <button 
           onClick={handleOpenAdd} 
-          className="px-4 py-2.5 rounded-xl bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+          className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer inline-flex items-center gap-1.5 active:scale-95 shrink-0"
         >
           <Plus size={15} /> Add New Terminal
         </button>
@@ -175,19 +175,19 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
         {/* Terminal Cards List (Span 5) */}
         <div className="lg:col-span-5 flex flex-col gap-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
           {terminals.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+            <div className="p-8 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow">
               No terminals registered yet. Click "Add New Terminal" to register one.
             </div>
           ) : (
             terminals.map((t) => (
               <div
                 key={t.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all flex items-center justify-between border-l-4 border-l-[#0052d1]"
+                className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all flex items-center justify-between border-l-4 border-l-[#0052d1]"
               >
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-sm text-slate-900 dark:text-white">{t.name}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-bold text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-bold text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700">
                       {t.code || 'NO-CODE'}
                     </span>
                   </div>
@@ -201,9 +201,9 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
 
                 <button
                   onClick={() => handleOpenEdit(t)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer shrink-0 ml-2"
+                  className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer shrink-0 ml-2 inline-flex items-center gap-1"
                 >
-                  <Edit size={13} className="inline mr-1" /> Edit
+                  <Edit size={13} /> Edit
                 </button>
               </div>
             ))
@@ -211,7 +211,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
         </div>
 
         {/* Interactive GIS Overview Map (Span 7) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow h-[560px] flex flex-col">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow h-[560px] flex flex-col">
           <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>Terminal Geofence Coverage Map</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Click map to preview coordinates</span>
@@ -269,7 +269,13 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                 <MapPin size={20} color="var(--accent-primary)" />
                 {selectedTerminal ? 'Edit Terminal Information' : 'Register New TODA Terminal'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <form onSubmit={handleSave}>
@@ -295,7 +301,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                     <div style={{
                       height: 340,
                       width: '100%',
-                      borderRadius: 12,
+                      borderRadius: 8,
                       overflow: 'hidden',
                       border: '2px solid var(--border-color)',
                       position: 'relative',
@@ -417,10 +423,19 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">
-                  <Check size={16} /> Save Terminal
+              <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                >
+                  <Check size={15} /> Save Terminal
                 </button>
               </div>
             </form>

@@ -8,12 +8,8 @@ import {
   Sparkles, 
   Crosshair, 
   Layers,
-  Image as ImageIcon,
-  Music,
-  Video,
   UploadCloud,
   X,
-  Play,
   Star,
   ArrowRight,
   ArrowLeft,
@@ -22,7 +18,11 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   Search,
-  MapPin
+  MapPin,
+  Image as ImageIcon,
+  Video,
+  Play,
+  Music
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -34,6 +34,7 @@ import {
   getLocationIconEmoji 
 } from '../../services/fareService';
 import { supabase } from '../../api/supabaseClient';
+import { cn } from '../../lib/utils';
 
 interface FareMatrixPageProps {
   locationFares: LocationFare[];
@@ -85,6 +86,32 @@ function MapClickTester({ onMapClick }: { onMapClick: (lat: number, lng: number)
     },
   });
   return null;
+}
+
+function MapZoomControls() {
+  const map = useMap();
+  return (
+    <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 z-[500]">
+      <button 
+        type="button"
+        onClick={() => map.zoomIn()}
+        className="w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-sm cursor-pointer active:scale-95"
+        title="Zoom In"
+        aria-label="Zoom In"
+      >
+        +
+      </button>
+      <button 
+        type="button"
+        onClick={() => map.zoomOut()}
+        className="w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-sm cursor-pointer active:scale-95"
+        title="Zoom Out"
+        aria-label="Zoom Out"
+      >
+        -
+      </button>
+    </div>
+  );
 }
 
 // Interactive Map Picker inside Modal
@@ -423,7 +450,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
       {/* Bento Grid Layout (Span 8 + Span 4) */}
       <div className="grid grid-cols-12 gap-6 items-start">
         {/* Main Table Area (Span 8) */}
-        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow hover:shadow-lg transition-shadow duration-300">
+        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow hover:shadow-lg transition-shadow duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white shrink-0">
               Regulated Location Rates
@@ -436,14 +463,14 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   placeholder="Search location or landmark..."
                   value={searchRule}
                   onChange={(e) => setSearchRule(e.target.value)}
-                  className="w-56 sm:w-64 h-9 pl-9 pr-3.5 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-full text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#276efe] focus:bg-white dark:focus:bg-slate-900 transition-all"
+                  className="w-56 sm:w-64 h-9 pl-9 pr-3.5 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#276efe] focus:bg-white dark:focus:bg-slate-900 transition-all"
                 />
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
 
               <button
                 onClick={handleOpenAdd}
-                className="h-9 px-4 bg-[#276efe] text-white rounded-full text-xs font-medium hover:opacity-90 transition-opacity shadow-sm shadow-[#276efe]/20 cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+                className="h-9 px-4 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-md text-xs font-bold transition-all shadow-sm shadow-[#0052d1]/20 cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
               >
                 <Plus size={14} />
                 <span>Add Location</span>
@@ -483,7 +510,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     >
                       <td className="py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                          <div className={`w-8 h-8 rounded-md flex items-center justify-center text-sm ${
                             loc.icon === 'stadium' 
                               ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300' 
                               : loc.icon === 'business'
@@ -521,11 +548,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
                       <td className="py-4 text-right">
                         {isActive ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#e6f7ef] text-[#006947] dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#e6f7ef] text-[#006947] dark:bg-emerald-950/60 dark:text-emerald-300">
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#eceef0] text-[#565e74] dark:bg-slate-800 dark:text-slate-400">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#eceef0] text-[#565e74] dark:bg-slate-800 dark:text-slate-400">
                             Inactive
                           </span>
                         )}
@@ -541,17 +568,25 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
         {/* Right Sidebar Area (Span 4) */}
         <div className="col-span-12 xl:col-span-4 space-y-6">
           {/* Card 1: Location Map Visualizer */}
-          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
             <div className="flex justify-between items-center mb-3 px-2">
               <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white">
                 Location Map Visualizer
               </h3>
-              <button className="text-[#276efe] hover:bg-[#276efe]/5 p-1.5 rounded-full transition-colors cursor-pointer">
-                <Layers size={20} />
+              <button 
+                type="button"
+                onClick={() => {
+                  setSelectedLocation(null);
+                  setTestResult(null);
+                }}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-[#0052d1] dark:text-sky-400 hover:bg-[#0052d1]/10 transition-colors cursor-pointer active:scale-95"
+                title="Reset Location Filter"
+              >
+                <Crosshair size={16} />
               </button>
             </div>
 
-            <div className="w-full h-[240px] rounded-[16px] overflow-hidden relative bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
+            <div className="w-full h-[240px] rounded-md overflow-hidden relative bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
               <MapContainer
                 center={[activeLocation?.lat || 16.5333, activeLocation?.lng || 120.3333]}
                 zoom={12}
@@ -565,6 +600,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 />
                 <MapClickTester onMapClick={handleMapTestClick} />
                 <LocationRecenter center={[activeLocation?.lat || 16.5333, activeLocation?.lng || 120.3333]} />
+                <MapZoomControls />
 
                 {filteredLocationFares.map((loc) => {
                   const isHighlighted = activeLocation?.id === loc.id;
@@ -619,34 +655,18 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </Marker>
                 ))}
               </MapContainer>
-
-              {/* Map Overlay Controls */}
-              <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 z-[500]">
-                <button 
-                  onClick={() => {}}
-                  className="w-8 h-8 bg-white dark:bg-slate-800 rounded-md shadow flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition-colors font-bold text-sm cursor-pointer"
-                >
-                  +
-                </button>
-                <button 
-                  onClick={() => {}}
-                  className="w-8 h-8 bg-white dark:bg-slate-800 rounded-md shadow flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition-colors font-bold text-sm cursor-pointer"
-                >
-                  -
-                </button>
-              </div>
             </div>
           </div>
 
           {/* Card 2: Location Details */}
-          <div className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow">
             <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white mb-4">
               Location Details
             </h3>
 
             <div className="bg-[#f2f4f6] dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 mb-4">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-xs font-medium text-[#276efe] bg-[#276efe]/10 px-2 py-1 rounded">
+                <span className="text-xs font-medium text-[#276efe] bg-[#276efe]/10 px-2 py-0.5 rounded">
                   Selected Location: {activeLocation?.location_name || 'Bauang Landmark'}
                 </span>
                 <span className="text-xs text-slate-400 flex items-center font-medium">
@@ -668,11 +688,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <span className="block text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <span>{activeVehicleCount}</span>
                     {activeVehicleCount > 0 ? (
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full border border-emerald-200/50">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200/50">
                         Live
                       </span>
                     ) : (
-                      <span className="text-[10px] text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">
+                      <span className="text-[10px] text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                         None
                       </span>
                     )}
@@ -689,7 +709,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
             <button
               onClick={() => activeLocation && handleOpenEdit(activeLocation)}
-              className="w-full py-2.5 bg-[#276efe]/5 text-[#276efe] border border-[#276efe]/20 rounded-full text-xs font-medium hover:bg-[#276efe]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full h-9 px-4 bg-[#276efe]/5 text-[#276efe] border border-[#276efe]/20 rounded-md text-xs font-semibold hover:bg-[#276efe]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             >
               <ShieldCheck size={16} />
               <span>Edit Location Rate</span>
@@ -719,7 +739,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
-              borderRadius: 16,
+              borderRadius: 8,
               width: '96%',
               maxWidth: 1100,
               maxHeight: '94vh',
@@ -750,16 +770,10 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  fontSize: '1.4rem', 
-                  lineHeight: 1, 
-                  color: 'var(--text-muted)' 
-                }}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close"
               >
-                ×
+                <X size={18} />
               </button>
             </div>
 
@@ -781,7 +795,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   alignItems: 'center',
                   gap: 8,
                   padding: '6px 14px',
-                  borderRadius: 20,
+                  borderRadius: 6,
+                  height: 36,
                   background: currentStep === 1 ? '#0052d1' : 'transparent',
                   color: currentStep === 1 ? '#ffffff' : 'var(--text-muted)',
                   fontWeight: 800,
@@ -794,7 +809,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 <span style={{
                   width: 20,
                   height: 20,
-                  borderRadius: '50%',
+                  borderRadius: 4,
                   background: currentStep === 1 ? '#ffffff' : 'var(--border-color)',
                   color: currentStep === 1 ? '#0052d1' : 'var(--text-main)',
                   display: 'flex',
@@ -818,7 +833,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   alignItems: 'center',
                   gap: 8,
                   padding: '6px 14px',
-                  borderRadius: 20,
+                  borderRadius: 6,
+                  height: 36,
                   background: currentStep === 2 ? '#0052d1' : 'transparent',
                   color: currentStep === 2 ? '#ffffff' : 'var(--text-muted)',
                   fontWeight: 800,
@@ -831,7 +847,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 <span style={{
                   width: 20,
                   height: 20,
-                  borderRadius: '50%',
+                  borderRadius: 4,
                   background: currentStep === 2 ? '#ffffff' : 'var(--border-color)',
                   color: currentStep === 2 ? '#0052d1' : 'var(--text-main)',
                   display: 'flex',
@@ -847,7 +863,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <span style={{
                     background: currentStep === 2 ? '#fcd400' : '#0052d1',
                     color: currentStep === 2 ? '#131b2e' : '#fff',
-                    borderRadius: 10,
+                    borderRadius: 4,
                     padding: '1px 6px',
                     fontSize: '0.65rem',
                     fontWeight: 900
@@ -1283,11 +1299,15 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 borderTop: '1px solid var(--border-color)',
                 background: 'var(--bg-primary)',
                 flexShrink: 0,
-                borderBottomLeftRadius: 16,
-                borderBottomRightRadius: 16,
+                borderBottomLeftRadius: 8,
+                borderBottomRightRadius: 8,
               }}>
                 <div>
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsModalOpen(false)} 
+                    className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -1297,10 +1317,9 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
-                      className="btn btn-secondary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                      className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95"
                     >
-                      <ArrowLeft size={16} /> Back: Set Location
+                      <ArrowLeft size={15} /> Back: Set Location
                     </button>
                   )}
 
@@ -1312,19 +1331,17 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         e.stopPropagation();
                         setCurrentStep(2);
                       }}
-                      className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                      className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
                     >
                       <span>Next: Add Files (Pictures / Video / Audio)</span>
-                      <ArrowRight size={16} />
+                      <ArrowRight size={15} />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                      className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
                     >
-                      <Check size={16} /> Save & Enforce Location Rate
+                      <Check size={15} /> Save & Enforce Location Rate
                     </button>
                   )}
                 </div>

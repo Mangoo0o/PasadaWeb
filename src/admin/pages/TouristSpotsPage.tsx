@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Compass, Plus, Edit, QrCode, Check, Crosshair, MapPin } from 'lucide-react';
+import { Compass, Plus, Edit, QrCode, Check, Crosshair, MapPin, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -163,7 +163,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
 
         <button 
           onClick={handleOpenAdd} 
-          className="px-4 py-2.5 rounded-xl bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+          className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer inline-flex items-center gap-1.5 active:scale-95 shrink-0"
         >
           <Plus size={15} /> Add Tourist Destination
         </button>
@@ -172,14 +172,14 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       {/* Spots Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {spots.length === 0 ? (
-          <div className="col-span-full text-center p-12 text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+          <div className="col-span-full text-center p-12 text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow">
             No tourist destinations registered in database yet.
           </div>
         ) : (
           spots.map((spot) => (
             <div 
               key={spot.id} 
-              className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
+              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
             >
               {(spot.cover_image_url || spot.image_url) && (
                 <div className="h-44 relative overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -188,7 +188,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     alt={spot.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-extrabold uppercase">
+                  <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-extrabold uppercase">
                     {spot.category || 'Attraction'}
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </h3>
                     <button
                       onClick={() => { setSelectedSpot(spot); setIsQRModalOpen(true); }}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 transition-colors cursor-pointer shrink-0"
+                      className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                       title="Generate QR Signage"
                     >
                       <QrCode size={16} />
@@ -226,9 +226,9 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </span>
                     <button
                       onClick={() => handleOpenEdit(spot)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                      className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
                     >
-                      <Edit size={13} className="inline mr-1" /> Edit Spot
+                      <Edit size={13} /> Edit Spot
                     </button>
                   </div>
                 </div>
@@ -247,7 +247,13 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                 <MapPin size={20} color="var(--accent-primary)" />
                 {selectedSpot ? 'Edit Destination Details' : 'Register New Tourist Spot'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <form onSubmit={handleSave}>
@@ -273,7 +279,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     <div style={{
                       height: 320,
                       width: '100%',
-                      borderRadius: 12,
+                      borderRadius: 8,
                       overflow: 'hidden',
                       border: '2px solid var(--border-color)',
                       position: 'relative',
@@ -345,7 +351,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="input-field"
+                        className="input-field h-9 rounded-md"
                       >
                         <option value="Agritourism">Agritourism / Grape Picking</option>
                         <option value="Beach & Nature">Beach & Nature</option>
@@ -407,10 +413,19 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">
-                  <Check size={16} /> Save Destination
+              <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                >
+                  <Check size={15} /> Save Destination
                 </button>
               </div>
             </form>
@@ -421,10 +436,16 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       {/* QR Code Signage Export Modal */}
       {isQRModalOpen && selectedSpot && (
         <div className="modal-overlay" onClick={() => setIsQRModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, borderRadius: 8 }}>
             <div className="modal-header">
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Tourist Landmark QR Plaque</h3>
-              <button onClick={() => setIsQRModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+              <button 
+                onClick={() => setIsQRModalOpen(false)} 
+                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <div className="modal-body" style={{ textAlign: 'center', background: '#fff', color: '#191c1e', padding: 24 }}>
@@ -435,7 +456,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                 {selectedSpot.name}
               </div>
 
-              <div style={{ margin: '20px auto', display: 'inline-block', padding: 16, background: '#f8fafc', borderRadius: 16, border: '2px solid #e2e8f0' }}>
+              <div style={{ margin: '20px auto', display: 'inline-block', padding: 16, background: '#f8fafc', borderRadius: 8, border: '2px solid #e2e8f0' }}>
                 <QRCodeSVG
                   value={`https://pasadaguide.ph/spot/${selectedSpot.id}`}
                   size={180}
@@ -448,9 +469,19 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
               </p>
             </div>
 
-            <div className="modal-footer">
-              <button onClick={() => window.print()} className="btn btn-secondary btn-sm">Print Plaque</button>
-              <button onClick={() => setIsQRModalOpen(false)} className="btn btn-primary btn-sm">Close</button>
+            <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+              <button 
+                onClick={() => window.print()} 
+                className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+              >
+                Print Plaque
+              </button>
+              <button 
+                onClick={() => setIsQRModalOpen(false)} 
+                className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

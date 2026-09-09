@@ -56,9 +56,9 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
   const totalTabs = tabs.length;
 
   return (
-    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-in fade-in slide-in-from-bottom-5 duration-300 select-none">
+    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-in fade-in slide-in-from-bottom-5 duration-300 select-none max-w-[calc(100vw-1rem)]">
       <nav 
-        className="bg-[#0052d1]/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full p-1.5 flex items-center gap-1.5 shadow-[0_12px_40px_rgba(0,82,209,0.42)] border border-white/30 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+        className="bg-[#0052d1]/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-[0_12px_40px_rgba(0,82,209,0.42)] border border-white/30 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
         role="navigation"
         aria-label="Main Navigation"
       >
@@ -73,10 +73,10 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
               onClick={() => setActiveTab(tab.id)}
               aria-label={tab.label}
               title={tab.label}
-              className={`h-11 sm:h-12 rounded-full flex items-center justify-center gap-1.5 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 cursor-pointer ${
+              className={`h-11 sm:h-12 rounded-full flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 cursor-pointer ${
                 isActive 
-                  ? 'bg-white text-[#0052d1] px-4 sm:px-5 shadow-[0_4px_18px_rgba(0,0,0,0.18)] font-black' 
-                  : 'w-11 sm:w-12 text-white/80 hover:text-white hover:bg-white/15'
+                  ? 'bg-white text-[#0052d1] px-3 sm:px-5 shadow-[0_4px_18px_rgba(0,0,0,0.18)] font-black' 
+                  : 'w-10 sm:w-12 text-white/80 hover:text-white hover:bg-white/15'
               }`}
             >
               <Icon 

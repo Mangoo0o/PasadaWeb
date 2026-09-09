@@ -14,6 +14,8 @@ export interface Profile {
   email?: string;
   phone?: string;
   phone_number?: string;
+  passenger_type?: 'regular' | 'student' | 'senior' | 'pwd' | string;
+  is_discount_eligible?: boolean;
 }
 
 export interface Terminal {

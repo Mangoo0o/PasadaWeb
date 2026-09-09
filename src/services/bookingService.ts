@@ -38,16 +38,31 @@ export const createBookingRequest = async (params: {
       newBooking.passenger_id = safePassengerId;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('bookings')
       .insert(newBooking)
-      .select('*, passenger:profiles(id, full_name, phone_number, passenger_type)')
+      .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
       .single();
 
-    if (error) {
-      console.warn('Booking insertion note:', error.message);
+    // If initial insert fails due to foreign key violation on passenger_id (e.g. preset/local mock profile not in DB),
+    // safely retry without passenger_id so the booking is still created in Supabase with a valid UUID!
+    if (error && newBooking.passenger_id && (error.code === '23503' || error.message?.includes('foreign key') || (error as any).status === 409)) {
+      console.warn('Retrying booking insert without foreign key passenger_id...');
+      const fallbackPayload = { ...newBooking };
+      delete fallbackPayload.passenger_id;
+      const retry = await supabase
+        .from('bookings')
+        .insert(fallbackPayload)
+        .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error || !data) {
+      console.warn('Booking insertion note:', error?.message);
       const fallbackBooking: Booking = {
-        id: `bk-${Date.now()}`,
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `bk-${Date.now()}`,
         ...newBooking,
         passenger_name: params.passenger?.full_name || 'Ka-Pasada Commuter',
         passenger: params.passenger || (params.passengerType ? ({ id: params.passengerId, role: 'passenger', full_name: 'Ka-Pasada Commuter', passenger_type: params.passengerType as any, language_pref: 'fil', created_at: new Date().toISOString() } as Profile) : undefined),
@@ -91,13 +106,32 @@ export const subscribeToOpenDispatches = (onUpdate: (detail?: any) => void) => {
         table: 'bookings'
       },
       (payload) => {
-        onUpdate(payload?.new || payload?.old);
+        const item: any = payload.eventType === 'DELETE'
+          ? { id: (payload.old as any)?.id, status: 'deleted' }
+          : (payload.new || payload.old);
+
+        if (item?.id && item?.status && item.status !== 'searching') {
+          try {
+            const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+            const filtered = queue.filter((b: any) => b.id !== item.id);
+            localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+          } catch {}
+        }
+        onUpdate(item);
       }
     )
     .subscribe();
 
   const handleLocal = (e: any) => {
-    onUpdate(e?.detail);
+    const item = e?.detail;
+    if (item?.id && item?.status && item.status !== 'searching') {
+      try {
+        const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+        const filtered = queue.filter((b: any) => b.id !== item.id);
+        localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
+      } catch {}
+    }
+    onUpdate(item);
   };
 
   window.addEventListener('pasada_new_dispatch', handleLocal);
@@ -116,19 +150,32 @@ export const subscribeToBooking = (
   bookingId: string, 
   onUpdate: (booking: Booking) => void
 ) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const isUuid = uuidRegex.test(bookingId);
+
   const fetchLatest = async () => {
+    if (!isUuid) {
+      // Local fallback only, don't send non-UUID to Supabase to prevent 400 Bad Request
+      try {
+        const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+        const local = queue.find((b: Booking) => b.id === bookingId);
+        if (local) onUpdate(local);
+      } catch {}
+      return;
+    }
+
     let { data, error } = await supabase
       .from('bookings')
-      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles(*)')
+      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles!bookings_passenger_id_fkey(*)')
       .eq('id', bookingId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       const fallback = await supabase
         .from('bookings')
         .select('*')
         .eq('id', bookingId)
-        .single();
+        .maybeSingle();
       data = fallback.data;
     }
 
@@ -146,21 +193,24 @@ export const subscribeToBooking = (
     }
   };
 
-  const channel = supabase
-    .channel(`booking-${bookingId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'bookings',
-        filter: `id=eq.${bookingId}`,
-      },
-      () => {
-        fetchLatest();
-      }
-    )
-    .subscribe();
+  let channel: any = null;
+  if (isUuid) {
+    channel = supabase
+      .channel(`booking-${bookingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${bookingId}`,
+        },
+        () => {
+          fetchLatest();
+        }
+      )
+      .subscribe();
+  }
 
   const handleLocal = (e?: any) => {
     if (!e?.detail || e.detail.id === bookingId) {
@@ -169,11 +219,13 @@ export const subscribeToBooking = (
   };
 
   window.addEventListener('pasada_new_dispatch', handleLocal);
+  window.addEventListener('pasada_booking_updated', handleLocal);
   window.addEventListener('storage', handleLocal);
 
   return () => {
-    supabase.removeChannel(channel);
+    if (channel) supabase.removeChannel(channel);
     window.removeEventListener('pasada_new_dispatch', handleLocal);
+    window.removeEventListener('pasada_booking_updated', handleLocal);
     window.removeEventListener('storage', handleLocal);
   };
 };
@@ -196,21 +248,6 @@ export const updateBookingStatus = async (
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const isUuid = uuidRegex.test(bookingId);
-
-    // Synchronize local storage dispatches queue immediately:
-    // If status is cancelled, driver_assigned, or completed, purge it from open queue so it disappears instantly!
-    try {
-      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
-      let updatedQueue: Booking[];
-      if (status !== 'searching') {
-        updatedQueue = queue.filter((b: Booking) => b.id !== bookingId);
-      } else {
-        updatedQueue = queue.map((b: Booking) => b.id === bookingId ? { ...b, ...updates, driver_id: validDriverId || driverId } : b);
-      }
-      localStorage.setItem('pasada_open_queue', JSON.stringify(updatedQueue));
-      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
-      window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
-    } catch {}
 
     // Check if driverId exists in Supabase drivers table to avoid foreign key errors
     if (validDriverId && isUuid) {
@@ -241,7 +278,7 @@ export const updateBookingStatus = async (
       updates.driver_id = validDriverId;
     }
 
-    // Only attempt Supabase update if bookingId is a valid UUID
+    // 1. Await Supabase database update first so ground-truth status is persisted
     if (isUuid) {
       let { error } = await supabase
         .from('bookings')
@@ -304,6 +341,20 @@ export const updateBookingStatus = async (
       }
     }
 
+    // 2. Synchronize local storage queue & notify listeners AFTER DB update has committed
+    try {
+      const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+      let updatedQueue: Booking[];
+      if (status !== 'searching') {
+        updatedQueue = queue.filter((b: Booking) => b.id !== bookingId);
+      } else {
+        updatedQueue = queue.map((b: Booking) => b.id === bookingId ? { ...b, ...updates, driver_id: validDriverId || driverId } : b);
+      }
+      localStorage.setItem('pasada_open_queue', JSON.stringify(updatedQueue));
+      window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
+      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
+    } catch {}
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -319,7 +370,7 @@ export const fetchActiveTrip = async (userId: string, isDriver = false): Promise
     
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles(*)')
+      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles!bookings_passenger_id_fkey(*)')
       .eq(column, userId)
       .in('status', activeStatuses)
       .order('created_at', { ascending: false })
@@ -459,7 +510,7 @@ export const fetchUserBookings = async (userId: string, isDriver = false): Promi
     const column = isDriver ? 'driver_id' : 'passenger_id';
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles(*)')
+      .select('*, driver:drivers(*, profile:profiles(*)), passenger:profiles!bookings_passenger_id_fkey(*)')
       .eq(column, userId)
       .order('created_at', { ascending: false });
 
@@ -481,7 +532,7 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
   try {
     let { data, error } = await supabase
       .from('bookings')
-      .select('*, passenger:profiles(id, full_name, phone_number, passenger_type)')
+      .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
       .eq('status', 'searching')
       .order('created_at', { ascending: false });
 
@@ -492,37 +543,36 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
         .eq('status', 'searching')
         .order('created_at', { ascending: false });
       data = fallbackQuery.data;
+      error = fallbackQuery.error;
     }
 
-    const serverBookings: Booking[] = data ? (data as Booking[]) : [];
+    // When Supabase responds successfully, server bookings are the ground truth!
+    if (!error && data) {
+      const serverBookings: Booking[] = (data as any[]).map((b: any) => ({
+        ...b,
+        passenger: b.passenger || {
+          id: b.passenger_id || '',
+          full_name: b.passenger_name || 'Ka-Pasada Commuter',
+          passenger_type: b.passenger_type || 'regular'
+        }
+      }));
 
+      // Directly synchronize localStorage queue to match exact ground-truth bookings
+      try {
+        localStorage.setItem('pasada_open_queue', JSON.stringify(serverBookings));
+      } catch {}
+
+      return serverBookings;
+    }
+
+    // Offline / network fallback only if Supabase call failed
     let localQueue: Booking[] = [];
     try {
       localQueue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]')
         .filter((b: Booking) => b && b.status === 'searching');
     } catch {}
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-    // If Supabase returned results, any UUID-based booking not in serverBookings is no longer searching
-    if (!error && data) {
-      const serverIds = new Set(serverBookings.map(b => b.id));
-      localQueue = localQueue.filter(b => !uuidRegex.test(b.id) || serverIds.has(b.id));
-      try {
-        localStorage.setItem('pasada_open_queue', JSON.stringify(localQueue));
-      } catch {}
-    }
-
-    const map = new Map<string, Booking>();
-    [...serverBookings, ...localQueue].forEach(b => {
-      if (b && b.id && b.status === 'searching' && !map.has(b.id)) {
-        map.set(b.id, b);
-      }
-    });
-
-    return Array.from(map.values()).sort((a, b) => 
-      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-    );
+    return localQueue;
   } catch (err) {
     return [];
   }

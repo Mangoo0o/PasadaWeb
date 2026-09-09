@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Download, Check } from 'lucide-react';
+import { Download, Check, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { cn } from '../../../lib/utils';
 
 interface PDFExportButtonProps {
   elementId?: string;
@@ -10,10 +11,11 @@ interface PDFExportButtonProps {
   data?: any[];
   headers?: string[];
   keys?: string[];
+  className?: string;
 }
 
 export const PDFExportButton: React.FC<PDFExportButtonProps> = ({ 
-  elementId, filename, title, data, headers, keys 
+  elementId, filename, title, data, headers, keys, className 
 }) => {
   const [exporting, setExporting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -84,16 +86,29 @@ export const PDFExportButton: React.FC<PDFExportButtonProps> = ({
     <button
       onClick={handleExport}
       disabled={exporting}
-      className="btn btn-secondary btn-sm"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+      className={cn(
+        'px-3.5 py-2 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
+        success
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white',
+        className
+      )}
+      title="Export official PDF report"
     >
       {success ? (
         <>
-          <Check size={14} color="var(--success)" /> Exported PDF
+          <Check size={14} className="text-emerald-600 dark:text-emerald-400" /> 
+          <span>PDF Exported</span>
+        </>
+      ) : exporting ? (
+        <>
+          <Loader2 size={14} className="animate-spin text-[#0052d1] dark:text-sky-400" /> 
+          <span>Generating PDF...</span>
         </>
       ) : (
         <>
-          <Download size={14} /> {exporting ? 'Generating PDF...' : 'Export PDF Report'}
+          <Download size={14} className="text-[#0052d1] dark:text-sky-400" /> 
+          <span>Export PDF Report</span>
         </>
       )}
     </button>
