@@ -52,16 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedProfile) {
           try {
             const parsed = JSON.parse(storedProfile);
-            // Ensure super admin role for primary administrative accounts
-            if (
-              parsed.email?.toLowerCase() === 'admin@gmail.com' ||
-              parsed.email?.toLowerCase() === 'pasada.admin@gmail.com' ||
-              parsed.full_name?.toLowerCase().includes('super admin')
-            ) {
-              parsed.role = 'super_admin';
-              localStorage.setItem('pasada_admin_profile', JSON.stringify(parsed));
-              localStorage.setItem('pasada_auth_user', JSON.stringify(parsed));
-            }
             if (parsed.role === 'admin' || parsed.role === 'super_admin') {
               setUser(parsed);
             }
@@ -109,24 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
-      // Built-in Super Admin override for admin@gmail.com or pasada.admin@gmail.com with admin123
-      if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'pasada.admin@gmail.com') && password === 'admin123') {
-        const superAdminProfile: Profile = {
-          id: '00000000-0000-0000-0000-000000000001',
-          role: 'super_admin',
-          full_name: 'LGU Transport Super Admin',
-          email: normalizedEmail,
-          department: 'Mayor’s Office - Transit Division',
-          employee_id: 'LGU-BG-001',
-          language_pref: 'fil',
-          created_at: new Date().toISOString()
-        };
-        setUser(superAdminProfile);
-        localStorage.setItem('pasada_admin_profile', JSON.stringify(superAdminProfile));
-        localStorage.setItem('pasada_auth_user', JSON.stringify(superAdminProfile));
-        logAdminMovement(superAdminProfile, 'ADMIN_LOGIN', 'profiles', superAdminProfile.id, { login_method: 'super_admin_credentials' }).catch(() => {});
-        return { success: true };
-      }
 
       // Check registered administrators in local cache (offline/demo resilience)
       try {
@@ -160,8 +132,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (profile && (profile.role === 'admin' || (profile.role as string) === 'super_admin')) {
             logAdminMovement(profile, 'ADMIN_LOGIN', 'profiles', profile.id, { login_method: 'supabase_auth' }).catch(() => {});
             return { success: true };
+          } else {
+            await supabase.auth.signOut();
+            setUser(null);
+            localStorage.removeItem('pasada_admin_profile');
+            localStorage.removeItem('pasada_auth_user');
+            return { 
+              success: false, 
+              error: 'Access Denied: This account does not have administrator or super administrator permissions.' 
+            };
           }
-          return { success: true };
         }
       }
 

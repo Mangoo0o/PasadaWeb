@@ -75,16 +75,18 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 select-none">
       {/* Left Section: Sidebar Toggle & Modernized Search Bar */}
       <div className="flex items-center gap-3">
-        {/* Sidebar Toggle Button (TailAdmin style) */}
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="w-9 h-9 border border-slate-200 dark:border-slate-800 rounded-md text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors"
-          title="Toggle Navigation"
-          aria-label="Toggle Navigation"
-        >
-          <Menu size={17} />
-        </button>
+        {/* Mobile-only Sidebar Toggle Button */}
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="md:hidden w-9 h-9 border border-slate-200 dark:border-slate-800 rounded-md text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+            title="Toggle Navigation"
+            aria-label="Toggle Navigation"
+          >
+            <Menu size={17} />
+          </button>
+        )}
 
         {/* Search Input with TailAdmin Command Shortcut Pill */}
         <div className="flex items-center relative w-72 md:w-96">

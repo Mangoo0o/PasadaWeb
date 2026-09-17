@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Receipt, Printer, X } from 'lucide-react';
+import { History, Receipt, Printer, X, Search } from 'lucide-react';
 import type { Booking } from '../types';
 import { cn } from '../../lib/utils';
 
@@ -9,10 +9,23 @@ interface BookingsPageProps {
 
 export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filtered = bookings.filter(b => filterStatus === 'all' || b.status === filterStatus);
+  const filtered = bookings.filter(b => {
+    const matchesStatus = filterStatus === 'all' || b.status === filterStatus;
+    if (!matchesStatus) return false;
+
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const idMatch = b.id.toLowerCase().includes(q);
+    const passMatch = (b.passenger?.full_name || '').toLowerCase().includes(q);
+    const driverMatch = (b.driver?.profile?.full_name || '').toLowerCase().includes(q);
+    const originMatch = (b.origin_name || b.pickup_name || '').toLowerCase().includes(q);
+    const destMatch = (b.destination_name || b.dropoff_name || '').toLowerCase().includes(q);
+    return idMatch || passMatch || driverMatch || originMatch || destMatch;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -63,13 +76,13 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
       {/* Stitch Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <History size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <History size={20} />
             </span>
             <span>Ride Monitor &amp; Fare Receipt Audit</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Track real-time trip lifecycles, inspect computed fare receipts, and audit completed rides.
           </p>
         </div>
@@ -103,7 +116,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                 >
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
                       tab.id === 'searching' && tab.count > 0
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -116,9 +129,31 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
             })}
           </div>
 
-          <span className="text-xs text-slate-400 font-medium py-2 hidden sm:inline shrink-0">
-            Showing {filtered.length} {filtered.length === 1 ? 'ride' : 'rides'}
-          </span>
+          {/* Right: Search Input & Match Counter */}
+          <div className="flex items-center gap-3 py-2 shrink-0">
+            <span className="hidden md:inline text-xs text-slate-400 font-medium">
+              Showing {filtered.length} {filtered.length === 1 ? 'ride' : 'rides'}
+            </span>
+            <div className="relative w-64 max-w-full">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search trip, passenger, driver..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium outline-none focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1]/20 transition-all text-slate-800 dark:text-slate-100 shadow-xs placeholder:text-slate-400"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -174,7 +209,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                     <td className="py-3.5 px-6 text-right">
                       <button
                         onClick={() => { setSelectedBooking(b); setIsModalOpen(true); }}
-                        className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#0052d1] dark:text-sky-400 font-bold text-xs transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                        className="h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                       >
                         <Receipt size={13} /> Receipt
                       </button>
@@ -319,14 +354,14 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
               <button 
                 type="button"
                 onClick={() => window.print()} 
-                className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95"
+                className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
               >
                 <Printer size={14} /> Print Receipt
               </button>
               <button 
                 type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="h-9 px-5 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
+                className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
               >
                 Close
               </button>

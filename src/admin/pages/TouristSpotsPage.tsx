@@ -150,20 +150,20 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       {/* Stitch Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <Compass size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <Compass size={20} />
             </span>
             <span>Tourist Attractions &amp; Audio Guide</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Manage Bauang tourism destinations, upload official spoken audio guides, &amp; generate QR landmarks.
           </p>
         </div>
 
         <button 
           onClick={handleOpenAdd} 
-          className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer inline-flex items-center gap-1.5 active:scale-95 shrink-0"
+          className="h-9 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs border border-transparent transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs shrink-0"
         >
           <Plus size={15} /> Add Tourist Destination
         </button>
@@ -188,7 +188,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     alt={spot.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-extrabold uppercase">
+                  <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-bold uppercase">
                     {spot.category || 'Attraction'}
                   </div>
                 </div>
@@ -197,12 +197,12 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start gap-2 mb-2">
-                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white leading-tight">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">
                       {spot.name}
                     </h3>
                     <button
                       onClick={() => { setSelectedSpot(spot); setIsQRModalOpen(true); }}
-                      className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[#0052d1] dark:text-sky-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      className="w-8 h-8 rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
                       title="Generate QR Signage"
                     >
                       <QrCode size={16} />
@@ -226,7 +226,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </span>
                     <button
                       onClick={() => handleOpenEdit(spot)}
-                      className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
+                      className="h-8 px-3 rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                     >
                       <Edit size={13} /> Edit Spot
                     </button>
@@ -248,7 +248,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   <Compass size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     {selectedSpot ? 'Edit Destination Details' : 'Register New Tourist Landmark'}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -273,7 +273,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   {/* LEFT COLUMN: Map Pin Picker */}
                   <div className="space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <Crosshair size={15} className="text-[#0052d1] dark:text-sky-400" />
                         <span>Pin Landmark on Map</span>
                       </label>
@@ -323,7 +323,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   {/* RIGHT COLUMN: Form Inputs */}
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Destination Name *
                       </label>
                       <input
@@ -337,7 +337,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Category
                       </label>
                       <select
@@ -353,7 +353,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Description &amp; Heritage Notes *
                       </label>
                       <textarea
@@ -367,7 +367,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Opening Hours *
                       </label>
                       <input
@@ -382,7 +382,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                           Latitude
                         </label>
                         <input
@@ -396,7 +396,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                           Longitude
                         </label>
                         <input
@@ -417,13 +417,13 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                  className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
+                  className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <Check size={15} /> Save Destination
                 </button>
@@ -443,7 +443,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   <QrCode size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Official QR Landmark Signage
                   </h3>
                   <p className="text-xs text-slate-400 truncate max-w-[240px]">
@@ -464,10 +464,10 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
 
             <div className="modal-body text-center bg-slate-50 dark:bg-slate-900/50 p-6 space-y-4">
               <div className="p-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-3 inline-block mx-auto max-w-xs w-full">
-                <div className="text-[10px] font-black uppercase tracking-widest text-[#0052d1] dark:text-sky-400">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#0052d1] dark:text-sky-400">
                   PASADAGUIDE MUNICIPAL TOURISM
                 </div>
-                <div className="font-black text-sm text-slate-900 dark:text-white">
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
                   {selectedSpot.name}
                 </div>
 
@@ -493,14 +493,14 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
               <button 
                 type="button" 
                 onClick={() => window.print()} 
-                className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
               >
                 Print Plaque
               </button>
               <button 
                 type="button" 
                 onClick={() => setIsQRModalOpen(false)} 
-                className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
+                className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
               >
                 Close
               </button>

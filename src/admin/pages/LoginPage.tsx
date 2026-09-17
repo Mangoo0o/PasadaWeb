@@ -339,21 +339,21 @@ export const LoginPage: React.FC = () => {
             type="submit"
             disabled={loading}
             style={{
-              background: 'linear-gradient(135deg, #00346F 0%, #004A99 100%)',
+              background: '#0f172a',
               color: '#ffffff',
-              border: 'none',
+              border: '1px solid #0f172a',
               borderRadius: 6,
-              padding: '12px 0',
-              fontWeight: 700,
-              fontSize: '0.9rem',
+              padding: '11px 0',
+              fontWeight: 600,
+              fontSize: '0.875rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
               marginTop: 6,
-              boxShadow: '0 4px 12px rgba(0, 52, 111, 0.25)',
-              transition: 'all 0.15s ease'
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              transition: 'background-color 0.15s ease'
             }}
           >
             <span>{loading ? 'Authenticating...' : activeTab === 'signin' ? 'Sign In to Dashboard' : 'Create Super Admin Account'}</span>

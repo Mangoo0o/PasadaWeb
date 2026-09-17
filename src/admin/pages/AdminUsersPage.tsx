@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Crown, 
   ShieldCheck, 
@@ -18,7 +19,7 @@ import {
   Mail,
   User,
   ShieldAlert,
-  Users
+  FileText
 } from 'lucide-react';
 import { 
   fetchAdminUsers, 
@@ -47,10 +48,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
   onNavigateToAuditTrail 
 }) => {
   // Super Admin authorization check
-  const isSuperAdmin = 
-    currentUser.role === 'super_admin' ||
-    currentUser.email?.toLowerCase() === 'admin@gmail.com' ||
-    currentUser.email?.toLowerCase() === 'pasada.admin@gmail.com';
+  const isSuperAdmin = currentUser.role === 'super_admin';
 
   const [admins, setAdmins] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +71,51 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
 
   const [showPassword, setShowPassword] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [menuAdmin, setMenuAdmin] = useState<Profile | null>(null);
+  const [menuCoords, setMenuCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    right: number;
+    openUpward: boolean;
+  } | null>(null);
+
+  // Close floating action menu on window scroll or resize to prevent drift
+  useEffect(() => {
+    if (!actionMenuId) return;
+    const handleDismiss = () => {
+      setActionMenuId(null);
+      setMenuAdmin(null);
+      setMenuCoords(null);
+    };
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [actionMenuId]);
+
+  const handleToggleMenu = (e: React.MouseEvent<HTMLButtonElement>, admin: Profile) => {
+    e.stopPropagation();
+    if (actionMenuId === admin.id) {
+      setActionMenuId(null);
+      setMenuAdmin(null);
+      setMenuCoords(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < 200 && rect.top > 200;
+
+    setMenuCoords({
+      top: openUpward ? undefined : rect.bottom + 6,
+      bottom: openUpward ? window.innerHeight - rect.top + 6 : undefined,
+      right: Math.max(16, window.innerWidth - rect.right),
+      openUpward
+    });
+    setActionMenuId(admin.id);
+    setMenuAdmin(admin);
+  };
 
   const loadAdmins = async () => {
     setLoading(true);
@@ -171,6 +214,8 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
 
   const openConfirmModal = (type: 'promote' | 'demote' | 'revoke', targetAdmin: Profile) => {
     setActionMenuId(null);
+    setMenuAdmin(null);
+    setMenuCoords(null);
     setConfirmModal({
       isOpen: true,
       type,
@@ -225,13 +270,13 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
       {/* Stitch Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <ShieldCheck size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <ShieldCheck size={20} />
             </span>
             <span>Administrator &amp; Access Control</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Provision municipal transit officers, manage role permissions, and enforce administrative governance.
           </p>
         </div>
@@ -256,9 +301,9 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="h-11 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white text-sm font-bold flex items-center gap-2 transition-all cursor-pointer active:scale-95 shadow-md shadow-[#0052d1]/20"
+              className="h-9 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             >
-              <UserPlus size={18} />
+              <UserPlus size={15} />
               <span>Add Administrator</span>
             </button>
           ) : (
@@ -280,128 +325,84 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
         </div>
       )}
 
-      {/* Executive Metric Cards Bento Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Total Admins */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#0052d1] flex items-center justify-center shrink-0">
-            <Users size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Administrators</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight my-0.5 tabular-nums">
-              {admins.length}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Registered municipal personnel</p>
-          </div>
-        </div>
-
-        {/* Super Admins */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
-            <Crown size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Super Administrators</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-amber-600 dark:text-amber-400 tracking-tight my-0.5 tabular-nums">
-              {superAdminCount}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Full municipal governance</p>
-          </div>
-        </div>
-
-        {/* Operational Admins */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 flex items-center justify-center shrink-0">
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Operational Admins</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight my-0.5 tabular-nums">
-              {standardAdminCount}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Dispatch, fares &amp; complaints</p>
-          </div>
-        </div>
-      </div>
 
       {/* Filter and Table Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
-        {/* Controls Toolbar */}
-        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-slate-50/50 dark:bg-slate-800/40">
-          {/* Role Segment Tabs */}
-          <div className="inline-flex items-center p-1 rounded-md bg-slate-200/70 dark:bg-slate-800 text-xs sm:text-sm font-semibold self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setRoleFilter('all')}
-              className={cn(
-                "px-4 py-2 rounded-lg transition-all cursor-pointer font-bold",
-                roleFilter === 'all'
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              )}
-            >
-              All Officials ({admins.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setRoleFilter('super_admin')}
-              className={cn(
-                "px-4 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 font-bold",
-                roleFilter === 'super_admin'
-                  ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              )}
-            >
-              <Crown size={14} />
-              <span>Super Admins ({superAdminCount})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRoleFilter('admin')}
-              className={cn(
-                "px-4 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 font-bold",
-                roleFilter === 'admin'
-                  ? "bg-white dark:bg-slate-900 text-[#0052d1] dark:text-sky-400 shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              )}
-            >
-              <ShieldCheck size={14} />
-              <span>Admins ({standardAdminCount})</span>
-            </button>
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+        {/* Unified Top Filter Row: Tabs on Left, Search on Right */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0 rounded-t-lg">
+          {/* Tabs */}
+          <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
+            {[
+              { id: 'all', label: 'All Officials', count: admins.length, icon: null },
+              { id: 'super_admin', label: 'Super Admins', count: superAdminCount, icon: Crown },
+              { id: 'admin', label: 'Admins', count: standardAdminCount, icon: ShieldCheck },
+            ].map((tab) => {
+              const isTabActive = roleFilter === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setRoleFilter(tab.id as any)}
+                  className={`px-3.5 py-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isTabActive
+                      ? 'border-[#0052d1] text-[#0052d1] dark:text-sky-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {Icon && <Icon size={13} className={isTabActive ? (tab.id === 'super_admin' ? 'text-amber-500' : 'text-[#0052d1] dark:text-sky-400') : 'text-slate-400'} />}
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
+                      tab.id === 'super_admin' && tab.count > 0
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Search Input */}
-          <div className="relative w-full sm:w-80">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by name, email, department..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium outline-none focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1]/20 text-slate-900 dark:text-white placeholder:text-slate-400 shadow-xs transition-all"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
-              >
-                <X size={14} />
-              </button>
-            )}
+          {/* Right: Search Input & Match Counter */}
+          <div className="flex items-center gap-3 py-2 shrink-0">
+            <span className="hidden md:inline text-xs text-slate-400 font-medium">
+              Showing {filteredAdmins.length} {filteredAdmins.length === 1 ? 'official' : 'officials'}
+            </span>
+            <div className="relative w-64 max-w-full">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search official, email, dept..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium outline-none focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1]/20 transition-all text-slate-800 dark:text-slate-100 shadow-xs placeholder:text-slate-400"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Directory Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[300px] pb-24 rounded-b-lg">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-800/60">
-                <th className="py-4 px-6">Administrative Officer</th>
-                <th className="py-4 px-6">Role Authority</th>
-                <th className="py-4 px-6">Department / Office</th>
-                <th className="py-4 px-6">Employee ID</th>
-                <th className="py-4 px-6 text-right">Actions</th>
+              <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Administrative Officer</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role Authority</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department / Office</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Employee ID</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
@@ -437,7 +438,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3.5">
                           <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm shrink-0 shadow-xs",
+                            "w-9 h-9 rounded-md flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs",
                             isAdminSuper 
                               ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700" 
                               : "bg-blue-100 dark:bg-blue-950/60 text-[#0052d1] dark:text-sky-300 border border-blue-200 dark:border-blue-800"
@@ -445,10 +446,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                             {initials}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                               <span>{admin.full_name}</span>
                               {isCurrent && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 dark:bg-blue-900/60 text-[#0052d1] dark:text-sky-200">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-[#0052d1] dark:text-sky-200">
                                   You
                                 </span>
                               )}
@@ -490,51 +491,20 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
 
                       {/* Actions */}
                       <td className="py-4 px-6 text-right">
-                        <div className="inline-flex items-center justify-end gap-2">
+                        <div className="inline-flex items-center justify-end">
                           <button
                             type="button"
-                            onClick={() => onNavigateToAuditTrail?.(admin.full_name)}
-                            className="h-8 px-3.5 rounded-lg bg-slate-100 hover:bg-[#0052d1] hover:text-white dark:bg-slate-800 dark:hover:bg-[#0052d1] text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-xs"
-                            title="Inspect all movements by this admin in Audit Trail"
+                            onClick={(e) => handleToggleMenu(e, admin)}
+                            className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer",
+                              actionMenuId === admin.id
+                                ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            )}
+                            title="Options"
                           >
-                            Movements
+                            <MoreVertical size={16} />
                           </button>
-
-                          {isSuperAdmin && (
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={() => setActionMenuId(actionMenuId === admin.id ? null : admin.id)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                              >
-                                <MoreVertical size={16} />
-                              </button>
-
-                              {actionMenuId === admin.id && (
-                                <div className="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl p-1.5 z-30 text-left text-xs animate-in fade-in zoom-in-95">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleRole(admin)}
-                                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200"
-                                  >
-                                    <KeyRound size={14} className="text-[#0052d1]" />
-                                    <span>{isAdminSuper ? 'Demote to Admin' : 'Promote to Super Admin'}</span>
-                                  </button>
-
-                                  {!isCurrent && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRevoke(admin)}
-                                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-2 cursor-pointer border-t border-slate-100 dark:border-slate-800"
-                                    >
-                                      <UserMinus size={14} />
-                                      <span>Revoke Admin Access</span>
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -569,12 +539,12 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                   {confirmModal.type === 'revoke' && <AlertTriangle size={22} />}
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     {confirmModal.type === 'promote' && 'Promote to Super Administrator'}
                     {confirmModal.type === 'demote' && 'Demote to Administrator'}
                     {confirmModal.type === 'revoke' && 'Revoke Administrator Access'}
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-slate-400 font-normal">
                     Security Governance Action
                   </p>
                 </div>
@@ -648,7 +618,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                 type="button"
                 disabled={confirmModal.isExecuting}
                 onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                className="h-10 px-4 rounded-lg text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs"
+                className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors cursor-pointer text-xs shadow-2xs"
               >
                 Cancel
               </button>
@@ -657,10 +627,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                 disabled={confirmModal.isExecuting}
                 onClick={executeConfirmAction}
                 className={cn(
-                  "h-10 px-5 rounded-lg font-black text-xs text-white shadow-md flex items-center gap-2 cursor-pointer active:scale-95 transition-all disabled:opacity-50",
-                  confirmModal.type === 'promote' && "bg-amber-600 hover:bg-amber-700 shadow-amber-600/25",
-                  confirmModal.type === 'demote' && "bg-[#0052d1] hover:bg-[#206afa] shadow-[#0052d1]/25",
-                  confirmModal.type === 'revoke' && "bg-rose-600 hover:bg-rose-700 shadow-rose-600/25"
+                  "h-9 px-4 rounded-md font-semibold text-xs text-white shadow-2xs flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50",
+                  confirmModal.type === 'promote' && "bg-amber-600 hover:bg-amber-700",
+                  confirmModal.type === 'demote' && "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900",
+                  confirmModal.type === 'revoke' && "bg-rose-600 hover:bg-rose-700"
                 )}
               >
                 {confirmModal.isExecuting && (
@@ -693,10 +663,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                   <UserPlus size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Provision Municipal Administrator
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-slate-400 font-normal">
                     Municipality of Bauang Transit Management Suite
                   </p>
                 </div>
@@ -865,17 +835,17 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setShowAddModal(false)}
-                  className="h-10 px-4 rounded-lg text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors text-xs cursor-pointer"
+                  className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors text-xs cursor-pointer shadow-2xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-10 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-black text-xs shadow-md shadow-[#0052d1]/25 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 transition-all"
+                  className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs shadow-2xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   {isSubmitting ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin" />
                   ) : null}
                   <span>{isSubmitting ? 'Provisioning...' : `Provision ${formData.role === 'super_admin' ? 'Super Admin' : 'Admin'}`}</span>
                 </button>
@@ -883,6 +853,87 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Floating Action Menu Portal (Immune to table overflow/scroll clipping) */}
+      {actionMenuId && menuAdmin && menuCoords && createPortal(
+        <>
+          <div
+            className="fixed inset-0 z-[9990] cursor-default bg-transparent"
+            onClick={() => {
+              setActionMenuId(null);
+              setMenuAdmin(null);
+              setMenuCoords(null);
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+              bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+              right: `${menuCoords.right}px`,
+              zIndex: 9999
+            }}
+            className={cn(
+              "w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl p-1.5 text-left text-xs animate-in fade-in zoom-in-95 backdrop-blur-md",
+              menuCoords.openUpward ? "origin-bottom-right" : "origin-top-right"
+            )}
+          >
+            {onNavigateToAuditTrail && (
+              <button
+                type="button"
+                onClick={() => {
+                  const targetName = menuAdmin.full_name;
+                  setActionMenuId(null);
+                  setMenuAdmin(null);
+                  setMenuCoords(null);
+                  onNavigateToAuditTrail(targetName);
+                }}
+                className="w-full text-left px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors"
+              >
+                <FileText size={14} className="text-slate-400 shrink-0" />
+                <span>View Audit Trail</span>
+              </button>
+            )}
+
+            {isSuperAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetAdmin = menuAdmin;
+                    setActionMenuId(null);
+                    setMenuAdmin(null);
+                    setMenuCoords(null);
+                    handleToggleRole(targetAdmin);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors"
+                >
+                  <KeyRound size={14} className="text-[#0052d1] dark:text-sky-400 shrink-0" />
+                  <span>{menuAdmin.role === 'super_admin' ? 'Demote to Admin' : 'Promote to Super Admin'}</span>
+                </button>
+
+                {menuAdmin.id !== currentUser.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetAdmin = menuAdmin;
+                      setActionMenuId(null);
+                      setMenuAdmin(null);
+                      setMenuCoords(null);
+                      handleRevoke(targetAdmin);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-2 cursor-pointer border-t border-slate-100 dark:border-slate-800 transition-colors"
+                  >
+                    <UserMinus size={14} className="shrink-0" />
+                    <span>Revoke Admin Access</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );

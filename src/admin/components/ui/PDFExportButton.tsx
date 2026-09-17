@@ -87,10 +87,10 @@ export const PDFExportButton: React.FC<PDFExportButtonProps> = ({
       onClick={handleExport}
       disabled={exporting}
       className={cn(
-        'px-3.5 py-2 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed',
+        'h-9 px-3.5 rounded-md text-xs font-medium transition-colors inline-flex items-center gap-2 cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed',
         success
           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white',
+          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white',
         className
       )}
       title="Export official PDF report"

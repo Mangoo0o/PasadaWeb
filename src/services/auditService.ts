@@ -4,10 +4,14 @@ import type { AdminAction, Profile } from '../admin/types';
 const AUDIT_CACHE_KEY = 'pasada_audit_actions';
 
 /**
- * Validates if an ID is a valid Postgres UUID
+ * Validates if an ID is a valid Postgres UUID that exists in database
  */
 function isValidUuid(id?: string): boolean {
   if (!id) return false;
+  // Exclude placeholder/synthetic UUIDs that don't exist in Supabase profiles
+  if (id === '00000000-0000-0000-0000-000000000001' || id.startsWith('local-') || id.startsWith('mock-')) {
+    return false;
+  }
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
@@ -58,13 +62,23 @@ export async function logAdminMovement(
       const { data, error } = await supabase
         .from('admin_actions')
         .insert(payload)
-        .select('*, admin:profiles(*)')
+        .select('id, created_at')
         .maybeSingle();
 
       if (!error && data) {
         actionRecord.id = data.id;
-        if (data.admin) {
-          actionRecord.admin = data.admin as Profile;
+      } else if (error) {
+        // If foreign key constraint failed (e.g. admin profile not present in remote profiles table), retry with admin_id: null
+        if (error.code === '23503' || (error as any).status === 409) {
+          const { data: retryData } = await supabase
+            .from('admin_actions')
+            .insert({ ...payload, admin_id: null })
+            .select('id, created_at')
+            .maybeSingle();
+
+          if (retryData) {
+            actionRecord.id = retryData.id;
+          }
         }
       }
     } catch (err) {
@@ -120,7 +134,13 @@ export async function fetchAuditLogs(): Promise<AdminAction[]> {
             target_id: row.target_id || undefined,
             details_json: row.details_json || {},
             created_at: row.created_at,
-            admin: row.admin || undefined
+            admin: row.admin || (row.details_json?.admin_name ? {
+              id: row.admin_id || '',
+              full_name: row.details_json.admin_name,
+              email: row.details_json.admin_email,
+              role: row.details_json.admin_role || 'admin',
+              department: row.details_json.department || row.details_json.admin_department
+            } as any : undefined)
           });
         });
       }

@@ -181,13 +181,13 @@ export const DriversPage: React.FC<DriversPageProps> = ({
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <Car size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <Car size={20} />
             </span>
             <span>Driver Franchise &amp; Document Verification</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Suriin ang 5 kinakailangang PDF documents (License, OR/CR, MTOP, Barangay &amp; Police Clearances) bago aprubahan ang prangkisa.
           </p>
         </div>
@@ -195,14 +195,14 @@ export const DriversPage: React.FC<DriversPageProps> = ({
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
 
           <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+            <div className="w-8 h-8 rounded-md bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
               {pendingCount}
             </div>
             <div>
-              <div className="text-xs font-black text-amber-950 dark:text-amber-200">
+              <div className="text-xs font-bold text-amber-950 dark:text-amber-200">
                 Pending Verification
               </div>
-              <div className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+              <div className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
                 Nangangailangan ng pagsusuri ng MTFRB
               </div>
             </div>
@@ -236,7 +236,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 >
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
                       tab.id === 'pending' && tab.count > 0 
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -434,7 +434,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                      <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white truncate">
                         {selectedDriver.profile?.full_name}
                       </h3>
                       {getStatusBadge(selectedDriver.verification_status)}
@@ -543,7 +543,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <FileBadge className="w-4 h-4 text-[#0052d1] shrink-0" />
-                      <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                         {currentDocConfig.title}
                       </h4>
                       <span className="text-xs text-slate-400 font-medium">
@@ -579,7 +579,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         href={currentActiveDoc.file_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                         title="Buksan sa bagong tab para sa buong laki"
                       >
                         <ExternalLink size={13} />
@@ -591,7 +591,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         download={currentActiveDoc.file_name || 'document.pdf'}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-[#0052d1] hover:bg-[#003f87] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                         title="I-download ang orihinal na PDF"
                       >
                         <Download size={13} />
@@ -673,7 +673,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     <div className="flex justify-end gap-2 pt-1">
                       <button
                         onClick={() => setIsRejecting(false)}
-                        className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium cursor-pointer shadow-2xs"
                       >
                         Bumalik
                       </button>
@@ -697,7 +697,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                   <button 
                     type="button"
                     onClick={() => setIsDocModalOpen(false)} 
-                    className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-100 shadow-xs flex items-center justify-center transition-colors"
+                    className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer flex items-center justify-center transition-colors shadow-2xs"
                   >
                     Close
                   </button>
@@ -709,7 +709,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         if (hasPrevDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex - 1].type);
                       }}
                       disabled={!hasPrevDoc}
-                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-medium flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
                       title="Tingnan ang nakaraang dokumento"
                     >
                       <ChevronLeft size={14} />
@@ -722,7 +722,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         if (hasNextDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex + 1].type);
                       }}
                       disabled={!hasNextDoc}
-                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-medium flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
                       title="Tingnan ang susunod na dokumento"
                     >
                       <span className="hidden sm:inline">Next Doc</span>
@@ -754,10 +754,10 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           type="button"
                           onClick={() => handleApprove(selectedDriver.profile_id || selectedDriver.id || '')}
                           disabled={isProcessingAction}
-                          className="h-9 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+                          className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs transition-colors disabled:opacity-50"
                         >
                           {isProcessingAction ? (
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <div className="w-3.5 h-3.5 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin" />
                           ) : (
                             <CheckCircle size={14} />
                           )}

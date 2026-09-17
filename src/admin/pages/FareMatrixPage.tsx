@@ -444,13 +444,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
       {/* Stitch Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <SlidersHorizontal size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <SlidersHorizontal size={20} />
             </span>
             <span>Fare Matrix &amp; Proximity Rates</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Manage regulated location rates, dynamic geofence pricing, &amp; distance-based tariffs.
           </p>
         </div>
@@ -479,7 +479,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
               <button
                 onClick={handleOpenAdd}
-                className="h-9 px-4 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-md text-xs font-bold transition-all shadow-sm shadow-[#0052d1]/20 cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+                className="h-9 px-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 rounded-md text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
               >
                 <Plus size={14} />
                 <span>Add Location</span>
@@ -575,7 +575,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
         </div>
 
         {/* Right Sidebar Area (Span 4) */}
-        <div className="col-span-12 xl:col-span-4 space-y-6">
+        <div className="col-span-12 xl:col-span-4 space-y-6 xl:sticky xl:top-6 self-start">
           {/* Card 1: Location Map Visualizer */}
           <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
             <div className="flex justify-between items-center mb-3 px-2">
@@ -693,8 +693,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Current Active Vehicles</span>
-                  <span className="block text-2xl font-black text-slate-900 dark:text-white tabular-nums flex items-center gap-1.5">
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Current Active Vehicles</span>
+                  <span className="block text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums flex items-center gap-1.5">
                     <span>{activeVehicleCount}</span>
                     {activeVehicleCount > 0 ? (
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200/50 tabular-nums">
@@ -708,8 +708,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   </span>
                 </div>
                 <div>
-                  <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Est. Wait Time</span>
-                  <span className="block text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Est. Wait Time</span>
+                  <span className="block text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {estWaitTime}
                   </span>
                 </div>
@@ -718,7 +718,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
             <button
               onClick={() => activeLocation && handleOpenEdit(activeLocation)}
-              className="w-full h-9 px-4 bg-[#276efe]/5 text-[#276efe] border border-[#276efe]/20 rounded-md text-xs font-semibold hover:bg-[#276efe]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              className="w-full h-9 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
             >
               <ShieldCheck size={16} />
               <span>Edit Location Rate</span>
@@ -740,7 +740,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <Sparkles size={22} className="text-[#0052d1] dark:text-sky-400" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                     {selectedFare ? 'Edit Location Tariff & Multimedia Guide' : 'Register Location Tariff Point'}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
@@ -768,7 +768,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   className={cn(
                     "px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer inline-flex items-center gap-2.5",
                     currentStep === 1
-                      ? "bg-[#0052d1] text-white shadow-md shadow-[#0052d1]/25"
+                      ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-2xs font-semibold"
                       : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                   )}
                 >
@@ -789,7 +789,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   className={cn(
                     "px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer inline-flex items-center gap-2.5",
                     currentStep === 2
-                      ? "bg-[#0052d1] text-white shadow-md shadow-[#0052d1]/25"
+                      ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-2xs font-semibold"
                       : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                   )}
                 >
@@ -1100,19 +1100,19 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <label className="flex-1 h-11 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#0052d1]/20 transition-all active:scale-95">
+                        <label className="flex-1 h-10 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
                           <ImageIcon size={16} />
                           <span>Upload Photos</span>
                           <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
 
                         <label className={cn(
-                          "flex-1 h-11 rounded-lg text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95",
-                          isUploadingVideo ? "bg-slate-600 cursor-not-allowed" : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 cursor-pointer"
+                          "flex-1 h-10 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center justify-center gap-2 shadow-2xs transition-colors",
+                          isUploadingVideo ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed" : "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer"
                         )}>
                           {isUploadingVideo ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <div className="w-4 h-4 border-2 border-[#0052d1] border-t-transparent rounded-full animate-spin" />
                               <span>Uploading Video...</span>
                             </>
                           ) : (
@@ -1237,23 +1237,23 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               </div>
 
               {/* Stepper Footer Controls */}
-              <div className="modal-footer px-6 sm:px-8 py-4 bg-slate-50/60 dark:bg-slate-900/60">
+              <div className="modal-footer px-6 sm:px-8 py-3.5 bg-slate-50/60 dark:bg-slate-900/60">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="h-11 px-5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+                  className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
                 >
                   Cancel
                 </button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   {currentStep === 2 && (
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
-                      className="h-11 px-5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-xs"
+                      className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                     >
-                      <ArrowLeft size={16} /> Back: Set Location
+                      <ArrowLeft size={15} /> Back
                     </button>
                   )}
 
@@ -1270,17 +1270,17 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         setFormError(null);
                         setCurrentStep(2);
                       }}
-                      className="h-11 px-6 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-black text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-[#0052d1]/25"
+                      className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                     >
                       <span>Next: Media &amp; Highlights</span>
-                      <ArrowRight size={16} />
+                      <ArrowRight size={15} />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      className="h-11 px-7 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-black text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-[#0052d1]/25"
+                      className="h-9 px-5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                     >
-                      <Check size={18} />
+                      <Check size={16} />
                       <span>{selectedFare ? 'Save & Enforce Rate' : 'Register Tariff Point'}</span>
                     </button>
                   )}

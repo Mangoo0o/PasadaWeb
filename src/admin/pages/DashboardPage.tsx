@@ -113,13 +113,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* Stitch Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <TrendingUp size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <TrendingUp size={20} />
             </span>
             <span>Bauang TODA Operations Center</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Real-time overview of municipal transit network, tariff regulation, &amp; fleet monitoring.
           </p>
         </div>
@@ -139,12 +139,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Registered Drivers</p>
-              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0 tabular-nums">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Registered Drivers</p>
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0 tabular-nums">
                 <TrendingUp size={11} /> {activeDriversCount > 0 ? `${Math.round((activeDriversCount / (drivers.length || 1)) * 100)}% Active` : 'Live'}
               </span>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
               {drivers.length}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
@@ -163,13 +163,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Regulated Locations</p>
-              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Regulated Locations</p>
+              <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0">
                 Bauang LGU
               </span>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
-              {locationFares.length > 0 ? `${locationFares.length}` : '10'} <span className="text-base sm:text-lg font-bold text-slate-500 dark:text-slate-400">Zones</span>
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
+              {locationFares.length > 0 ? `${locationFares.length}` : '10'} <span className="text-sm sm:text-base font-semibold text-slate-500 dark:text-slate-400">Zones</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
               Active proximity tariff destinations
@@ -187,12 +187,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Active Complaints</p>
-              <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200/70 dark:border-rose-800 shrink-0 tabular-nums">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Active Complaints</p>
+              <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-bold text-[10px] bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200/70 dark:border-rose-800 shrink-0 tabular-nums">
                 {openComplaintsCount} Open
               </span>
             </div>
-            <h3 className={`text-3xl sm:text-4xl font-black tracking-tight leading-none my-1 tabular-nums ${openComplaintsCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+            <h3 className={`text-2xl sm:text-3xl font-bold tracking-tight leading-none my-1 tabular-nums ${openComplaintsCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
               {openComplaintsCount}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
@@ -211,12 +211,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Computed Fares (Today)</p>
-              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Computed Fares (Today)</p>
+              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0">
                 Tariff Regulated
               </span>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
               ₱{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
@@ -232,7 +232,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden relative flex flex-col min-h-[480px]">
           {/* Floating Glass Panel */}
           <div className="absolute top-4 left-4 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-md p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-md pointer-events-auto">
-            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Regulated Locations</h3>
+            <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">Regulated Locations</h3>
             <p className="text-[11px] text-slate-500 font-medium">Live view of Bauang TODA operations</p>
           </div>
 
@@ -259,7 +259,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     <div className="p-1 min-w-[150px]">
                       <div className="font-bold text-[#0052d1] text-xs">{loc.location_name}</div>
                       <div className="text-[11px] text-slate-700 dark:text-slate-200 mt-1">
-                        Regulated Fare: <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold">₱{Number(loc.standard_fare).toFixed(2)}</strong>
+                        Regulated Fare: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">₱{Number(loc.standard_fare).toFixed(2)}</strong>
                       </div>
                       <div className="text-[10px] text-slate-400 mt-0.5">{loc.notes || 'Regulated Destination'}</div>
                       <button
@@ -278,7 +278,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <Marker key={d.profile_id || d.id} position={[d.current_lat!, d.current_lng!]} icon={driverIcon}>
                   <Popup>
                     <div className="p-1">
-                      <div className="font-black text-xs text-slate-900">
+                      <div className="font-bold text-xs text-slate-900">
                         {d.profile?.full_name || 'Driver'}
                       </div>
                       <div className="text-[10px] text-slate-600">Plate: <strong>{d.plate_number}</strong></div>
@@ -300,7 +300,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-1">
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Hourly Ride Demand</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Hourly Ride Demand</h3>
                 <p className="text-[11px] text-slate-400 font-medium">Passenger trips &amp; fare revenue index</p>
               </div>
               <span className="text-[10px] font-bold text-[#0052d1] dark:text-sky-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/70 dark:border-blue-800 shrink-0">
@@ -317,7 +317,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-2">
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Fleet Distribution</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Fleet Distribution</h3>
                 <p className="text-[11px] text-slate-400 font-medium">Driver allocation by TODA</p>
               </div>
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0">

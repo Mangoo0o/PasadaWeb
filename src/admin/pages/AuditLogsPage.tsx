@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   X, 
@@ -8,7 +8,8 @@ import {
   FileText, 
   Copy, 
   Check, 
-  ExternalLink 
+  ExternalLink,
+  Filter
 } from 'lucide-react';
 import type { AdminAction } from '../types';
 import { exportAuditLogsToCsv } from '../../services/auditService';
@@ -30,6 +31,15 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
   const [selectedLog, setSelectedLog] = useState<AdminAction | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
 
+  // Sync search whenever initialSearchQuery changes (e.g. clicking View Audit Trail on an admin)
+  useEffect(() => {
+    if (initialSearchQuery !== undefined) {
+      setSearch(initialSearchQuery);
+      setCategoryFilter('all');
+      setDateFilter('all');
+    }
+  }, [initialSearchQuery]);
+
   const getActionCategory = (actionType: string): string => {
     const t = actionType.toUpperCase();
     if (t.includes('PROVISION') || t.includes('ROLE') || t.includes('REVOKE')) return 'admin_provisioning';
@@ -44,13 +54,28 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
   const filtered = useMemo(() => {
     const now = Date.now();
     return auditLogs.filter(log => {
-      const q = search.toLowerCase();
+      const q = search.toLowerCase().trim();
       const type = log.action_type?.toLowerCase() || '';
       const adminName = (log.admin?.full_name || log.details_json?.admin_name || '').toLowerCase();
+      const adminEmail = (log.admin?.email || log.details_json?.admin_email || '').toLowerCase();
+      const adminId = (log.admin_id || log.details_json?.admin_id || '').toLowerCase();
       const targetTable = (log.target_table || '').toLowerCase();
+      const targetId = (log.target_id || '').toLowerCase();
+      const targetOfficer = (log.details_json?.target_officer || log.details_json?.provisioned_officer || '').toLowerCase();
+      const targetEmail = (log.details_json?.target_email || log.details_json?.provisioned_email || '').toLowerCase();
       const detailsStr = JSON.stringify(log.details_json || {}).toLowerCase();
 
-      const searchMatch = !search || type.includes(q) || adminName.includes(q) || targetTable.includes(q) || detailsStr.includes(q);
+      const searchMatch = !q || 
+        type.includes(q) || 
+        adminName.includes(q) || 
+        adminEmail.includes(q) || 
+        adminId.includes(q) ||
+        targetTable.includes(q) || 
+        targetId.includes(q) || 
+        targetOfficer.includes(q) ||
+        targetEmail.includes(q) ||
+        detailsStr.includes(q);
+
       const categoryMatch = categoryFilter === 'all' || getActionCategory(log.action_type) === categoryFilter;
 
       let dateMatch = true;
@@ -94,13 +119,13 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
       {/* Stitch Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <ShieldCheck size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <ShieldCheck size={20} />
             </span>
             <span>Audit Trail &amp; Compliance Log</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Immutable official log of all administrative movements, driver approvals, rate matrix adjustments, and system security actions.
           </p>
         </div>
@@ -108,80 +133,125 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
         <button
           type="button"
           onClick={() => exportAuditLogsToCsv(filtered)}
-          className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shadow-md shadow-[#0052d1]/20 active:scale-95 shrink-0"
+          className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto shadow-2xs shrink-0"
         >
           <Download size={15} />
           <span>Export CSV Report</span>
         </button>
       </div>
 
-      {/* Unified Filter Toolbar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search action, official name, target, or payload..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-8 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium outline-none focus:border-[#0052d1] text-slate-900 dark:text-white placeholder:text-slate-400"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Dropdown Filters */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-10 px-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
-          >
-            <option value="all">All Operations</option>
-            <option value="admin_provisioning">Admin Provisioning</option>
-            <option value="driver_approvals">Driver Approvals</option>
-            <option value="tariff_fares">Tariff &amp; Rates</option>
-            <option value="infrastructure">Terminals &amp; Spots</option>
-            <option value="complaints">Complaints Triage</option>
-            <option value="auth">Security &amp; Auth</option>
-          </select>
-
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-            className="h-10 px-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
-          >
-            <option value="all">All Time</option>
-            <option value="today">Today (24h)</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-          </select>
-
-          <span className="text-xs sm:text-sm font-bold text-slate-400 pl-1 whitespace-nowrap">
-            {filtered.length} records
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
+      {/* Content Container: Unified Filter Row & Table */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+        {/* Unified Top Filter Row: Tabs on Left, Search on Right */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
+          {/* Tabs */}
+          <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
+            {[
+              { id: 'all', label: 'All Operations', count: auditLogs.length },
+              { id: 'admin_provisioning', label: 'Admin Provisioning', count: auditLogs.filter(l => getActionCategory(l.action_type) === 'admin_provisioning').length },
+              { id: 'driver_approvals', label: 'Driver Approvals', count: auditLogs.filter(l => getActionCategory(l.action_type) === 'driver_approvals').length },
+              { id: 'tariff_fares', label: 'Tariff & Rates', count: auditLogs.filter(l => getActionCategory(l.action_type) === 'tariff_fares').length },
+              { id: 'complaints', label: 'Complaints', count: auditLogs.filter(l => getActionCategory(l.action_type) === 'complaints').length },
+              { id: 'auth', label: 'Security & Auth', count: auditLogs.filter(l => getActionCategory(l.action_type) === 'auth').length },
+            ].map((tab) => {
+              const isTabActive = categoryFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCategoryFilter(tab.id)}
+                  className={`px-3.5 py-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isTabActive
+                      ? 'border-[#0052d1] text-[#0052d1] dark:text-sky-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: Date Filter, Search Input & Match Counter */}
+          <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
+            <span className="hidden md:inline text-xs text-slate-400 font-medium">
+              Showing {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
+            </span>
+
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              className="h-9 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-[#0052d1] shadow-xs cursor-pointer"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today (24h)</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+            </select>
+
+            <div className="relative w-64 max-w-full">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search action, official, target..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium outline-none focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1]/20 transition-all text-slate-800 dark:text-slate-100 shadow-xs placeholder:text-slate-400"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Active Filter Pill when searching by specific official */}
+        {search && (
+          <div className="flex items-center justify-between px-6 py-2 bg-blue-50/70 dark:bg-blue-950/40 border-b border-blue-200/80 dark:border-blue-800/60 text-xs">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 flex-wrap">
+              <span className="font-semibold text-[#0052d1] dark:text-sky-400 flex items-center gap-1.5">
+                <Filter size={13} />
+                Filtered:
+              </span>
+              <span className="font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                {search}
+              </span>
+              <span className="text-slate-500 dark:text-slate-400">
+                ({filtered.length} {filtered.length === 1 ? 'movement' : 'movements'} recorded)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer ml-auto"
+            >
+              <X size={13} />
+              <span>Clear Filter</span>
+            </button>
+          </div>
+        )}
+
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-800/60">
-                <th className="py-4 px-6">Timestamp</th>
-                <th className="py-4 px-6">Movement Event</th>
-                <th className="py-4 px-6">Official Actor</th>
-                <th className="py-4 px-6">Target Component</th>
-                <th className="py-4 px-6">Payload Details</th>
-                <th className="py-4 px-6 text-right">Inspect</th>
+              <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Timestamp</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Movement Event</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Official Actor</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Target Component</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payload Details</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Inspect</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
@@ -189,7 +259,20 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                 <tr>
                   <td colSpan={6} className="text-center py-16 text-slate-400 font-medium">
                     <FileText size={28} className="mx-auto mb-2 opacity-40" />
-                    No audit movements match current filters.
+                    {search ? (
+                      <div className="space-y-2">
+                        <p>No audit movements found for &ldquo;<span className="font-semibold text-slate-700 dark:text-slate-200">{search}</span>&rdquo;.</p>
+                        <button
+                          type="button"
+                          onClick={() => setSearch('')}
+                          className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                        >
+                          Clear filter to show all records
+                        </button>
+                      </div>
+                    ) : (
+                      'No audit movements match current filters.'
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -264,7 +347,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                             e.stopPropagation();
                             setSelectedLog(log);
                           }}
-                          className="h-8 px-3 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-[#0052d1] hover:text-white dark:bg-slate-800 dark:hover:bg-[#0052d1] transition-all inline-flex items-center gap-1 cursor-pointer"
+                          className="h-7 px-2.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors inline-flex items-center gap-1 cursor-pointer shadow-2xs"
                         >
                           <span>Inspect</span>
                           <ExternalLink size={12} />
@@ -294,7 +377,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Audit Record Inspection
                     </h3>
                     <span className={cn(
@@ -389,7 +472,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyJson}
-                    className="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 hover:bg-[#0052d1]/20 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                    className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     {copiedJson ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
                     <span>{copiedJson ? 'Copied to Clipboard' : 'Copy JSON'}</span>
@@ -418,7 +501,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="h-9 px-5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer transition-colors"
+                className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium cursor-pointer transition-colors shadow-2xs"
               >
                 Dismiss Inspector
               </button>

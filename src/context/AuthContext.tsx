@@ -331,22 +331,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return {};
         }
 
-        // Admin shortcuts: 09171234567 / 9171234567 / 'admin'
-        if (cleanDigits.endsWith('9171234567') || normalizedInput === 'admin') {
-          const superAdminProfile: Profile = {
-            id: '00000000-0000-0000-0000-000000000001',
-            role: 'admin',
-            full_name: 'LGU Transport Super Admin',
-            phone_number: '+63 917 123 4567',
-            language_pref: 'fil',
-            created_at: new Date().toISOString()
-          };
-          setUser(superAdminProfile);
-          localStorage.setItem('pasada_auth_user', JSON.stringify(superAdminProfile));
-          localStorage.setItem('pasada_admin_profile', JSON.stringify(superAdminProfile));
-          return {};
-        }
-
         // Student shortcuts: 09191112222 / 9191112222 / 'student' / 'pedro'
         if (cleanDigits.endsWith('9191112222') || normalizedInput === 'student' || normalizedInput === 'pedro') {
           const studentUser: Profile = {
@@ -398,21 +382,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 2. Email Presets
-      // Admin preset
-      if (normalizedInput === 'admin@gmail.com' || normalizedInput === 'pasada.admin@gmail.com') {
-        const superAdminProfile: Profile = {
-          id: '00000000-0000-0000-0000-000000000001',
-          role: 'admin',
-          full_name: 'LGU Transport Super Admin',
-          phone_number: '+63 917 123 4567',
-          language_pref: 'fil',
-          created_at: new Date().toISOString()
-        };
-        setUser(superAdminProfile);
-        localStorage.setItem('pasada_auth_user', JSON.stringify(superAdminProfile));
-        localStorage.setItem('pasada_admin_profile', JSON.stringify(superAdminProfile));
-        return {};
-      }
 
       // Driver preset
       if (normalizedInput === 'driver.juan@gmail.com' || normalizedInput === 'driver@gmail.com') {

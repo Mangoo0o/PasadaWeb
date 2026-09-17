@@ -151,20 +151,20 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
       {/* Stitch Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
-              <MapPin size={24} />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-1.5 sm:p-2 rounded-md bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <MapPin size={20} />
             </span>
             <span>TODA Terminals &amp; Barangay Locations</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
             Configure municipal terminal coordinates, operational codes, &amp; dispatch coverage.
           </p>
         </div>
 
         <button 
           onClick={handleOpenAdd} 
-          className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0044b3] text-white font-bold text-xs shadow-md shadow-[#0052d1]/20 transition-all cursor-pointer inline-flex items-center gap-1.5 active:scale-95 shrink-0"
+          className="h-9 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs border border-transparent transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs shrink-0"
         >
           <Plus size={15} /> Add New Terminal
         </button>
@@ -201,7 +201,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
 
                 <button
                   onClick={() => handleOpenEdit(t)}
-                  className="h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer shrink-0 ml-2 inline-flex items-center gap-1"
+                  className="h-8 px-2.5 rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition-colors cursor-pointer shrink-0 ml-2 inline-flex items-center gap-1 shadow-2xs"
                 >
                   <Edit size={13} /> Edit
                 </button>
@@ -270,7 +270,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                   <MapPin size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     {selectedTerminal ? 'Edit Terminal Information' : 'Register New TODA Terminal'}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -295,7 +295,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                   {/* LEFT COLUMN: Map Pin Picker */}
                   <div className="space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <Crosshair size={15} className="text-[#0052d1] dark:text-sky-400" />
                         <span>Pin Location on Map</span>
                       </label>
@@ -336,7 +336,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                   {/* RIGHT COLUMN: Form Inputs */}
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Terminal Station Name *
                       </label>
                       <input
@@ -350,7 +350,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Terminal Route Code *
                       </label>
                       <input
@@ -365,7 +365,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                           Latitude
                         </label>
                         <input
@@ -395,10 +395,10 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
 
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                           Dispatch Coverage Radius
                         </label>
-                        <span className="text-xs font-black text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-bold text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 px-2 py-0.5 rounded-md">
                           {coverageRadius} km
                         </span>
                       </div>
@@ -425,13 +425,13 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                  className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
+                  className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <Check size={15} /> Save Terminal
                 </button>

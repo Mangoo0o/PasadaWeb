@@ -27,6 +27,23 @@ const AdminContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [auditFilterQuery, setAuditFilterQuery] = useState<string>('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('pasada_admin_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('pasada_admin_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   // Application Data State
   const [terminals, setTerminals] = useState<Terminal[]>([]);
@@ -485,6 +502,8 @@ const AdminContent: React.FC = () => {
           setActiveTab={setActiveTab}
           pendingDriverCount={pendingDriversCount}
           openComplaintCount={openComplaintsCount}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
 
         <div className="main-content">
@@ -494,6 +513,7 @@ const AdminContent: React.FC = () => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onRefreshData={fetchLiveData}
+            onToggleSidebar={toggleSidebar}
           />
 
           {!isConfigured && (
@@ -567,7 +587,9 @@ const AdminContent: React.FC = () => {
             <AdminUsersPage
               currentUser={user}
               onNavigateToAuditTrail={(filterQuery) => {
-                setAuditFilterQuery(filterQuery || '');
+                const targetQuery = (filterQuery || '').trim();
+                setAuditFilterQuery(targetQuery);
+                fetchAuditLogs().then(logs => setAuditLogs(logs)).catch(() => {});
                 setActiveTab('audit-logs');
               }}
             />
