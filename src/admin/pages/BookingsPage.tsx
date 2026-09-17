@@ -64,7 +64,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <History size={24} />
             </span>
             <span>Ride Monitor &amp; Fare Receipt Audit</span>
@@ -78,7 +78,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
       </div>
 
       {/* Bookings Data Table Card with Unified Top Filter Row */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
         {/* Unified Top Filter Row: Tabs on Left */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
           <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
@@ -103,7 +103,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                 >
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
                       tab.id === 'searching' && tab.count > 0
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -124,13 +124,13 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Trip ID</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Route Itinerary</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Passenger</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Assigned Driver</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Computed Fare</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Receipt</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trip ID</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Route Itinerary</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Passenger</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Driver</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Computed Fare</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Receipt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -143,14 +143,14 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
               ) : (
                 filtered.map(b => (
                   <tr key={b.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="py-3.5 px-6 font-mono text-[11px] text-slate-500">
+                    <td className="py-3.5 px-6 font-mono text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
                       {b.id.slice(0, 8)}...
                     </td>
                     <td className="py-3.5 px-6">
                       <div className="font-bold text-slate-900 dark:text-white">
                         {b.origin_name || b.pickup_name || 'Pickup Point'}
                       </div>
-                      <div className="text-[10px] text-slate-400">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
                         ➔ {b.destination_name || b.dropoff_name || 'Dropoff Point'}
                       </div>
                     </td>
@@ -161,11 +161,11 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                       <div className="font-bold text-slate-900 dark:text-white">
                         {b.driver?.profile?.full_name || 'Assigned Driver'}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono">
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                         {b.driver?.plate_number || 'Tricycle'}
                       </div>
                     </td>
-                    <td className="py-3.5 px-6 font-black text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-6 font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-sm">
                       ₱{Number(b.final_fare || b.computed_fare || b.estimated_fare || 0).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-6">
@@ -187,67 +187,146 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
         </div>
       </div>
 
-      {/* Digital Fare Receipt Modal */}
+      {/* Executive Digital Fare Receipt Modal */}
       {isModalOpen && selectedBooking && (
-        <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Official Digital Fare Receipt</h3>
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div 
+            className="modal-content max-w-md" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="modal-header">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <Receipt size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Official Fare Receipt
+                  </h3>
+                  <p className="font-mono text-xs text-slate-400 mt-0.5">
+                    Ref: {selectedBooking.id.slice(0, 12)}...
+                  </p>
+                </div>
+              </div>
+
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              <div className="text-center pb-4 border-b border-dashed border-slate-300 dark:border-slate-700">
-                <div className="font-black text-sm text-[#0052d1] dark:text-sky-400">MUNICIPALITY OF BAUANG</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Tricycle Regulatory Board Fare Breakdown</div>
-                <div className="text-[10px] text-slate-400 font-mono mt-1">Trip Ref: {selectedBooking.id}</div>
+            {/* Modal Body - Official Receipt Aesthetic */}
+            <div className="modal-body space-y-4">
+              {/* Civic Municipal Header */}
+              <div className="text-center pb-3.5 border-b border-dashed border-slate-300 dark:border-slate-700">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 px-2.5 py-0.5 rounded-md inline-block mb-1">
+                  Municipality of Bauang, La Union
+                </span>
+                <div className="font-black text-sm text-slate-900 dark:text-white">
+                  Tricycle Regulatory Board Fare Receipt
+                </div>
+                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                  Trip Timestamp: {new Date(selectedBooking.created_at).toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Passenger:</span>
-                  <strong className="text-slate-900 dark:text-white">{selectedBooking.passenger?.full_name || 'Passenger'}</strong>
+              {/* Route Itinerary Flow */}
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0 mt-1" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-black block">Pickup</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
+                      {selectedBooking.origin_name || selectedBooking.pickup_name || 'Pickup Point'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Driver:</span>
-                  <strong className="text-slate-900 dark:text-white">{selectedBooking.driver?.profile?.full_name || 'Driver'}</strong>
+
+                <div className="ml-1.25 border-l-2 border-dashed border-slate-300 dark:border-slate-700 h-3" />
+
+                <div className="flex items-start gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#0052d1] ring-4 ring-[#0052d1]/20 shrink-0 mt-1" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-black block">Dropoff</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
+                      {selectedBooking.destination_name || selectedBooking.dropoff_name || 'Dropoff Point'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Route:</span>
-                  <span className="text-right text-slate-900 dark:text-white max-w-[200px] truncate">
-                    {selectedBooking.origin_name || selectedBooking.pickup_name} ➔ {selectedBooking.destination_name || selectedBooking.dropoff_name}
+              </div>
+
+              {/* Ride Metadata Grid */}
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Passenger</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate block">
+                    {selectedBooking.passenger?.full_name || 'Passenger'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Distance:</span>
-                  <strong className="text-slate-900 dark:text-white">{selectedBooking.estimated_distance_km || selectedBooking.distance_km || 2.0} km</strong>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Driver &amp; Plate</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate block">
+                    {selectedBooking.driver?.profile?.full_name || 'Driver'}
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-400">
+                    {selectedBooking.driver?.plate_number || 'Tricycle'}
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Distance</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">
+                    {selectedBooking.estimated_distance_km || selectedBooking.distance_km || 2.0} km
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Status</span>
+                  <div>{getStatusBadge(selectedBooking.status)}</div>
                 </div>
               </div>
 
-              <div className="border-t-2 border-[#0052d1] pt-3 flex justify-between items-center">
-                <span className="font-extrabold text-sm text-slate-900 dark:text-white">Total Regulated Fare:</span>
-                <span className="text-2xl font-black text-[#0052d1] dark:text-sky-400">
+              {/* Regulated Fare Total Banner */}
+              <div className="p-4 rounded-lg bg-[#0052d1]/5 dark:bg-[#0052d1]/10 border border-[#0052d1]/20 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
+                    Regulated Municipal Fare
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Certified LGU Tariff Ordinance
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-[#0052d1] dark:text-sky-400 tabular-nums tracking-tight">
                   ₱{Number(selectedBooking.final_fare || selectedBooking.computed_fare || selectedBooking.estimated_fare || 0).toFixed(2)}
-                </span>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-end gap-2">
+            {/* Modal Footer */}
+            <div className="modal-footer">
               <button 
+                type="button"
                 onClick={() => window.print()} 
-                className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95"
               >
-                <Printer size={14} /> Print
+                <Printer size={14} /> Print Receipt
               </button>
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+                className="h-9 px-5 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
               >
                 Close
               </button>

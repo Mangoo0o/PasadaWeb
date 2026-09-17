@@ -209,6 +209,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const [lng, setLng] = useState<number>(120.3333);
   const [icon, setIcon] = useState<string>('pin');
   const [notes, setNotes] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Media State
   const [images, setImages] = useState<string[]>([]);
@@ -235,6 +236,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setCurrentStep(1);
     setLocationName('');
     setDescription('');
+    setFormError(null);
     setImages([]);
     setCoverImageUrl('');
     setAudioUrl('');
@@ -270,6 +272,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setLng(Number(fare.lng));
     setIcon(fare.icon || 'pin');
     setNotes(fare.notes || '');
+    setFormError(null);
     setIsModalOpen(true);
   };
 
@@ -344,9 +347,10 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     e.preventDefault();
     if (!locationName || locationName.trim() === '') {
       setCurrentStep(1);
-      alert('Please provide a destination location name in Step 1.');
+      setFormError('Please provide a destination location name in Step 1.');
       return;
     }
+    setFormError(null);
     onSaveLocationFare({
       id: selectedFare?.id,
       origin_terminal_id: originTerminalId,
@@ -438,21 +442,26 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   return (
     <div className="page-container p-6 sm:p-8 space-y-8" id="location-fare-matrix-report">
       {/* Stitch Page Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Fare Matrix &amp; Proximity Rates
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Manage regulated location rates and dynamic geofence pricing.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+              <SlidersHorizontal size={24} />
+            </span>
+            <span>Fare Matrix &amp; Proximity Rates</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            Manage regulated location rates, dynamic geofence pricing, &amp; distance-based tariffs.
+          </p>
+        </div>
       </div>
 
       {/* Bento Grid Layout (Span 8 + Span 4) */}
       <div className="grid grid-cols-12 gap-6 items-start">
         {/* Main Table Area (Span 8) */}
-        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow hover:shadow-lg transition-shadow duration-300">
+        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow hover:shadow-lg transition-shadow duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white shrink-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight shrink-0">
               Regulated Location Rates
             </h3>
 
@@ -482,11 +491,11 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200/60 dark:border-slate-800">
-                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">DESTINATION / LOCATION</th>
-                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">STANDARD FARE</th>
-                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">DISCOUNT FARE</th>
-                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">PROXIMITY RADIUS</th>
-                  <th className="pb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-right">STATUS</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DESTINATION / LOCATION</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">STANDARD FARE</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DISCOUNT FARE</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">PROXIMITY RADIUS</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">STATUS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -520,13 +529,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                             {getLocationIconEmoji(loc.icon, loc.location_name)}
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900 dark:text-white text-xs">{loc.location_name}</p>
-                            <p className="text-[12px] text-slate-400">{loc.notes || 'Regulated Destination'}</p>
+                            <p className="font-bold text-slate-900 dark:text-white text-xs">{loc.location_name}</p>
+                            <p className="text-[12px] text-slate-500 dark:text-slate-400">{loc.notes || 'Regulated Destination'}</p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-4 font-medium text-slate-900 dark:text-white text-xs">
+                      <td className="py-4 font-bold text-slate-900 dark:text-white text-xs tabular-nums">
                         ₱{Number(loc.standard_fare).toFixed(2)}
                         {isSurge && (
                           <span className="text-[10px] text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 px-1.5 py-0.5 rounded ml-1 font-semibold">
@@ -536,13 +545,13 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       </td>
 
                       <td className="py-4 text-slate-500 dark:text-slate-400 text-xs">
-                        <span>₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}</span>
+                        <span className="tabular-nums font-semibold">₱{Number(loc.discounted_fare || Math.round(Number(loc.standard_fare) * 0.8)).toFixed(2)}</span>
                         <span className="text-[10px] bg-[#dae2fd] text-[#5c647a] dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded ml-1 font-semibold">
                           Sen/Stu
                         </span>
                       </td>
 
-                      <td className="py-4 text-slate-700 dark:text-slate-300 font-normal text-xs">
+                      <td className="py-4 text-slate-700 dark:text-slate-300 font-mono text-xs tabular-nums">
                         {radiusKm} km
                       </td>
 
@@ -568,9 +577,9 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
         {/* Right Sidebar Area (Span 4) */}
         <div className="col-span-12 xl:col-span-4 space-y-6">
           {/* Card 1: Location Map Visualizer */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800 soft-shadow">
             <div className="flex justify-between items-center mb-3 px-2">
-              <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 Location Map Visualizer
               </h3>
               <button 
@@ -659,12 +668,12 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
           </div>
 
           {/* Card 2: Location Details */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow">
-            <h3 className="text-[18px] font-semibold text-slate-900 dark:text-white mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200/80 dark:border-slate-800 soft-shadow">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-4">
               Location Details
             </h3>
 
-            <div className="bg-[#f2f4f6] dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 mb-4">
+            <div className="bg-[#f2f4f6] dark:bg-slate-800/60 rounded-lg p-4 border border-slate-200/80 dark:border-slate-700 mb-4">
               <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-medium text-[#276efe] bg-[#276efe]/10 px-2 py-0.5 rounded">
                   Selected Location: {activeLocation?.location_name || 'Bauang Landmark'}
@@ -678,29 +687,29 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               <h4 className="font-medium text-slate-900 dark:text-white mb-1">
                 {activeLocation?.location_name || 'Bauang Central'}
               </h4>
-              <p className="text-xs text-slate-400 mb-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-mono tabular-nums">
                 Radius: {((activeLocation?.proximity_radius_meters || 1000) / 1000).toFixed(1)}km • Center: {activeLocation?.lat ? activeLocation.lat.toFixed(4) : '16.5333'}° N, {activeLocation?.lng ? Math.abs(activeLocation.lng).toFixed(4) : '120.3333'}° {activeLocation?.lng && activeLocation.lng >= 0 ? 'E' : 'W'}
               </p>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="block text-xs text-slate-400 mb-1">Current Active Vehicles</span>
-                  <span className="block text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Current Active Vehicles</span>
+                  <span className="block text-2xl font-black text-slate-900 dark:text-white tabular-nums flex items-center gap-1.5">
                     <span>{activeVehicleCount}</span>
                     {activeVehicleCount > 0 ? (
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200/50">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200/50 tabular-nums">
                         Live
                       </span>
                     ) : (
-                      <span className="text-[10px] text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                         None
                       </span>
                     )}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-xs text-slate-400 mb-1">Est. Wait Time</span>
-                  <span className="block text-xl font-semibold text-slate-900 dark:text-white">
+                  <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Est. Wait Time</span>
+                  <span className="block text-2xl font-black text-slate-900 dark:text-white tabular-nums">
                     {estWaitTime}
                   </span>
                 </div>
@@ -717,226 +726,173 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Add / Edit Location Fare Modal with Wide 2-Step Stepper (Scroll-Free) */}
+             {/* Add / Edit Location Fare Modal with Executive 2-Step Layout */}
       {isModalOpen && (
-        <div
-          onClick={() => setIsModalOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15,23,42,0.65)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-        >
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div
+            className="modal-content max-w-6xl w-[96%] max-h-[92vh]"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 8,
-              width: '96%',
-              maxWidth: 1100,
-              maxHeight: '94vh',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.32)',
-            }}
           >
-            {/* Header — fixed */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 24px',
-              borderBottom: '1px solid var(--border-color)',
-              flexShrink: 0,
-              background: 'var(--bg-surface)',
-            }}>
-              <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Sparkles size={18} style={{ color: '#fcd400' }} />
-                  {selectedFare ? 'Edit Location Tariff & Explore Media' : 'Add New Location Tariff'}
-                </h3>
-                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Configure municipal fares, proximity geofence, and media showcases for the Explore feed.
-                </p>
+            {/* Modal Header */}
+            <div className="modal-header px-6 sm:px-8 py-5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
+                  <Sparkles size={22} className="text-[#0052d1] dark:text-sky-400" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                    {selectedFare ? 'Edit Location Tariff & Multimedia Guide' : 'Register Location Tariff Point'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                    Configure municipal fares, proximity geofence radius, and multimedia highlights for commuter navigation.
+                  </p>
+                </div>
               </div>
+
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            {/* Stepper Tabs Bar */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 24px',
-              borderBottom: '1px solid var(--border-color)',
-              background: 'var(--bg-primary)',
-              flexShrink: 0,
-            }}>
-              <button
-                type="button"
-                onClick={() => setCurrentStep(1)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 14px',
-                  borderRadius: 6,
-                  height: 36,
-                  background: currentStep === 1 ? '#0052d1' : 'transparent',
-                  color: currentStep === 1 ? '#ffffff' : 'var(--text-muted)',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  border: currentStep === 1 ? 'none' : '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <span style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 4,
-                  background: currentStep === 1 ? '#ffffff' : 'var(--border-color)',
-                  color: currentStep === 1 ? '#0052d1' : 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.72rem',
-                  fontWeight: 900
-                }}>
-                  1
-                </span>
-                <span>Step 1: Set Location & Fare Rates</span>
-              </button>
-
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>→</span>
-
-              <button
-                type="button"
-                onClick={() => setCurrentStep(2)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 14px',
-                  borderRadius: 6,
-                  height: 36,
-                  background: currentStep === 2 ? '#0052d1' : 'transparent',
-                  color: currentStep === 2 ? '#ffffff' : 'var(--text-muted)',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  border: currentStep === 2 ? 'none' : '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <span style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 4,
-                  background: currentStep === 2 ? '#ffffff' : 'var(--border-color)',
-                  color: currentStep === 2 ? '#0052d1' : 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.72rem',
-                  fontWeight: 900
-                }}>
-                  2
-                </span>
-                <span>Step 2: Add Files (Pictures, Video & Audio)</span>
-                {images.length > 0 && (
-                  <span style={{
-                    background: currentStep === 2 ? '#fcd400' : '#0052d1',
-                    color: currentStep === 2 ? '#131b2e' : '#fff',
-                    borderRadius: 4,
-                    padding: '1px 6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 900
-                  }}>
-                    {images.length}
+            {/* Stepper Tabs Ribbon */}
+            <div className="px-6 sm:px-8 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer inline-flex items-center gap-2.5",
+                    currentStep === 1
+                      ? "bg-[#0052d1] text-white shadow-md shadow-[#0052d1]/25"
+                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  )}
+                >
+                  <span className={cn(
+                    "w-6 h-6 rounded-md flex items-center justify-center text-xs font-black",
+                    currentStep === 1 ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                  )}>
+                    1
                   </span>
-                )}
-              </button>
+                  <span>Step 1: Location &amp; Fare Rates</span>
+                </button>
+
+                <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" />
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer inline-flex items-center gap-2.5",
+                    currentStep === 2
+                      ? "bg-[#0052d1] text-white shadow-md shadow-[#0052d1]/25"
+                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  )}
+                >
+                  <span className={cn(
+                    "w-6 h-6 rounded-md flex items-center justify-center text-xs font-black",
+                    currentStep === 2 ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                  )}>
+                    2
+                  </span>
+                  <span>Step 2: Media &amp; Highlights</span>
+                  {images.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-[#fcd400] text-slate-900">
+                      {images.length} photos
+                    </span>
+                  )}
+                  {videoUrl && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-500 text-white">
+                      Video
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <span className="hidden md:inline-block text-xs text-slate-400 font-medium">
+                {currentStep === 1 ? 'Phase 1 of 2: Spatial & Pricing Parameters' : 'Phase 2 of 2: Multimedia Showcases'}
+              </span>
             </div>
 
             {/* Form Body */}
             <form
               onSubmit={handleSave}
-              style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+              className="flex-1 min-h-0 flex flex-col overflow-hidden"
             >
-              <div style={{ flex: 1, minHeight: 0, padding: '18px 24px', overflowY: 'auto' }}>
+              <div className="flex-1 min-h-0 p-6 sm:p-8 overflow-y-auto space-y-6">
+                {formError && (
+                  <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs sm:text-sm font-bold flex items-center justify-between animate-in fade-in">
+                    <span className="flex items-center gap-2">⚠️ {formError}</span>
+                    <button type="button" onClick={() => setFormError(null)} className="text-rose-500 hover:text-rose-700 text-lg font-bold cursor-pointer">×</button>
+                  </div>
+                )}
                 
-                {/* STEP 1: Location & Fare Rate (2 Columns, fits without scroll) */}
+                {/* STEP 1: Location & Fare Rate */}
                 {currentStep === 1 && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 24,
-                    alignItems: 'start',
-                  }}>
-                    {/* Step 1 Left Column: Names, Icons, Fares & Coordinates */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+                    {/* Left Column: Details & Pricing (Reduced to 4 cols on XL for maximum map area) */}
+                    <div className="lg:col-span-5 xl:col-span-4 space-y-3.5">
                       {/* Destination Name */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
+                      <div>
+                        <label className="block text-xs font-black text-slate-800 dark:text-slate-200 mb-1 uppercase tracking-wider">
                           Destination Location Name *
                         </label>
-                        <input
-                          type="text"
-                          required
-                          value={locationName}
-                          onChange={(e) => setLocationName(e.target.value)}
-                          placeholder="e.g. Lomboy Grape Farms, Bauang Beach, Central West"
-                          className="input-field"
-                          style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                        />
+                        <div className="relative">
+                          <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#0052d1] dark:text-sky-400" />
+                          <input
+                            type="text"
+                            required
+                            value={locationName}
+                            onChange={(e) => setLocationName(e.target.value)}
+                            placeholder="e.g. Lomboy Grape Farms, Bauang Market"
+                            className="w-full h-10 pl-9 pr-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1] focus:ring-2 focus:ring-[#0052d1]/15 transition-all"
+                          />
+                        </div>
                       </div>
 
-                      {/* Location Icon Category Pins */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>
-                          Category Pin Icon
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+                      {/* Location Icon Category Pins (Compact 3-column Grid) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                            Category Pin Icon *
+                          </label>
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            Map icon style
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {LOCATION_ICON_OPTIONS.map((opt) => {
                             const isSelected = icon === opt.id || icon === opt.icon;
+                            const parts = opt.label.split(' / ');
+                            const primaryName = parts[0];
+                            const secondaryName = parts[1] || opt.id;
                             return (
                               <button
                                 key={opt.id}
                                 type="button"
                                 onClick={() => setIcon(opt.id)}
-                                className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                                style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: '6px 2px',
-                                  fontSize: '0.65rem',
-                                  border: isSelected ? '2px solid #0052d1' : '1px solid var(--border-color)',
-                                  gap: 2,
-                                  cursor: 'pointer',
-                                }}
+                                className={cn(
+                                  "flex items-center gap-2 p-2 rounded-lg border text-left transition-all cursor-pointer",
+                                  isSelected
+                                    ? "bg-[#0052d1]/10 dark:bg-sky-950/60 border-[#0052d1] ring-2 ring-[#0052d1]/20 shadow-xs"
+                                    : "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                )}
                               >
-                                <span style={{ fontSize: '1.15rem' }}>{opt.icon}</span>
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: isSelected ? 800 : 600 }}>
-                                  {opt.label.split('/')[0]}
-                                </span>
+                                <div className="w-7 h-7 rounded-md bg-white dark:bg-slate-800 flex items-center justify-center text-base shrink-0 shadow-xs border border-slate-200/60 dark:border-slate-700">
+                                  {opt.icon}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                                    {primaryName}
+                                  </span>
+                                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 truncate leading-tight">
+                                    {secondaryName}
+                                  </span>
+                                </div>
                               </button>
                             );
                           })}
@@ -944,110 +900,155 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       </div>
 
                       {/* Fares */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>Standard Fare (₱)</label>
-                          <input
-                            type="number"
-                            step="1.00"
-                            required
-                            value={standardFare}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
-                              setStandardFare(val);
-                              setDiscountedFare(Math.round(val * 0.8));
-                            }}
-                            className="input-field"
-                            style={{ padding: '8px 10px', fontSize: '0.85rem' }}
-                          />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/60 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-extrabold text-emerald-900 dark:text-emerald-200">
+                              Standard Base *
+                            </label>
+                            <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 rounded">
+                              Regular
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-black text-emerald-600 dark:text-emerald-400">
+                              ₱
+                            </span>
+                            <input
+                              type="number"
+                              step="1.00"
+                              required
+                              value={standardFare}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setStandardFare(val);
+                                setDiscountedFare(Math.round(val * 0.8));
+                              }}
+                              className="w-full h-10 pl-8 pr-3 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-lg text-base font-black text-emerald-600 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            />
+                          </div>
+                          <p className="text-[9px] text-emerald-700/80 dark:text-emerald-400/80 font-medium">
+                            Tricycle base tariff
+                          </p>
                         </div>
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem' }}>20% Discounted (₱)</label>
-                          <input
-                            type="number"
-                            step="1.00"
-                            required
-                            value={discountedFare}
-                            onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
-                            className="input-field"
-                            style={{ padding: '8px 10px', fontSize: '0.85rem' }}
-                          />
+
+                        <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/60 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-extrabold text-blue-900 dark:text-blue-200">
+                              20% Discounted *
+                            </label>
+                            <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.2 rounded">
+                              Student/PWD
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-black text-blue-600 dark:text-blue-400">
+                              ₱
+                            </span>
+                            <input
+                              type="number"
+                              step="1.00"
+                              required
+                              value={discountedFare}
+                              onChange={(e) => setDiscountedFare(parseFloat(e.target.value) || 0)}
+                              className="w-full h-10 pl-8 pr-3 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700/80 rounded-lg text-base font-black text-blue-700 dark:text-blue-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            />
+                          </div>
+                          <p className="text-[9px] text-blue-700/80 dark:text-blue-400/80 font-medium">
+                            Mandatory 20% discount
+                          </p>
                         </div>
                       </div>
 
-                      {/* Manual Lat/Lng Coordinates (Moved to Left Column) */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <MapPin size={15} style={{ color: '#0052d1' }} />
-                          Precise GPS Coordinates
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      {/* Proximity Geofence Radius Slider Card (Moved to Left Column) */}
+                      <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+                        <div className="flex justify-between items-center">
                           <div>
-                            <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Latitude</label>
+                            <label className="text-xs font-black text-slate-800 dark:text-slate-200 block uppercase tracking-wider">
+                              Proximity Geofence Radius
+                            </label>
+                            <span className="text-[10px] text-slate-400">
+                              Commuter tariff trigger boundary
+                            </span>
+                          </div>
+                          <span className="text-xs font-black text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 px-2.5 py-0.5 rounded-md border border-[#0052d1]/20 font-mono">
+                            {proximityRadius}m ({(proximityRadius / 1000).toFixed(2)} km)
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="300"
+                          max="3000"
+                          step="50"
+                          value={proximityRadius}
+                          onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#0052d1]"
+                        />
+                        <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                          <span>300m (Stop)</span>
+                          <span>1.5km (Town)</span>
+                          <span>3km (District)</span>
+                        </div>
+                      </div>
+
+                      {/* Coordinates Card */}
+                      <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            <MapPin size={13} className="text-[#0052d1] dark:text-sky-400" />
+                            <span>GPS Coordinates</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            Auto-syncs with pin
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block mb-0.5">
+                              Latitude (N)
+                            </span>
                             <input
                               type="number"
-                              step="0.00001"
+                              step="0.000001"
                               value={lat}
                               onChange={(e) => setLat(parseFloat(e.target.value) || lat)}
-                              className="input-field"
-                              style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                              className="w-full h-9 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:border-[#0052d1] focus:ring-2 focus:ring-[#0052d1]/20 transition-all"
                             />
                           </div>
                           <div>
-                            <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Longitude</label>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block mb-0.5">
+                              Longitude (E)
+                            </span>
                             <input
                               type="number"
-                              step="0.00001"
+                              step="0.000001"
                               value={lng}
                               onChange={(e) => setLng(parseFloat(e.target.value) || lng)}
-                              className="input-field"
-                              style={{ fontSize: '0.82rem', padding: '7px 10px' }}
+                              className="w-full h-9 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:border-[#0052d1] focus:ring-2 focus:ring-[#0052d1]/20 transition-all"
                             />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Step 1 Right Column: Geofence & Enriched Leaflet Map */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {/* Radius Slider */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.82rem' }}>
-                            Proximity Geofence Radius
-                          </label>
-                          <span style={{ fontWeight: 900, color: '#0052d1', fontSize: '0.85rem', background: 'rgba(0,82,209,0.1)', padding: '2px 8px', borderRadius: 6 }}>
-                            {proximityRadius} meters
+                    {/* Right Column: Interactive Leaflet Map Only (Maximized Widescreen View) */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-2">
+                      {/* Map Picker Frame - Expansive Full Area */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0">
+                              <Crosshair size={14} />
+                            </div>
+                            <label className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                              Interactive Map Pin Placement
+                            </label>
+                          </div>
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-md">
+                            Click map or drag 📍 marker
                           </span>
                         </div>
-                        <input
-                          type="range"
-                          min="300"
-                          max="2500"
-                          step="50"
-                          value={proximityRadius}
-                          onChange={(e) => setProximityRadius(parseInt(e.target.value, 10))}
-                          style={{ width: '100%', accentColor: '#0052d1', marginTop: 4 }}
-                        />
-                      </div>
-
-                      {/* Enriched Bigger Map Picker */}
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.82rem' }}>
-                            Interactive Map Picker
-                          </label>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Click map or drag marker pin</span>
-                        </div>
-                        <div style={{
-                          position: 'relative',
-                          width: '100%',
-                          height: 310,
-                          borderRadius: 14,
-                          overflow: 'hidden',
-                          border: '1.5px solid var(--border-color)',
-                          boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
-                        }}>
+                        <div className="relative w-full h-[540px] xl:h-[570px] rounded-lg overflow-hidden border border-slate-200/80 dark:border-slate-700 shadow-md">
                           <MapContainer
                             center={[lat, lng]}
                             zoom={14}
@@ -1069,70 +1070,68 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                                 setLng(newLng);
                               }}
                             />
+                            <MapZoomControls />
                           </MapContainer>
+                          {/* Floating coordinates indicator badge on map */}
+                          <div className="absolute top-3 left-3 z-[500] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700/80 shadow-md text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                            <span className="font-mono">📍 Pin: {lat.toFixed(5)}° N, {lng.toFixed(5)}° E</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 2: Add Files (Pictures, Video & Audio) */}
+                {/* STEP 2: Media & Highlights */}
                 {currentStep === 2 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                    {/* ── Unified Media Upload Zone ── */}
-                    <div style={{
-                      border: '2px dashed #0052d1',
-                      borderRadius: 14,
-                      background: 'rgba(0,82,209,0.03)',
-                      padding: '14px 16px',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <span style={{ fontSize: '0.83rem', fontWeight: 800, color: '#0052d1', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <UploadCloud size={15} /> Media Files
-                        </span>
-                        <span style={{ fontSize: '0.71rem', color: 'var(--text-muted)' }}>Photos, videos — all in one</span>
+                  <div className="space-y-6">
+                    {/* Media Upload Zone */}
+                    <div className="p-6 rounded-lg border-2 border-dashed border-[#0052d1]/30 bg-[#0052d1]/5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-black text-[#0052d1] dark:text-sky-400 flex items-center gap-2 uppercase tracking-wider">
+                            <UploadCloud size={18} /> Photo &amp; Video Media
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Showcases displayed to commuters exploring destinations and booking trips.
+                          </p>
+                        </div>
                       </div>
 
-                      {/* Two upload buttons side by side */}
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <label style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '10px 0', borderRadius: 10, cursor: 'pointer',
-                          background: '#0052d1', color: '#fff',
-                          fontSize: '0.78rem', fontWeight: 800, transition: 'opacity 0.15s',
-                        }}>
-                          <ImageIcon size={14} /> Add Photos
-                          <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <label className="flex-1 h-11 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#0052d1]/20 transition-all active:scale-95">
+                          <ImageIcon size={16} />
+                          <span>Upload Photos</span>
+                          <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
 
-                        <label style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '10px 0', borderRadius: 10, cursor: isUploadingVideo ? 'not-allowed' : 'pointer',
-                          background: isUploadingVideo ? '#6b9cf5' : '#131b2e', color: '#fff',
-                          fontSize: '0.78rem', fontWeight: 800, transition: 'opacity 0.15s',
-                          opacity: isUploadingVideo ? 0.8 : 1,
-                        }}>
+                        <label className={cn(
+                          "flex-1 h-11 rounded-lg text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95",
+                          isUploadingVideo ? "bg-slate-600 cursor-not-allowed" : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 cursor-pointer"
+                        )}>
                           {isUploadingVideo ? (
                             <>
-                              <span style={{ display: 'inline-block', width: 13, height: 13, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                              Uploading…
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Uploading Video...</span>
                             </>
                           ) : (
-                            <><Video size={14} /> Add Video</>
+                            <>
+                              <Video size={16} />
+                              <span>Upload Video</span>
+                            </>
                           )}
-                          <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={isUploadingVideo} style={{ display: 'none' }} />
+                          <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={isUploadingVideo} className="hidden" />
                         </label>
                       </div>
 
                       {videoUploadError && (
-                        <div style={{ marginTop: 8, fontSize: '0.72rem', color: '#dc2626', fontWeight: 600 }}>⚠️ {videoUploadError}</div>
+                        <p className="text-xs text-rose-600 font-semibold">⚠️ {videoUploadError}</p>
                       )}
 
-                      {/* ── Unified Preview Strip ── */}
+                      {/* Preview Strip */}
                       {(images.length > 0 || videoUrl) && (
-                        <div style={{ marginTop: 12, display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-                          {/* Image thumbnails */}
+                        <div className="flex gap-3 overflow-x-auto pt-2 pb-1">
                           {images.map((imgUrl, idx) => {
                             const isCover = coverImageUrl === imgUrl || (!coverImageUrl && idx === 0);
                             return (
@@ -1140,186 +1139,121 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                                 key={`img-${idx}`}
                                 onClick={() => setCoverImageUrl(imgUrl)}
                                 title="Click to set as cover"
-                                style={{
-                                  position: 'relative', flexShrink: 0,
-                                  width: 72, height: 72, borderRadius: 10, overflow: 'hidden',
-                                  border: isCover ? '2.5px solid #0052d1' : '2px solid transparent',
-                                  boxShadow: isCover ? '0 0 0 1px #0052d1' : '0 1px 4px rgba(0,0,0,0.15)',
-                                  cursor: 'pointer',
-                                }}
+                                className={cn(
+                                  "relative shrink-0 w-24 h-24 rounded-lg overflow-hidden cursor-pointer border-2 transition-all shadow-sm",
+                                  isCover ? "border-[#0052d1] ring-3 ring-[#0052d1]/30" : "border-slate-200 dark:border-slate-700"
+                                )}
                               >
-                                <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={imgUrl} alt="" className="w-full h-full object-cover" />
                                 {isCover && (
-                                  <div style={{
-                                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                                    background: 'rgba(0,82,209,0.9)', color: '#fff',
-                                    fontSize: '0.5rem', fontWeight: 900, textAlign: 'center', padding: '2px 0', letterSpacing: 1
-                                  }}>COVER</div>
+                                  <div className="absolute bottom-0 inset-x-0 bg-[#0052d1] text-white text-[9px] font-black text-center py-0.5 tracking-wider">
+                                    COVER PHOTO
+                                  </div>
                                 )}
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); handleRemoveImage(idx); }}
-                                  style={{
-                                    position: 'absolute', top: 3, right: 3, width: 17, height: 17,
-                                    borderRadius: '50%', background: 'rgba(220,38,38,0.9)', color: '#fff',
-                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.6rem', fontWeight: 900, lineHeight: 1,
-                                  }}
-                                  title="Remove"
-                                >×</button>
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-md bg-rose-600 text-white flex items-center justify-center text-xs font-bold shadow-sm hover:bg-rose-700"
+                                  title="Remove image"
+                                >
+                                  ×
+                                </button>
                               </div>
                             );
                           })}
 
-                          {/* Video preview tile */}
                           {videoUrl && !isUploadingVideo && (
-                            <div style={{
-                              position: 'relative', flexShrink: 0,
-                              width: 120, height: 72, borderRadius: 10, overflow: 'hidden',
-                              border: '2px solid #fcd400', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                            }}>
-                              <video
-                                src={videoUrl}
-                                muted playsInline
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                              <div style={{
-                                position: 'absolute', inset: 0,
-                                background: 'rgba(0,0,0,0.35)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}>
-                                <Play size={20} color="#fff" fill="#fff" />
+                            <div className="relative shrink-0 w-36 h-24 rounded-lg overflow-hidden border-2 border-purple-500 shadow-sm">
+                              <video src={videoUrl} muted playsInline className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <Play size={24} className="text-white fill-white" />
                               </div>
-                              <div style={{
-                                position: 'absolute', bottom: 3, left: 0, right: 0, textAlign: 'center',
-                                fontSize: '0.5rem', fontWeight: 900, color: '#fcd400', letterSpacing: 1,
-                              }}>VIDEO</div>
                               <button
                                 type="button"
                                 onClick={() => setVideoUrl('')}
-                                style={{
-                                  position: 'absolute', top: 3, right: 3, width: 17, height: 17,
-                                  borderRadius: '50%', background: 'rgba(220,38,38,0.9)', color: '#fff',
-                                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: '0.6rem', fontWeight: 900,
-                                }}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-md bg-rose-600 text-white flex items-center justify-center text-xs font-bold shadow-sm hover:bg-rose-700"
                                 title="Remove video"
-                              >×</button>
+                              >
+                                ×
+                              </button>
                             </div>
                           )}
                         </div>
                       )}
-
-                      {/* Empty state */}
-                      {images.length === 0 && !videoUrl && !isUploadingVideo && (
-                        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
-                          No media yet — upload photos or a video above
-                        </p>
-                      )}
                     </div>
 
-                    {/* ── Explore Description ── */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', marginBottom: 4 }}>
-                        Description & Highlights
+                    {/* Explore Description */}
+                    <div>
+                      <label className="block text-xs font-black text-slate-800 dark:text-slate-200 mb-1.5 uppercase tracking-wider">
+                        Description &amp; Tourist Highlights
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Key highlights, attractions, visiting hours, and stories shown on the Explore feed…"
-                        rows={3}
-                        className="input-field"
-                        style={{ resize: 'none', fontSize: '0.82rem' }}
+                        placeholder="Key attractions, visiting tips, and cultural stories displayed in the commuter app…"
+                        rows={4}
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1] focus:ring-3 focus:ring-[#0052d1]/15 transition-all resize-none"
                       />
                     </div>
 
-                    {/* ── Audio Tour Guide ── */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ fontWeight: 800, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <Music size={14} style={{ color: '#0052d1' }} /> Audio Tour Guide
+                    {/* Audio Tour Guide */}
+                    <div>
+                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200 mb-2 uppercase tracking-wider">
+                        <Music size={15} className="text-[#0052d1] dark:text-sky-400" />
+                        <span>Spoken Audio Tour Guide</span>
                       </label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <label style={{
-                          padding: '7px 12px', borderRadius: 8,
-                          background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-                          fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
-                        }}>
-                          <UploadCloud size={13} /> Upload Audio
-                          <input type="file" accept="audio/*" onChange={handleAudioUpload} style={{ display: 'none' }} />
+                      <div className="flex gap-3 items-center">
+                        <label className="h-11 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0">
+                          <UploadCloud size={16} />
+                          <span>Upload MP3 Audio</span>
+                          <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
                         </label>
                         <input
                           type="text"
                           value={audioUrl}
                           onChange={(e) => setAudioUrl(e.target.value)}
-                          placeholder="Or paste audio URL…"
-                          className="input-field"
-                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
+                          placeholder="Or paste direct audio stream URL…"
+                          className="flex-1 h-11 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                         {audioUrl && (
-                          <button type="button" onClick={() => setAudioUrl('')} className="btn btn-secondary"
-                            style={{ padding: '6px 10px', color: 'var(--danger)' }} title="Clear Audio">
-                            <X size={14} />
+                          <button
+                            type="button"
+                            onClick={() => setAudioUrl('')}
+                            className="h-11 px-3.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold cursor-pointer hover:bg-rose-100"
+                            title="Clear Audio"
+                          >
+                            <X size={16} />
                           </button>
                         )}
                       </div>
                       {audioUrl && (
-                        <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 8 }}>
-                          <audio controls src={audioUrl} style={{ width: '100%', height: 30 }} />
+                        <div className="mt-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          <audio controls src={audioUrl} className="w-full h-8" />
                         </div>
                       )}
                     </div>
-
-                    {/* ── Video URL override (manual paste) ── */}
-                    {!videoUrl && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <Video size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                        <input
-                          type="text"
-                          value={videoUrl}
-                          onChange={(e) => setVideoUrl(e.target.value)}
-                          placeholder="Or paste a video MP4 URL directly…"
-                          className="input-field"
-                          style={{ fontSize: '0.78rem', padding: '6px 10px' }}
-                        />
-                      </div>
-                    )}
-
                   </div>
                 )}
-
               </div>
 
               {/* Stepper Footer Controls */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 24px',
-                borderTop: '1px solid var(--border-color)',
-                background: 'var(--bg-primary)',
-                flexShrink: 0,
-                borderBottomLeftRadius: 8,
-                borderBottomRightRadius: 8,
-              }}>
-                <div>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)} 
-                    className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="modal-footer px-6 sm:px-8 py-4 bg-slate-50/60 dark:bg-slate-900/60">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="h-11 px-5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+                >
+                  Cancel
+                </button>
 
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div className="flex items-center gap-3">
                   {currentStep === 2 && (
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
-                      className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95"
+                      className="h-11 px-5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-xs"
                     >
-                      <ArrowLeft size={15} /> Back: Set Location
+                      <ArrowLeft size={16} /> Back: Set Location
                     </button>
                   )}
 
@@ -1329,19 +1263,25 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (!locationName.trim()) {
+                          setFormError('Please enter a Destination Location Name.');
+                          return;
+                        }
+                        setFormError(null);
                         setCurrentStep(2);
                       }}
-                      className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                      className="h-11 px-6 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-black text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-[#0052d1]/25"
                     >
-                      <span>Next: Add Files (Pictures / Video / Audio)</span>
-                      <ArrowRight size={15} />
+                      <span>Next: Media &amp; Highlights</span>
+                      <ArrowRight size={16} />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                      className="h-11 px-7 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-black text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-[#0052d1]/25"
                     >
-                      <Check size={15} /> Save & Enforce Location Rate
+                      <Check size={18} />
+                      <span>{selectedFare ? 'Save & Enforce Rate' : 'Register Tariff Point'}</span>
                     </button>
                   )}
                 </div>

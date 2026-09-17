@@ -231,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setDriverProfile(defaultDriver);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
           }
-        } else if (profile.role === 'admin') {
+        } else if (profile.role === 'admin' || (profile.role as string) === 'super_admin') {
           localStorage.setItem('pasada_active_tab', 'admin');
         } else {
           localStorage.setItem('pasada_active_tab', 'home');

@@ -8,12 +8,21 @@ export const isConfigured = Boolean(
   supabaseUrl && 
   supabaseAnonKey && 
   !supabaseUrl.includes('sample-project') && 
-  !supabaseUrl.includes('placeholder')
+  !supabaseUrl.includes('placeholder') &&
+  !supabaseUrl.includes('your-project-id') &&
+  !supabaseAnonKey.includes('your-anon-public-key') &&
+  supabaseUrl.startsWith('https://')
 );
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+// Only initialize full auth persistence/refresh if valid credentials are provided
+export const supabase = createClient(
+  isConfigured ? supabaseUrl : 'https://placeholder.supabase.co', 
+  isConfigured ? supabaseAnonKey : 'placeholder-anon-key', 
+  {
+    auth: {
+      persistSession: isConfigured,
+      autoRefreshToken: isConfigured,
+    },
+  }
+);
+

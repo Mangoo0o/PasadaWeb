@@ -19,7 +19,7 @@ export const App: React.FC = () => {
 
   const getRoleDefaultTab = (role?: string) => {
     if (role === 'driver') return 'driver';
-    if (role === 'admin') return 'admin';
+    if (role === 'admin' || role === 'super_admin') return 'admin';
     return 'home';
   };
 
@@ -31,7 +31,7 @@ export const App: React.FC = () => {
     if (user?.role === 'passenger' && ['home', 'pasada', 'history', 'profile'].includes(saved || '')) {
       return saved || 'home';
     }
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
       return saved || 'admin';
     }
     return getRoleDefaultTab(user?.role);
@@ -54,7 +54,7 @@ export const App: React.FC = () => {
       if (!savedTab || !['driver', 'dispatch', 'profile', 'history'].includes(savedTab) || savedTab === 'home' || savedTab === 'pasada') {
         handleSetActiveTab('driver');
       }
-    } else if (user?.role === 'admin') {
+    } else if (user?.role === 'admin' || user?.role === 'super_admin') {
       const savedTab = localStorage.getItem('pasada_active_tab');
       if (!savedTab || !['admin', 'home', 'pasada', 'history', 'profile'].includes(savedTab)) {
         handleSetActiveTab('admin');

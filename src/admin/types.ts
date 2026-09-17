@@ -16,6 +16,18 @@ export interface Profile {
   phone_number?: string;
   passenger_type?: 'regular' | 'student' | 'senior' | 'pwd' | string;
   is_discount_eligible?: boolean;
+  department?: string;
+  employee_id?: string;
+  status?: 'active' | 'suspended';
+}
+
+export interface AdminUserFormData {
+  fullName: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'super_admin';
+  department: string;
+  employeeId?: string;
 }
 
 export interface Terminal {

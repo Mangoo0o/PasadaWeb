@@ -1,4 +1,4 @@
-import { supabase } from '../api/supabaseClient';
+import { supabase, isConfigured } from '../api/supabaseClient';
 import { LocationFare } from '../types/database.types';
 
 // Preset icon options for Admin Location Creator & Map Displays
@@ -50,152 +50,15 @@ export const getLocationIconEmoji = (iconId?: string, locationName?: string): st
   return '📍';
 };
 
-// Robust local fallback for Bauang Municipality locations & official tariff
-export const DEFAULT_LOCATION_FARES: LocationFare[] = [
-  {
-    id: 'a0000001-0000-0000-0000-000000000001',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Bauang Town Plaza & Munisipyo',
-    lat: 16.5333,
-    lng: 120.3333,
-    proximity_radius_meters: 600,
-    standard_fare: 20.00,
-    discounted_fare: 16.00,
-    icon: 'landmark',
-    notes: 'Central Commercial Hub & Town Hall',
-    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000002',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Sts. Peter & Paul Parish Church',
-    lat: 16.5330,
-    lng: 120.3325,
-    proximity_radius_meters: 500,
-    standard_fare: 20.00,
-    discounted_fare: 16.00,
-    icon: 'church',
-    notes: 'Historical Landmark & Church Ground',
-    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000003',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Bauang Public Market & Trading Post',
-    lat: 16.5350,
-    lng: 120.3350,
-    proximity_radius_meters: 700,
-    standard_fare: 20.00,
-    discounted_fare: 16.00,
-    icon: 'market',
-    notes: 'Commercial Market & Terminal Exchange',
-    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000004',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Central West Elementary & Barangay Hall',
-    lat: 16.5310,
-    lng: 120.3270,
-    proximity_radius_meters: 800,
-    standard_fare: 25.00,
-    discounted_fare: 20.00,
-    icon: 'school',
-    notes: 'Residential Community & School District',
-    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000005',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Baccuit Sur Barangay Center',
-    lat: 16.5210,
-    lng: 120.3280,
-    proximity_radius_meters: 1000,
-    standard_fare: 30.00,
-    discounted_fare: 24.00,
-    icon: 'barangay',
-    notes: 'South Barangay Highway Corridor',
-    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000006',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Lomboy Grape Farms (Agritourism Hub)',
-    lat: 16.5250,
-    lng: 120.3400,
-    proximity_radius_meters: 1000,
-    standard_fare: 35.00,
-    discounted_fare: 28.00,
-    icon: 'farm',
-    notes: 'Pioneer Vineyard & Farm Tourism Hub',
-    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000007',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Bauang Beach & Sunset Park (Bagbag)',
-    lat: 16.5410,
-    lng: 120.3190,
-    proximity_radius_meters: 1200,
-    standard_fare: 40.00,
-    discounted_fare: 32.00,
-    icon: 'beach',
-    notes: 'Coastal Beach & Resort Tourist Hub',
-    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000008',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Paringao Coastal & Resort Strip',
-    lat: 16.5490,
-    lng: 120.3150,
-    proximity_radius_meters: 1200,
-    standard_fare: 45.00,
-    discounted_fare: 36.00,
-    icon: 'resort',
-    notes: 'North Coastal Beach & Hotel Strip',
-    video_url: 'https://vjs.zencdn.net/v/oceans.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000009',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Quinavite Barangay Hall & Highway Junction',
-    lat: 16.5200,
-    lng: 120.3480,
-    proximity_radius_meters: 900,
-    standard_fare: 35.00,
-    discounted_fare: 28.00,
-    icon: 'gas',
-    notes: 'East Inland Agricultural District',
-    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
-  },
-  {
-    id: 'a0000001-0000-0000-0000-000000000010',
-    origin_terminal_id: 'a0000000-0000-0000-0000-000000000001',
-    terminal_name: 'Bauang Central TODA (Town Plaza)',
-    location_name: 'Calumbaya Rural High School & Valley',
-    lat: 16.5120,
-    lng: 120.3550,
-    proximity_radius_meters: 1200,
-    standard_fare: 50.00,
-    discounted_fare: 40.00,
-    icon: 'park',
-    notes: 'Outer Foothills & Extended Barangay Route',
-    video_url: 'https://media.w3.org/2010/05/sintel/trailer.mp4'
-  }
-];
+// No hardcoded seeded data - location fares are dynamically loaded from Supabase database
+export const DEFAULT_LOCATION_FARES: LocationFare[] = [];
 
-// Fetch Location Fares from Supabase with fallback to DEFAULT_LOCATION_FARES
+// Fetch Location Fares from Supabase database only
 export const fetchLocationFares = async (originTerminalId?: string): Promise<LocationFare[]> => {
+  if (!isConfigured) {
+    return [];
+  }
+
   try {
     let query = supabase
       .from('location_fares')
@@ -208,14 +71,11 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
 
     const { data, error } = await query;
 
-    if (error || !data || data.length === 0) {
+    if (error || !data) {
       if (error) {
-        console.warn('Note on fetching location_fares from DB, using official defaults:', error.message);
+        console.warn('Error fetching location_fares from database:', error.message);
       }
-      if (originTerminalId) {
-        return DEFAULT_LOCATION_FARES.filter(f => f.origin_terminal_id === originTerminalId);
-      }
-      return DEFAULT_LOCATION_FARES;
+      return [];
     }
 
     return (data || []).map((item: any) => {
@@ -251,11 +111,8 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
       };
     });
   } catch (err: any) {
-    console.warn('Exception fetching location_fares, using fallback:', err.message);
-    if (originTerminalId) {
-      return DEFAULT_LOCATION_FARES.filter(f => f.origin_terminal_id === originTerminalId);
-    }
-    return DEFAULT_LOCATION_FARES;
+    console.warn('Exception fetching location_fares:', err.message);
+    return [];
   }
 };
 

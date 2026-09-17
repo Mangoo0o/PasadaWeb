@@ -152,7 +152,7 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <MapPin size={24} />
             </span>
             <span>TODA Terminals &amp; Barangay Locations</span>
@@ -175,26 +175,26 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
         {/* Terminal Cards List (Span 5) */}
         <div className="lg:col-span-5 flex flex-col gap-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
           {terminals.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+            <div className="p-8 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow">
               No terminals registered yet. Click "Add New Terminal" to register one.
             </div>
           ) : (
             terminals.map((t) => (
               <div
                 key={t.id}
-                className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all flex items-center justify-between border-l-4 border-l-[#0052d1]"
+                className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all flex items-center justify-between group"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">{t.name}</span>
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">{t.name}</span>
                     <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-bold text-[#0052d1] dark:text-sky-400 border border-slate-200 dark:border-slate-700">
                       {t.code || 'NO-CODE'}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    Coordinates: {t.lat.toFixed(4)}, {t.lng.toFixed(4)} • Radius: {t.coverage_radius_km || 3.0} km
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono tabular-nums">
+                    GPS: {t.lat.toFixed(4)}°, {t.lng.toFixed(4)}° • Radius: {t.coverage_radius_km || 3.0} km
                   </div>
-                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 tabular-nums">
                     ● {t.active_drivers_count || 8} Active Tricycles Dispatched
                   </div>
                 </div>
@@ -211,13 +211,13 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
         </div>
 
         {/* Interactive GIS Overview Map (Span 7) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow h-[560px] flex flex-col">
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>Terminal Geofence Coverage Map</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Click map to preview coordinates</span>
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow h-[560px] flex flex-col">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">Terminal Geofence Coverage Map</h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Click map to preview coordinates</span>
           </div>
 
-          <div style={{ flex: 1, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}>
             <MapContainer
               center={[16.5333, 120.3333]}
               zoom={13}
@@ -260,18 +260,29 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
         </div>
       </div>
 
-      {/* Add/Edit Terminal Modal with 2-Column Layout (Map Left, Inputs Right) */}
+      {/* Add/Edit Terminal Modal with 2-Column Layout */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 880, width: '92%' }}>
+          <div className="modal-content max-w-4xl w-[94%]" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MapPin size={20} color="var(--accent-primary)" />
-                {selectedTerminal ? 'Edit Terminal Information' : 'Register New TODA Terminal'}
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <MapPin size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    {selectedTerminal ? 'Edit Terminal Information' : 'Register New TODA Terminal'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Configure municipal terminal coordinates, operational route code, and dispatch geofence.
+                  </p>
+                </div>
+              </div>
+
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={18} />
@@ -279,34 +290,21 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
             </div>
 
             <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: 24,
-                  alignItems: 'start'
-                }}>
+              <div className="modal-body space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                   {/* LEFT COLUMN: Map Pin Picker */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 0 }}>
-                        <Crosshair size={16} color="var(--accent-primary)" />
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                        <Crosshair size={15} className="text-[#0052d1] dark:text-sky-400" />
                         <span>Pin Location on Map</span>
                       </label>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--info)', fontWeight: 600 }}>
+                      <span className="text-[11px] text-slate-400 font-medium">
                         Drag pin or click map
                       </span>
                     </div>
 
-                    <div style={{
-                      height: 340,
-                      width: '100%',
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      border: '2px solid var(--border-color)',
-                      position: 'relative',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                    }}>
+                    <div className="h-72 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner">
                       <MapContainer
                         center={[lat, lng]}
                         zoom={14}
@@ -329,78 +327,78 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                       </MapContainer>
                     </div>
 
-                    <div style={{
-                      marginTop: 8,
-                      padding: '6px 12px',
-                      background: 'var(--bg-primary)',
-                      borderRadius: 8,
-                      border: '1px solid var(--border-color)',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      color: 'var(--text-muted)'
-                    }}>
-                      <span>Selected: <strong style={{ color: 'var(--text-main)' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</strong></span>
-                      <span>Geofence: <strong style={{ color: 'var(--accent-primary)' }}>{coverageRadius} km</strong></span>
+                    <div className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs flex justify-between text-slate-500 dark:text-slate-400">
+                      <span>Selected: <strong className="text-slate-900 dark:text-white font-mono">{lat.toFixed(5)}, {lng.toFixed(5)}</strong></span>
+                      <span>Geofence: <strong className="text-[#0052d1] dark:text-sky-400">{coverageRadius} km</strong></span>
                     </div>
                   </div>
 
                   {/* RIGHT COLUMN: Form Inputs */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Terminal Name</label>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Terminal Station Name *
+                      </label>
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Payocpoc Sur TODA Terminal"
-                        className="input-field"
+                        placeholder="e.g. Central Bauang Public Market Terminal"
+                        className="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                       />
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Terminal Route Code</label>
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Terminal Route Code *
+                      </label>
                       <input
                         type="text"
                         required
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
-                        placeholder="e.g. PAY-04"
-                        className="input-field"
+                        placeholder="e.g. TRM-01 or PAY-04"
+                        className="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-mono font-bold text-[#0052d1] dark:text-sky-400 outline-none focus:border-[#0052d1]"
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Latitude</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          Latitude
+                        </label>
                         <input
                           type="number"
                           step="any"
                           required
                           value={lat}
                           onChange={(e) => setLat(parseFloat(e.target.value))}
-                          className="input-field"
+                          className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                       </div>
 
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Longitude</label>
+                      <div>
+                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          Longitude
+                        </label>
                         <input
                           type="number"
                           step="any"
                           required
                           value={lng}
                           onChange={(e) => setLng(parseFloat(e.target.value))}
-                          className="input-field"
+                          className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label className="form-label">Dispatch Geofence Radius</label>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-pasada-navy)' }}>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                          Dispatch Coverage Radius
+                        </label>
+                        <span className="text-xs font-black text-[#0052d1] dark:text-sky-400 bg-[#0052d1]/10 px-2 py-0.5 rounded-md">
                           {coverageRadius} km
                         </span>
                       </div>
@@ -411,9 +409,9 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                         step="0.5"
                         value={coverageRadius}
                         onChange={(e) => setCoverageRadius(parseFloat(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--accent-primary)', marginTop: 4 }}
+                        className="w-full accent-[#0052d1] cursor-pointer"
                       />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      <div className="flex justify-between text-[11px] text-slate-400 mt-1">
                         <span>0.5 km (Hub)</span>
                         <span>5.0 km (Town)</span>
                         <span>10.0 km (Municipal)</span>
@@ -423,17 +421,17 @@ export const TerminalsPage: React.FC<TerminalsPageProps> = ({
                 </div>
               </div>
 
-              <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="modal-footer">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                  className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                  className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
                 >
                   <Check size={15} /> Save Terminal
                 </button>

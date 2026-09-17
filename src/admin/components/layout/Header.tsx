@@ -125,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={handleRefresh}
           disabled={isRefreshing}
           className={cn(
-            'w-9 h-9 text-slate-500 hover:text-[#0052d1] dark:text-slate-400 dark:hover:text-sky-400 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center',
+            'w-9 h-9 text-slate-500 hover:text-[#0052d1] dark:text-slate-400 dark:hover:text-sky-400 rounded-md border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center',
             isRefreshing && 'opacity-70 pointer-events-none'
           )}
           title={isRefreshing ? 'Refreshing Data...' : 'Refresh Live Fleet & Fares Data'}
@@ -134,22 +134,22 @@ export const Header: React.FC<HeaderProps> = ({
           <RefreshCw size={15} className={cn('transition-transform duration-500', isRefreshing && 'animate-spin text-[#0052d1] dark:text-sky-400')} />
         </button>
 
-        {/* Dark/Light Mode Toggle (Circular TailAdmin style) */}
+        {/* Dark/Light Mode Toggle (TailAdmin style) */}
         <button
           onClick={toggleTheme}
-          className="w-9 h-9 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
+          className="w-9 h-9 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-md border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
           title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
           aria-label="Toggle Theme"
         >
           {theme === 'dark' ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
         </button>
 
-        {/* Notifications Dropdown (Circular with orange dot) */}
+        {/* Notifications Dropdown */}
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className={cn(
-              'w-9 h-9 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center relative',
+              'w-9 h-9 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-md border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center relative',
               showNotifications && 'bg-slate-100 dark:bg-slate-800 text-[#0052d1]'
             )}
             title="Notifications"
@@ -214,19 +214,19 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* User Profile Pill with Avatar & Name (TailAdmin style) */}
+        {/* User Profile Pill with Avatar & Name */}
         <div className="relative ml-1" ref={profileRef}>
           <button
             type="button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className={cn(
-              'flex items-center gap-2.5 p-1 pl-1 pr-2.5 rounded-full border border-transparent hover:border-slate-200 dark:hover:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-all',
+              'flex items-center gap-2.5 p-1 pl-1 pr-2.5 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-all',
               showProfileMenu && 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
             )}
             title="Admin Account Details"
             aria-label="Admin Profile Menu"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#0052d1] to-[#206afa] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+            <div className="w-8 h-8 rounded-md bg-gradient-to-tr from-[#0052d1] to-[#206afa] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
               {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'A'}
             </div>
             <div className="text-left hidden sm:block">

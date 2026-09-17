@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   X,
   FileCheck,
-  ScrollText
+  ScrollText,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AdminAuthContext';
 import { cn } from '../../../lib/utils';
@@ -49,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingDriverCount, 
   openComplaintCount 
 }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
 
   const menuNavItems = [
@@ -73,8 +74,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'bookings', label: 'Ride Monitor', icon: History },
   ];
 
-  const supportNavItems = [
-    { id: 'audit-logs', label: 'Audit Trail', icon: FileCheck },
+  const governanceNavItems = [
+    { 
+      id: 'admin-users', 
+      label: 'Admin & Access', 
+      icon: UserPlus,
+      badge: user?.role === 'super_admin' ? 'Super' : undefined,
+      badgeColor: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+    },
+    { 
+      id: 'audit-logs', 
+      label: 'Audit Trail & Compliance', 
+      icon: FileCheck 
+    },
   ];
 
   return (
@@ -99,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 px-3 space-y-4 overflow-y-auto pt-1">
           {/* MENU Category */}
           <div>
-            <p className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <p className="px-3 pb-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               Menu
             </p>
             <div className="space-y-1">
@@ -130,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span className="truncate">{item.label}</span>
                     </div>
                     {item.count !== undefined && (
-                      <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0', item.countColor)}>
+                      <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold font-mono tabular-nums shrink-0', item.countColor)}>
                         {item.count}
                       </span>
                     )}
@@ -140,13 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* SUPPORT & LOGS Category */}
+          {/* GOVERNANCE & LOGS Category */}
           <div>
-            <p className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Support &amp; Logs
+            <p className="px-3 pb-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              Governance &amp; Compliance
             </p>
             <div className="space-y-1">
-              {supportNavItems.map((item) => {
+              {governanceNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
@@ -172,6 +184,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       />
                       <span className="truncate">{item.label}</span>
                     </div>
+                    {item.badge !== undefined && (
+                      <span className={cn('px-1.5 py-0.2 rounded text-[10px] font-black shrink-0', item.badgeColor)}>
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

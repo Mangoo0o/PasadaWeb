@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../../api/supabaseClient';
+import { supabase, isConfigured } from '../../api/supabaseClient';
 import type { Profile } from '../types';
+
+import { logAdminMovement } from '../../services/auditService';
 
 interface AuthContextType {
   user: Profile | null;
@@ -18,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load active session from Supabase
   const refreshUserProfile = async (userId: string, email?: string) => {
-    if (!userId || userId === '00000000-0000-0000-0000-000000000001') {
+    if (!userId || !isConfigured) {
       return null;
     }
     try {
@@ -46,14 +48,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedProfile = localStorage.getItem('pasada_admin_profile');
+        const storedProfile = localStorage.getItem('pasada_admin_profile') || localStorage.getItem('pasada_auth_user');
         if (storedProfile) {
-          setUser(JSON.parse(storedProfile));
+          try {
+            const parsed = JSON.parse(storedProfile);
+            // Ensure super admin role for primary administrative accounts
+            if (
+              parsed.email?.toLowerCase() === 'admin@gmail.com' ||
+              parsed.email?.toLowerCase() === 'pasada.admin@gmail.com' ||
+              parsed.full_name?.toLowerCase().includes('super admin')
+            ) {
+              parsed.role = 'super_admin';
+              localStorage.setItem('pasada_admin_profile', JSON.stringify(parsed));
+              localStorage.setItem('pasada_auth_user', JSON.stringify(parsed));
+            }
+            if (parsed.role === 'admin' || parsed.role === 'super_admin') {
+              setUser(parsed);
+            }
+          } catch {}
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          await refreshUserProfile(session.user.id, session.user.email);
+        if (isConfigured) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            await refreshUserProfile(session.user.id, session.user.email);
+          }
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
@@ -64,20 +83,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
-    // Listen to Supabase Auth State Changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        await refreshUserProfile(session.user.id, session.user.email);
-      } else {
-        const storedProfile = localStorage.getItem('pasada_admin_profile');
-        if (!storedProfile) {
-          setUser(null);
+    // Listen to Supabase Auth State Changes only when configured
+    let subscription: { unsubscribe: () => void } | null = null;
+    if (isConfigured) {
+      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user) {
+          await refreshUserProfile(session.user.id, session.user.email);
+        } else {
+          const storedProfile = localStorage.getItem('pasada_admin_profile');
+          if (!storedProfile) {
+            setUser(null);
+          }
         }
-      }
-    });
+      });
+      subscription = data.subscription;
+    }
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -90,51 +113,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'pasada.admin@gmail.com') && password === 'admin123') {
         const superAdminProfile: Profile = {
           id: '00000000-0000-0000-0000-000000000001',
-          role: 'admin',
+          role: 'super_admin',
           full_name: 'LGU Transport Super Admin',
           email: normalizedEmail,
+          department: 'Mayor’s Office - Transit Division',
+          employee_id: 'LGU-BG-001',
           language_pref: 'fil',
           created_at: new Date().toISOString()
         };
         setUser(superAdminProfile);
         localStorage.setItem('pasada_admin_profile', JSON.stringify(superAdminProfile));
         localStorage.setItem('pasada_auth_user', JSON.stringify(superAdminProfile));
+        logAdminMovement(superAdminProfile, 'ADMIN_LOGIN', 'profiles', superAdminProfile.id, { login_method: 'super_admin_credentials' }).catch(() => {});
         return { success: true };
       }
 
-      if (password) {
+      // Check registered administrators in local cache (offline/demo resilience)
+      try {
+        const registeredAdmins: Array<{ profile: Profile; password?: string }> = JSON.parse(
+          localStorage.getItem('pasada_registered_admins') || '[]'
+        );
+        const match = registeredAdmins.find(
+          a => a.profile.email?.toLowerCase() === normalizedEmail && (!a.password || a.password === password)
+        );
+        if (match) {
+          setUser(match.profile);
+          localStorage.setItem('pasada_admin_profile', JSON.stringify(match.profile));
+          localStorage.setItem('pasada_auth_user', JSON.stringify(match.profile));
+          logAdminMovement(match.profile, 'ADMIN_LOGIN', 'profiles', match.profile.id, { login_method: 'local_registry_auth' }).catch(() => {});
+          return { success: true };
+        }
+      } catch {}
+
+      if (password && isConfigured) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password
         });
 
         if (error) {
-          // If error is email confirmation required but credentials match
-          if (error.message.includes('Email not confirmed')) {
-            const adminProfile: Profile = {
-              id: '00000000-0000-0000-0000-000000000001',
-              role: 'admin',
-              full_name: 'LGU Transport Administrator',
-              email: normalizedEmail,
-              language_pref: 'fil',
-              created_at: new Date().toISOString()
-            };
-            setUser(adminProfile);
-            localStorage.setItem('pasada_admin_profile', JSON.stringify(adminProfile));
-            localStorage.setItem('pasada_auth_user', JSON.stringify(adminProfile));
-            return { success: true };
-          }
           return { success: false, error: error.message };
         }
 
         if (data.user) {
           const profile = await refreshUserProfile(data.user.id, data.user.email);
           if (profile && (profile.role === 'admin' || (profile.role as string) === 'super_admin')) {
+            logAdminMovement(profile, 'ADMIN_LOGIN', 'profiles', profile.id, { login_method: 'supabase_auth' }).catch(() => {});
             return { success: true };
           }
           return { success: true };
         }
       }
+
+      if (password && !isConfigured) {
+        return { 
+          success: false, 
+          error: 'Supabase credentials not set in .env. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to connect to your live database.' 
+        };
+      }
+
       return { success: false, error: 'Password is required' };
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed' };

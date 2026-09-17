@@ -194,7 +194,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
 
-          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2.5">
+          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
               {pendingCount}
             </div>
@@ -211,7 +211,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
       </div>
 
       {/* Content Container: Unified Filter Row & Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
         {/* Unified Top Filter Row: Tabs on Left, Search on Right */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
           {/* Tabs */}
@@ -236,7 +236,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 >
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
                       tab.id === 'pending' && tab.count > 0 
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -281,11 +281,11 @@ export const DriversPage: React.FC<DriversPageProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Driver / ID</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Vehicle Details</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">TODA / Terminal</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Documents & Actions</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Driver / ID</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vehicle Details</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">TODA / Terminal</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Documents & Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -311,7 +311,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                           </div>
                           <div>
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{driverName}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                               ID: {driverId.substring(0, 8)}
                             </div>
                           </div>
@@ -319,15 +319,15 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                       </td>
 
                       <td className="py-3.5 px-6">
-                        <div className="inline-block px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold text-[11px] rounded border border-slate-200 dark:border-slate-700">
+                        <div className="inline-block px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold text-[11px] rounded border border-slate-200 dark:border-slate-700 tracking-tight tabular-nums">
                           {d.plate_number} {d.body_number ? `(#${d.body_number})` : ''}
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">{d.tricycle_model}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{d.tricycle_model}</div>
                       </td>
 
                       <td className="py-3.5 px-6">
                         <div className="font-bold text-slate-800 dark:text-slate-200">{terminalName}</div>
-                        <div className="text-[10px] text-slate-400">Bauang Toda Route</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Bauang Toda Route</div>
                       </td>
 
                       <td className="py-3.5 px-6">
@@ -417,11 +417,11 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
         return (
           <div 
-            className="modal-overlay fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in"
+            className="modal-overlay"
             onClick={() => setIsDocModalOpen(false)}
           >
             <div 
-              className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-5xl xl:max-w-6xl overflow-hidden flex flex-col transition-all ${
+              className={`modal-content max-w-5xl xl:max-w-6xl ${
                 isExpandedPreview ? 'h-[96vh]' : 'h-[92vh] max-h-[920px]'
               }`}
               onClick={(e) => e.stopPropagation()}
@@ -429,7 +429,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
               {/* Modal Top Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/60 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-[#0052d1] text-white flex items-center justify-center font-black shadow-md shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-[#0052d1] text-white flex items-center justify-center font-black shadow-md shrink-0">
                     <Car className="w-5 h-5 text-[#fcd400]" />
                   </div>
                   <div className="min-w-0">
@@ -450,8 +450,9 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
+                    type="button"
                     onClick={() => setIsExpandedPreview(!isExpandedPreview)}
-                    className="hidden sm:flex p-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    className="hidden sm:flex px-3 py-1.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                     title={isExpandedPreview ? "I-minimize ang preview" : "I-expand ang preview"}
                   >
                     {isExpandedPreview ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -459,8 +460,9 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                   </button>
 
                   <button 
+                    type="button"
                     onClick={() => setIsDocModalOpen(false)} 
-                    className="w-9 h-9 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
+                    className="modal-close-btn"
                     title="Close"
                   >
                     <X size={18} />
@@ -537,7 +539,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
               <div className="flex-1 overflow-y-auto p-3 sm:p-5 flex flex-col min-h-0 space-y-3">
                 
                 {/* Active Document Subheader / Toolbar */}
-                <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                <div className="p-3 sm:p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <FileBadge className="w-4 h-4 text-[#0052d1] shrink-0" />
@@ -601,12 +603,12 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                 {/* PDF Viewer Frame */}
                 {loadingDocs ? (
-                  <div className="flex-1 min-h-[360px] flex flex-col items-center justify-center text-xs font-bold text-slate-400 gap-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex-1 min-h-[360px] flex flex-col items-center justify-center text-xs font-bold text-slate-400 gap-2 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-800">
                     <div className="w-8 h-8 border-2 border-[#0052d1] border-t-transparent rounded-full animate-spin" />
                     <span>Kinukuha ang dokumento mula sa secure storage...</span>
                   </div>
                 ) : currentActiveDoc?.file_url ? (
-                  <div className="flex-1 min-h-[460px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-950 flex flex-col relative shadow-inner">
+                  <div className="flex-1 min-h-[460px] w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-950 flex flex-col relative shadow-inner">
                     <iframe
                       src={`${currentActiveDoc.file_url}#view=FitH&toolbar=1`}
                       title={`PDF Preview - ${currentDocConfig.title}`}
@@ -614,8 +616,8 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     />
                   </div>
                 ) : (
-                  <div className="flex-1 min-h-[300px] rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col items-center justify-center gap-2 text-center p-6">
-                    <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
+                  <div className="flex-1 min-h-[300px] rounded-lg border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col items-center justify-center gap-2 text-center p-6">
+                    <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <div className="text-sm font-black text-amber-900 dark:text-amber-200">
@@ -629,7 +631,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
 
                 {/* Rejection Feedback Box */}
                 {isRejecting && (
-                  <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-3 shrink-0 animate-in fade-in">
+                  <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-3 shrink-0 animate-in fade-in">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-black text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
                         <AlertCircle className="w-4 h-4 text-rose-600" />
@@ -693,14 +695,16 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                 {/* Left: Close & Stepper Step Controls */}
                 <div className="flex items-center gap-2">
                   <button 
+                    type="button"
                     onClick={() => setIsDocModalOpen(false)} 
-                    className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-100 shadow-xs flex items-center justify-center"
+                    className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-100 shadow-xs flex items-center justify-center transition-colors"
                   >
                     Close
                   </button>
 
-                  <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-700 pl-2">
+                  <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-2">
                     <button
+                      type="button"
                       onClick={() => {
                         if (hasPrevDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex - 1].type);
                       }}
@@ -713,6 +717,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => {
                         if (hasNextDoc) setActiveDocType(REQUIRED_DRIVER_DOCUMENTS[currentDocIndex + 1].type);
                       }}
@@ -736,6 +741,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                     ) : (
                       <>
                         <button
+                          type="button"
                           onClick={() => setIsRejecting(true)}
                           disabled={isProcessingAction}
                           className="h-9 px-4 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50"
@@ -745,6 +751,7 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                         </button>
 
                         <button
+                          type="button"
                           onClick={() => handleApprove(selectedDriver.profile_id || selectedDriver.id || '')}
                           disabled={isProcessingAction}
                           className="h-9 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"

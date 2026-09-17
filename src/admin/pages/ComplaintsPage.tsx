@@ -43,7 +43,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <span className="p-2 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
               <AlertTriangle size={24} />
             </span>
             <span>Complaint Triage</span>
@@ -57,7 +57,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
       </div>
 
       {/* Unified Filter Row & View Controls */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-800/40 gap-3 py-1 sm:py-0">
           {/* Tabs */}
           <div className="flex items-center overflow-x-auto gap-1 sm:gap-2">
@@ -80,7 +80,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                 >
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
                       tab.id === 'open' && tab.count > 0 
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -135,7 +135,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
       {viewMode === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.length === 0 ? (
-            <div className="col-span-full py-16 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+            <div className="col-span-full py-16 text-center text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow">
               No active complaints matching criteria.
             </div>
           ) : (
@@ -147,7 +147,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
               return (
                 <div
                   key={c.id}
-                  className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-shadow duration-200 flex flex-col justify-between"
+                  className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-shadow duration-200 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-3.5">
@@ -163,7 +163,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white capitalize">
                             {c.category.replace(/_/g, ' ')}
                           </h3>
-                          <p className="text-[10px] text-slate-400 font-medium">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium font-mono tabular-nums">
                             {new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -180,7 +180,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl mb-4 italic leading-relaxed border border-slate-100 dark:border-slate-800">
+                    <p className="text-sm text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg mb-4 italic leading-relaxed border border-slate-100 dark:border-slate-800 measure-prose">
                       "{c.description}"
                     </p>
                   </div>
@@ -215,12 +215,12 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Date Filed</th>
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Category</th>
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Complainant</th>
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Reported Driver</th>
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="py-3 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date Filed</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Category</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Complainant</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reported Driver</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -233,7 +233,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                 ) : (
                   filtered.map(c => (
                     <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-3 px-6 text-slate-500 font-mono text-[11px]">
+                      <td className="py-3 px-6 text-slate-600 dark:text-slate-300 font-mono text-[11px] tabular-nums">
                         {new Date(c.created_at).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-6">
@@ -246,7 +246,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                       </td>
                       <td className="py-3 px-6">
                         <div className="font-bold text-slate-800 dark:text-slate-200">{c.driver_name || 'Driver'}</div>
-                        <div className="text-[10px] text-slate-400">Body #{c.driver_body_number || 'N/A'}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">Body #{c.driver_body_number || 'N/A'}</div>
                       </td>
                       <td className="py-3 px-6">
                         <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase ${
@@ -276,70 +276,136 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
         </div>
       )}
 
-      {/* Stitch Triage & Resolution Modal */}
+      {/* Executive Complaint Triage & Resolution Modal */}
       {isModalOpen && selectedComplaint && (
-        <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl w-full max-w-lg overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Complaint Triage: Case #{selectedComplaint.id.slice(0, 8)}
-              </h3>
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div 
+            className="modal-content max-w-xl" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="modal-header">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      Complaint Triage &amp; Sanction
+                    </h3>
+                    <span className="font-mono text-xs text-slate-400">
+                      #{selectedComplaint.id.slice(0, 8)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-rose-600 dark:text-rose-400 font-bold capitalize">
+                      {selectedComplaint.category.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                    <span className="text-xs text-slate-400">
+                      Filed: {new Date(selectedComplaint.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-4 sm:p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Complainant:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{selectedComplaint.passenger_name || 'Passenger'}</span>
+            {/* Modal Body */}
+            <div className="modal-body space-y-4">
+              {/* Complainant vs Driver Breakdown */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">
+                    <User size={14} className="text-[#0052d1] dark:text-sky-400" />
+                    <span>Complainant Passenger</span>
+                  </div>
+                  <div className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    {selectedComplaint.passenger_name || selectedComplaint.passenger?.full_name || 'Passenger'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    Verified commuter account
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Driver:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{selectedComplaint.driver_name || 'Reported Driver'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Category:</span>
-                  <span className="font-bold text-rose-600 capitalize">{selectedComplaint.category.replace(/_/g, ' ')}</span>
+
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">
+                    <Bike size={14} className="text-amber-600 dark:text-amber-400" />
+                    <span>Reported Tricycle / Driver</span>
+                  </div>
+                  <div className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    {selectedComplaint.driver_name || selectedComplaint.driver?.profile?.full_name || 'Reported Driver'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                    Body #{selectedComplaint.driver_body_number || selectedComplaint.driver?.plate_number || 'N/A'}
+                  </div>
                 </div>
               </div>
 
+              {/* Passenger Incident Statement */}
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Passenger Incident Statement</label>
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-md text-xs text-slate-700 dark:text-slate-300 italic border border-slate-200/80 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                    Passenger Incident Statement
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-400">Direct Citizen Report</span>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-lg text-xs text-slate-800 dark:text-slate-200 italic border border-slate-200 dark:border-slate-700/80 leading-relaxed shadow-inner">
                   "{selectedComplaint.description}"
                 </div>
               </div>
 
+              {/* LGU Official Resolution Notes & Sanctions */}
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">LGU Official Resolution Notes & Sanctions</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                    LGU Official Resolution Notes &amp; Action
+                  </label>
+                  <span className="text-[10px] text-[#0052d1] dark:text-sky-400 font-bold">Recorded on Audit Trail</span>
+                </div>
                 <textarea
                   rows={4}
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
-                  placeholder="e.g. Mediation conducted at Bauang TODA desk. Driver warned and refunded excess fare."
-                  className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs outline-none focus:ring-2 focus:ring-[#0052d1]/20 resize-y"
+                  placeholder="e.g. Mediation held at Bauang TODA desk. Driver refunded excess ₱20 fare and received first written warning."
+                  className="w-full p-3.5 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1] focus:ring-3 focus:ring-[#0052d1]/15 transition-all resize-y"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-end gap-2.5">
+            {/* Modal Footer */}
+            <div className="modal-footer">
               <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer transition-colors"
+              >
+                Dismiss
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleSaveResolution('reviewing')}
-                className="h-9 px-4 rounded-md bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                className="h-9 px-4 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95"
               >
                 <Clock size={14} /> Mark In-Review
               </button>
+
               <button
+                type="button"
                 onClick={() => handleSaveResolution('resolved')}
-                className="h-9 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
+                className="h-9 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
               >
-                <Check size={14} /> Resolve & Close
+                <Check size={14} /> Resolve &amp; Close Case
               </button>
             </div>
           </div>

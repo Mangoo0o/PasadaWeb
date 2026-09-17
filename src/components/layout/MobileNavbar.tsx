@@ -31,7 +31,7 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
         { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
       ];
     }
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
       return [
         { id: 'admin', label: t('nav.admin', 'Admin'), icon: ShieldCheck },
         { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },

@@ -114,7 +114,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <TrendingUp size={24} />
             </span>
             <span>Bauang TODA Operations Center</span>
@@ -132,22 +132,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 1: Registered Drivers */}
         <div 
           onClick={() => setActiveTab('drivers')}
-          className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
+          className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
         >
-          <div className="w-11 h-11 bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+          <div className="w-11 h-11 bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 rounded-md flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
             <Car size={22} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Registered Drivers</p>
-              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Registered Drivers</p>
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0 tabular-nums">
                 <TrendingUp size={11} /> {activeDriversCount > 0 ? `${Math.round((activeDriversCount / (drivers.length || 1)) * 100)}% Active` : 'Live'}
               </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1">
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
               {drivers.length}
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
               {pendingDriversCount > 0 ? `${pendingDriversCount} pending verification` : 'All operators verified'}
             </p>
           </div>
@@ -156,22 +156,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 2: Regulated Locations */}
         <div 
           onClick={() => setActiveTab('fare-matrix')}
-          className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
+          className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
         >
-          <div className="w-11 h-11 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+          <div className="w-11 h-11 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
             <MapPin size={22} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Regulated Locations</p>
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Regulated Locations</p>
+              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0">
                 Bauang LGU
               </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1">
-              {locationFares.length > 0 ? `${locationFares.length} Locations` : '10 Locations'}
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
+              {locationFares.length > 0 ? `${locationFares.length}` : '10'} <span className="text-base sm:text-lg font-bold text-slate-500 dark:text-slate-400">Zones</span>
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
               Active proximity tariff destinations
             </p>
           </div>
@@ -180,22 +180,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 3: Active Complaints */}
         <div 
           onClick={() => setActiveTab('complaints')}
-          className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
+          className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
         >
-          <div className="w-11 h-11 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+          <div className="w-11 h-11 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-md flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
             <AlertTriangle size={22} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Active Complaints</p>
-              <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200/70 dark:border-rose-800 shrink-0">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Active Complaints</p>
+              <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200/70 dark:border-rose-800 shrink-0 tabular-nums">
                 {openComplaintsCount} Open
               </span>
             </div>
-            <h3 className={`text-2xl sm:text-3xl font-black tracking-tight leading-none my-1 ${openComplaintsCount > 0 ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+            <h3 className={`text-3xl sm:text-4xl font-black tracking-tight leading-none my-1 tabular-nums ${openComplaintsCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
               {openComplaintsCount}
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
               {complaints.filter(c => c.category === 'overcharging').length} Overcharging reports
             </p>
           </div>
@@ -204,22 +204,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 4: Computed Fares (Today) */}
         <div 
           onClick={() => setActiveTab('bookings')}
-          className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
+          className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow hover:shadow-md transition-all cursor-pointer group flex items-start gap-3.5"
         >
-          <div className="w-11 h-11 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+          <div className="w-11 h-11 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5">
             <PesoIcon size={22} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1.5 mb-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Computed Fares (Today)</p>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Computed Fares (Today)</p>
               <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/70 dark:border-emerald-800 shrink-0">
                 Tariff Regulated
               </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1">
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none my-1 tabular-nums">
               ₱{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
               Across {bookings.length} recorded rides
             </p>
           </div>
@@ -229,9 +229,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* Stitch Bento Grid: Map + Right Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left 8-col: Regulated Locations Map */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden relative flex flex-col min-h-[480px]">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden relative flex flex-col min-h-[480px]">
           {/* Floating Glass Panel */}
-          <div className="absolute top-4 left-4 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-lg p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-md pointer-events-auto">
+          <div className="absolute top-4 left-4 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-md p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-md pointer-events-auto">
             <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Regulated Locations</h3>
             <p className="text-[11px] text-slate-500 font-medium">Live view of Bauang TODA operations</p>
           </div>
@@ -297,7 +297,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Right 4-col: Charts (TailAdmin Style) */}
         <div className="lg:col-span-4 flex flex-col gap-5">
           {/* Hourly Ride Demand (TailAdmin Bar Chart 2) */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-1">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Hourly Ride Demand</h3>
@@ -314,7 +314,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           {/* Terminal Fleet Distribution (TailAdmin Pie / Donut Chart) */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-2">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Fleet Distribution</h3>

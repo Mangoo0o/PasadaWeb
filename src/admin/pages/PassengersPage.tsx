@@ -52,7 +52,7 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <Users size={24} />
             </span>
             <span>Passenger Directory</span>
@@ -66,7 +66,7 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800 ambient-shadow flex items-center justify-between gap-4 flex-wrap">
         <div className="relative w-full sm:w-80 max-w-full">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
@@ -86,24 +86,24 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
             </button>
           )}
         </div>
-        <span className="text-xs font-semibold text-slate-400">
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">
           {filtered.length} Registered Commuters
         </span>
       </div>
 
       {/* Stitch Data Table Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Passenger Name</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Tariff Status</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Email Address</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Phone Contact</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Language</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Registered Date</th>
-                <th className="py-3.5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Status</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Passenger Name</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tariff Status</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email Address</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Contact</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Language</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Registered Date</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -138,7 +138,7 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
                         <Globe size={11} /> {p.language_pref || 'fil'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 text-slate-500 font-mono text-[11px]">
+                    <td className="py-3.5 px-6 text-slate-500 dark:text-slate-400 font-mono text-[11px] tabular-nums">
                       {new Date(p.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3.5 px-6 text-right">

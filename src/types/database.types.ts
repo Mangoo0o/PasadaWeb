@@ -1,4 +1,4 @@
-export type UserRole = 'passenger' | 'driver' | 'admin';
+export type UserRole = 'passenger' | 'driver' | 'admin' | 'super_admin';
 
 export type BookingStatus =
   | 'searching'

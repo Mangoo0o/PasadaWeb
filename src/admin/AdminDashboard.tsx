@@ -12,10 +12,12 @@ import { ComplaintsPage } from './pages/ComplaintsPage';
 import { BookingsPage } from './pages/BookingsPage';
 import { TouristSpotsPage } from './pages/TouristSpotsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 
-import { supabase } from '../api/supabaseClient';
+import { supabase, isConfigured } from '../api/supabaseClient';
 import { fetchLocationFares, saveLocationFare, deleteLocationFare } from '../services/fareService';
 import { updateDriverVerificationStatus } from '../services/driverDocumentService';
+import { logAdminMovement, fetchAuditLogs } from '../services/auditService';
 import type { 
   Terminal, Driver, FareMatrix, LocationFare, Booking, Complaint, TouristSpot, AdminAction, 
   VerificationStatus, ComplaintStatus, Profile, NotificationItem 
@@ -24,6 +26,7 @@ import type {
 const AdminContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [auditFilterQuery, setAuditFilterQuery] = useState<string>('');
 
   // Application Data State
   const [terminals, setTerminals] = useState<Terminal[]>([]);
@@ -38,8 +41,27 @@ const AdminContent: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const notifyError = useCallback((title: string, msg: string) => {
+    setNotifications(prev => [
+      {
+        id: `err-${Date.now()}`,
+        recipient_role: 'admin',
+        type: 'system',
+        title,
+        message: msg,
+        read: false,
+        created_at: new Date().toISOString()
+      },
+      ...prev
+    ]);
+  }, []);
+
   // Fetch Live Data from Supabase Database
   const fetchLiveData = useCallback(async () => {
+    if (!isConfigured) {
+      return;
+    }
+
     try {
       const [
         resTerminals,
@@ -61,18 +83,12 @@ const AdminContent: React.FC = () => {
         fetchLocationFares()
       ]);
 
-      // Safely query admin_actions if table exists in DB
+      // Fetch live & resilient cached audit actions
       try {
-        const { data: auditData, error: auditError } = await supabase
-          .from('admin_actions')
-          .select('*, admin:profiles(*)')
-          .order('created_at', { ascending: false });
-        
-        if (!auditError && auditData) {
-          setAuditLogs(auditData as AdminAction[]);
-        }
+        const auditData = await fetchAuditLogs();
+        setAuditLogs(auditData);
       } catch (err) {
-        // Silently skip if table is not created yet
+        console.warn('Audit fetch note:', err);
       }
 
       if (resTerminals.data) {
@@ -87,7 +103,7 @@ const AdminContent: React.FC = () => {
       const profileMap = new Map<string, Profile>();
       allProfiles.forEach(p => profileMap.set(p.id, p));
 
-      // Create map of drivers
+      // Create map of drivers from real database records
       const driverMap = new Map<string, Driver>();
 
       rawDrivers.forEach(d => {
@@ -99,9 +115,9 @@ const AdminContent: React.FC = () => {
           profile_id: pId,
           id: d.id,
           terminal_id: d.terminal_id,
-          plate_number: d.plate_number || 'ABC 1234',
+          plate_number: d.plate_number || 'N/A',
           body_number: d.body_number,
-          tricycle_model: d.tricycle_model || 'Standard Tricycle',
+          tricycle_model: d.tricycle_model || 'Tricycle',
           verification_status: localStatus || (d.verification_status as VerificationStatus) || 'pending',
           rejection_reason: localRejection || undefined,
           rating: d.rating_avg || d.rating || 5.0,
@@ -114,19 +130,18 @@ const AdminContent: React.FC = () => {
         });
       });
 
-      // Merge any driver who registered in profiles
+      // Merge drivers who registered in profiles
       driverProfiles.forEach(p => {
         const localStatus = localStorage.getItem(`pasada_driver_status_${p.id}`) as VerificationStatus | null;
         const localRejection = localStorage.getItem(`pasada_driver_rejection_${p.id}`);
 
         if (!driverMap.has(p.id)) {
-          const generatedPlate = `BG-${Math.abs(p.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 37 % 90000 + 10000)}`;
           driverMap.set(p.id, {
             profile_id: p.id,
             id: p.id,
             terminal_id: null,
-            plate_number: generatedPlate,
-            tricycle_model: 'Standard Tricycle',
+            plate_number: p.phone_number || 'Pending Assignment',
+            tricycle_model: 'Tricycle',
             verification_status: localStatus || 'pending',
             rejection_reason: localRejection || undefined,
             rating: 5.0,
@@ -145,36 +160,6 @@ const AdminContent: React.FC = () => {
         }
       });
 
-      // Merge any driver in pasada_registered_users cache
-      try {
-        const regMap = JSON.parse(localStorage.getItem('pasada_registered_users') || '{}');
-        for (const k of Object.keys(regMap)) {
-          const item = regMap[k];
-          if (item?.profile?.role === 'driver' && item.profile?.id) {
-            const pId = item.profile.id;
-            const localSavedStatus = (localStorage.getItem(`pasada_driver_status_${pId}`) as VerificationStatus) || item.driverProfile?.verification_status || 'pending';
-            if (!driverMap.has(pId)) {
-              driverMap.set(pId, {
-                profile_id: pId,
-                id: pId,
-                terminal_id: null,
-                plate_number: item.driverProfile?.plate_number || 'BG-99999',
-                body_number: item.driverProfile?.body_number || '0000',
-                tricycle_model: item.driverProfile?.tricycle_model || 'Standard Tricycle',
-                verification_status: localSavedStatus,
-                rating: item.driverProfile?.rating_avg || 5.0,
-                total_trips: item.driverProfile?.total_trips || 0,
-                profile: item.profile,
-                terminal: undefined
-              });
-            } else if (localSavedStatus === 'approved') {
-              const existing = driverMap.get(pId)!;
-              existing.verification_status = 'approved';
-            }
-          }
-        }
-      } catch {}
-
       setDrivers(Array.from(driverMap.values()));
 
       if (resLocationFares) {
@@ -192,16 +177,16 @@ const AdminContent: React.FC = () => {
         setBookings(resBookings.data as Booking[]);
       }
 
-      // Map complaints cleanly with names & body numbers
+      // Map complaints cleanly with real names & body numbers
       const rawComplaints = (resComplaints.data as any[]) || [];
       const mappedComplaints: Complaint[] = rawComplaints.map(c => {
         const pass = profileMap.get(c.passenger_id);
         const drv = c.driver_id ? (driverMap.get(c.driver_id) || Array.from(driverMap.values()).find(d => d.id === c.driver_id)) : undefined;
         return {
           ...c,
-          passenger_name: pass?.full_name || c.passenger_name || 'Ka-Pasada Commuter',
-          driver_name: drv?.profile?.full_name || c.driver_name || 'Reported Driver',
-          driver_body_number: drv?.body_number || drv?.plate_number || c.driver_body_number || '0142',
+          passenger_name: pass?.full_name || c.passenger_name || 'Passenger',
+          driver_name: drv?.profile?.full_name || c.driver_name || 'Driver',
+          driver_body_number: drv?.body_number || drv?.plate_number || c.driver_body_number || 'N/A',
           passenger: c.passenger || pass || undefined,
           driver: c.driver || drv || undefined
         };
@@ -219,6 +204,10 @@ const AdminContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!isConfigured) {
+      return;
+    }
+
     fetchLiveData();
 
     // Realtime postgres changes
@@ -241,8 +230,16 @@ const AdminContent: React.FC = () => {
       })
       .subscribe();
 
+    const handleAuditLogAdded = (e: any) => {
+      if (e.detail) {
+        setAuditLogs(prev => [e.detail, ...prev.filter(l => l.id !== e.detail.id)]);
+      }
+    };
+    window.addEventListener('pasada_audit_log_added', handleAuditLogAdded);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('pasada_audit_log_added', handleAuditLogAdded);
     };
   }, [fetchLiveData]);
 
@@ -275,39 +272,19 @@ const AdminContent: React.FC = () => {
     }
 
     // Log in Audit Trail
-    const log: AdminAction = {
-      id: `a-${Date.now()}`,
-      admin_id: user.id,
-      action_type: 'SAVE_LOCATION_FARE',
-      target_table: 'location_fares',
-      target_id: res.data?.id,
-      details_json: { 
-        location: fareData.location_name, 
-        standard_fare: fareData.standard_fare, 
-        proximity_radius_meters: fareData.proximity_radius_meters,
-        icon: fareData.icon || 'pin'
-      },
-      created_at: new Date().toISOString(),
-      admin: user
-    };
-    setAuditLogs(prev => [log, ...prev]);
+    await logAdminMovement(user, 'SAVE_LOCATION_FARE', 'location_fares', res.data?.id, { 
+      location: fareData.location_name, 
+      standard_fare: fareData.standard_fare, 
+      proximity_radius_meters: fareData.proximity_radius_meters,
+      icon: fareData.icon || 'pin'
+    });
   };
 
   const handleDeleteLocationFare = async (id: string) => {
     await deleteLocationFare(id);
     setLocationFares(prev => prev.filter(f => f.id !== id));
 
-    const log: AdminAction = {
-      id: `a-${Date.now()}`,
-      admin_id: user.id,
-      action_type: 'DELETE_LOCATION_FARE',
-      target_table: 'location_fares',
-      target_id: id,
-      details_json: { id },
-      created_at: new Date().toISOString(),
-      admin: user
-    };
-    setAuditLogs(prev => [log, ...prev]);
+    await logAdminMovement(user, 'DELETE_LOCATION_FARE', 'location_fares', id, { id });
   };
 
   const handleUpdateFare = async (updated: FareMatrix) => {
@@ -324,17 +301,11 @@ const AdminContent: React.FC = () => {
     }
     
     // Log in Audit Trail
-    const log: AdminAction = {
-      id: `a-${Date.now()}`,
-      admin_id: user.id,
-      action_type: 'UPDATE_FARE_MATRIX',
-      target_table: 'fare_matrix',
-      target_id: updated.id,
-      details_json: { terminal: updated.origin_terminal?.name, base_fare: updated.base_fare, per_km_rate: updated.per_km_rate },
-      created_at: new Date().toISOString(),
-      admin: user
-    };
-    setAuditLogs(prev => [log, ...prev]);
+    await logAdminMovement(user, 'UPDATE_FARE_MATRIX', 'fare_matrix', updated.id, { 
+      terminal: updated.origin_terminal?.name, 
+      base_fare: updated.base_fare, 
+      per_km_rate: updated.per_km_rate 
+    });
   };
 
   const handleAddTerminal = async (newTerminal: Terminal) => {
@@ -352,7 +323,7 @@ const AdminContent: React.FC = () => {
       const { data, error } = await supabase.from('terminals').insert(payload).select().single();
       if (error) {
         console.error('Error adding terminal in DB:', error);
-        alert(`Failed to save terminal to database: ${error.message}`);
+        notifyError('Terminal Registration Note', error.message);
         return;
       }
       
@@ -364,10 +335,16 @@ const AdminContent: React.FC = () => {
           lng: Number(data.lng),
           coverage_radius_km: newTerminal.coverage_radius_km || 3.5
         }]);
+
+        await logAdminMovement(user, 'ADD_TERMINAL', 'terminals', data.id, {
+          name: newTerminal.name,
+          code: newTerminal.code,
+          base_fare: newTerminal.base_fare
+        });
       }
     } catch (e: any) {
       console.error('Error adding terminal in DB:', e);
-      alert(`Failed to save terminal: ${e.message || e}`);
+      notifyError('Terminal Registration Note', e.message || String(e));
     }
   };
 
@@ -382,10 +359,17 @@ const AdminContent: React.FC = () => {
 
       if (error) {
         console.error('Error updating terminal in DB:', error);
-        alert(`Failed to update terminal: ${error.message}`);
+        notifyError('Terminal Update Note', error.message);
+      } else {
+        await logAdminMovement(user, 'UPDATE_TERMINAL', 'terminals', updated.id, {
+          name: updated.name,
+          lat: updated.lat,
+          lng: updated.lng
+        });
       }
     } catch (e: any) {
       console.error('Error updating terminal in DB:', e);
+      notifyError('Terminal Update Note', e.message || String(e));
     }
   };
 
@@ -399,22 +383,18 @@ const AdminContent: React.FC = () => {
     }
 
     const driver = drivers.find(d => d.profile_id === profileId || d.id === profileId);
-    const log: AdminAction = {
-      id: `a-${Date.now()}`,
-      admin_id: user.id,
-      action_type: status === 'approved' ? 'APPROVE_DRIVER' : status === 'suspended' ? 'SUSPEND_DRIVER' : 'REJECT_DRIVER',
-      target_table: 'drivers',
-      target_id: profileId,
-      details_json: { 
+    await logAdminMovement(
+      user,
+      status === 'approved' ? 'APPROVE_DRIVER' : status === 'suspended' ? 'SUSPEND_DRIVER' : 'REJECT_DRIVER',
+      'drivers',
+      profileId,
+      { 
         driver_name: driver?.profile?.full_name, 
         plate_number: driver?.plate_number, 
         new_status: status,
         rejection_reason: reason 
-      },
-      created_at: new Date().toISOString(),
-      admin: user
-    };
-    setAuditLogs(prev => [log, ...prev]);
+      }
+    );
   };
 
   const handleUpdateComplaint = async (id: string, status: ComplaintStatus, notes?: string) => {
@@ -426,17 +406,11 @@ const AdminContent: React.FC = () => {
       console.error('Error updating complaint in DB:', e);
     }
 
-    const log: AdminAction = {
-      id: `a-${Date.now()}`,
-      admin_id: user.id,
-      action_type: 'RESOLVE_COMPLAINT',
-      target_table: 'complaints',
-      target_id: id,
-      details_json: { complaint_id: id, status, resolution_notes: notes },
-      created_at: new Date().toISOString(),
-      admin: user
-    };
-    setAuditLogs(prev => [log, ...prev]);
+    await logAdminMovement(user, 'RESOLVE_COMPLAINT', 'complaints', id, { 
+      complaint_id: id, 
+      status, 
+      resolution_notes: notes 
+    });
   };
 
   const handleAddTouristSpot = async (newSpot: TouristSpot) => {
@@ -454,14 +428,19 @@ const AdminContent: React.FC = () => {
       const { data, error } = await supabase.from('tourist_spots').insert(payload).select().single();
       if (error) {
         console.error('Error adding tourist spot in DB:', error);
-        alert(`Failed to save tourist spot: ${error.message}`);
+        notifyError('Destination Note', error.message);
         return;
       }
       if (data) {
         setTouristSpots(prev => [...prev, data as TouristSpot]);
+        await logAdminMovement(user, 'ADD_TOURIST_SPOT', 'tourist_spots', data.id, {
+          name: newSpot.name,
+          category: newSpot.category
+        });
       }
     } catch (e: any) {
       console.error('Error adding tourist spot in DB:', e);
+      notifyError('Destination Note', e.message || String(e));
     }
   };
 
@@ -479,10 +458,15 @@ const AdminContent: React.FC = () => {
 
       if (error) {
         console.error('Error updating tourist spot in DB:', error);
-        alert(`Failed to update spot: ${error.message}`);
+        notifyError('Destination Note', error.message);
+      } else {
+        await logAdminMovement(user, 'UPDATE_TOURIST_SPOT', 'tourist_spots', updated.id, {
+          name: updated.name
+        });
       }
     } catch (e: any) {
       console.error('Error updating tourist spot in DB:', e);
+      notifyError('Destination Note', e.message || String(e));
     }
   };
 
@@ -511,6 +495,21 @@ const AdminContent: React.FC = () => {
             setSearchQuery={setSearchQuery}
             onRefreshData={fetchLiveData}
           />
+
+          {!isConfigured && (
+            <div className="mx-6 mt-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold">Supabase Database Connection Required</p>
+                <p className="text-xs text-amber-800 dark:text-amber-300/90 mt-0.5 leading-relaxed">
+                  Your <code className="px-1 py-0.5 rounded bg-amber-500/20 font-mono text-[11px]">.env</code> file currently contains placeholder credentials (<code className="px-1 py-0.5 rounded bg-amber-500/20 font-mono text-[11px]">https://your-project-id.supabase.co</code>). 
+                  To load live transit data from your database, update <code className="px-1 py-0.5 rounded bg-amber-500/20 font-mono text-[11px]">VITE_SUPABASE_URL</code> and <code className="px-1 py-0.5 rounded bg-amber-500/20 font-mono text-[11px]">VITE_SUPABASE_ANON_KEY</code> with your project API settings.
+                </p>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'dashboard' && (
             <DashboardPage
@@ -564,8 +563,21 @@ const AdminContent: React.FC = () => {
             />
           )}
 
+          {activeTab === 'admin-users' && (
+            <AdminUsersPage
+              currentUser={user}
+              onNavigateToAuditTrail={(filterQuery) => {
+                setAuditFilterQuery(filterQuery || '');
+                setActiveTab('audit-logs');
+              }}
+            />
+          )}
+
           {activeTab === 'audit-logs' && (
-            <AuditLogsPage auditLogs={auditLogs} />
+            <AuditLogsPage 
+              auditLogs={auditLogs} 
+              initialSearchQuery={auditFilterQuery} 
+            />
           )}
         </div>
       </div>

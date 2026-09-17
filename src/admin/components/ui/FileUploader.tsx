@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadCloud, CheckCircle, FileAudio, FileText } from 'lucide-react';
+import { UploadCloud, CheckCircle, FileAudio, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from '../../../api/supabaseClient';
 
 interface FileUploaderProps {
@@ -16,30 +16,32 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState<string | null>(currentUrl ? currentUrl.split('/').pop() || 'Existing File' : null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
     setUploading(true);
+    setUploadError(null);
     setFileName(file.name);
 
     try {
       const fileExt = file.name.split('.').pop();
       const filePath = `${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadErr } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadErr) throw uploadErr;
 
       const { data: { publicUrl } } = supabase.storage
         .from(bucketName)
         .getPublicUrl(filePath);
 
       onUploadComplete(publicUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error('File upload error:', err);
-      alert('Failed to upload file. Check storage bucket permissions.');
+      setUploadError(err.message || 'Failed to upload file. Check storage bucket permissions.');
     } finally {
       setUploading(false);
     }
@@ -74,7 +76,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <label htmlFor={`file-input-${bucketName}`} style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
           {uploading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <UploadCloud size={28} className="animate-bounce" color="var(--accent-primary)" />
+              <UploadCloud size={28} className="animate-pulse" color="var(--accent-primary)" />
               <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Uploading to Supabase Storage ({bucketName})...</span>
             </div>
           ) : fileName ? (
@@ -100,6 +102,22 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           )}
         </label>
       </div>
+      {uploadError && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: 8,
+          fontSize: '0.75rem',
+          color: '#ef4444',
+          background: 'rgba(239, 68, 68, 0.08)',
+          padding: '6px 10px',
+          borderRadius: 8
+        }}>
+          <AlertCircle size={14} style={{ flexShrink: 0 }} />
+          <span>{uploadError}</span>
+        </div>
+      )}
     </div>
   );
 };

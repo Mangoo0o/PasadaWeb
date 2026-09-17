@@ -151,7 +151,7 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
+            <span className="p-2 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400">
               <Compass size={24} />
             </span>
             <span>Tourist Attractions &amp; Audio Guide</span>
@@ -172,14 +172,14 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       {/* Spots Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {spots.length === 0 ? (
-          <div className="col-span-full text-center p-12 text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow">
+          <div className="col-span-full text-center p-12 text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow">
             No tourist destinations registered in database yet.
           </div>
         ) : (
           spots.map((spot) => (
             <div 
               key={spot.id} 
-              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
+              className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 ambient-shadow overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
             >
               {(spot.cover_image_url || spot.image_url) && (
                 <div className="h-44 relative overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -238,18 +238,29 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
         )}
       </div>
 
-      {/* Add / Edit Destination Modal with 2-Column Layout (Map Left, Inputs Right) */}
+      {/* Add / Edit Destination Modal with 2-Column Layout */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 880, width: '92%' }}>
+          <div className="modal-content max-w-4xl w-[94%]" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MapPin size={20} color="var(--accent-primary)" />
-                {selectedSpot ? 'Edit Destination Details' : 'Register New Tourist Spot'}
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <Compass size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    {selectedSpot ? 'Edit Destination Details' : 'Register New Tourist Landmark'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Pin landmark coordinates, upload spoken audio guides, and configure municipal explore showcase.
+                  </p>
+                </div>
+              </div>
+
               <button 
+                type="button"
                 onClick={() => setIsModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={18} />
@@ -257,34 +268,21 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
             </div>
 
             <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: 24,
-                  alignItems: 'start'
-                }}>
+              <div className="modal-body space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                   {/* LEFT COLUMN: Map Pin Picker */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 0 }}>
-                        <Crosshair size={16} color="var(--accent-primary)" />
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                        <Crosshair size={15} className="text-[#0052d1] dark:text-sky-400" />
                         <span>Pin Landmark on Map</span>
                       </label>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--info)', fontWeight: 600 }}>
+                      <span className="text-[11px] text-slate-400 font-medium">
                         Drag pin or click map
                       </span>
                     </div>
 
-                    <div style={{
-                      height: 320,
-                      width: '100%',
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      border: '2px solid var(--border-color)',
-                      position: 'relative',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                    }}>
+                    <div className="h-72 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner">
                       <MapContainer
                         center={[lat, lng]}
                         zoom={14}
@@ -306,22 +304,12 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                       </MapContainer>
                     </div>
 
-                    <div style={{
-                      marginTop: 8,
-                      padding: '6px 12px',
-                      background: 'var(--bg-primary)',
-                      borderRadius: 8,
-                      border: '1px solid var(--border-color)',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      color: 'var(--text-muted)'
-                    }}>
-                      <span>Selected: <strong style={{ color: 'var(--text-main)' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</strong></span>
-                      <span>Category: <strong style={{ color: 'var(--accent-primary)' }}>{category}</strong></span>
+                    <div className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs flex justify-between text-slate-500 dark:text-slate-400">
+                      <span>Coordinates: <strong className="text-slate-900 dark:text-white font-mono">{lat.toFixed(5)}, {lng.toFixed(5)}</strong></span>
+                      <span>Category: <strong className="text-[#0052d1] dark:text-sky-400">{category}</strong></span>
                     </div>
 
-                    <div style={{ marginTop: 14 }}>
+                    <div className="pt-1">
                       <FileUploader
                         bucketName="tourist-audio"
                         accept="audio/*,.mp3,.wav,.m4a"
@@ -333,79 +321,91 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   </div>
 
                   {/* RIGHT COLUMN: Form Inputs */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Destination Name</label>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Destination Name *
+                      </label>
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Lomboy Grape Farm"
-                        className="input-field"
+                        placeholder="e.g. Lomboy Grape Farm, Bauang Beach"
+                        className="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                       />
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Category</label>
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Category
+                      </label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="input-field h-9 rounded-md"
+                        className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-[#0052d1] cursor-pointer"
                       >
                         <option value="Agritourism">Agritourism / Grape Picking</option>
-                        <option value="Beach & Nature">Beach & Nature</option>
+                        <option value="Beach &amp; Nature">Beach &amp; Nature</option>
                         <option value="Heritage Site">Heritage Site / Historical Church</option>
-                        <option value="Food & Culture">Food & Culture</option>
+                        <option value="Food &amp; Culture">Food &amp; Culture</option>
                       </select>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Description & Heritage Notes</label>
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Description &amp; Heritage Notes *
+                      </label>
                       <textarea
                         rows={3}
                         required
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Detailed history and highlights..."
-                        className="input-field"
+                        placeholder="Detailed history, cultural background, and visitor highlights..."
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1] resize-none"
                       />
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Opening Hours</label>
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                        Opening Hours *
+                      </label>
                       <input
                         type="text"
                         required
                         value={openingHours}
                         onChange={(e) => setOpeningHours(e.target.value)}
                         placeholder="e.g. 07:00 AM - 05:00 PM Daily"
-                        className="input-field"
+                        className="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Latitude</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          Latitude
+                        </label>
                         <input
                           type="number"
                           step="any"
                           required
                           value={lat}
                           onChange={(e) => setLat(parseFloat(e.target.value))}
-                          className="input-field"
+                          className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                       </div>
 
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Longitude</label>
+                      <div>
+                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          Longitude
+                        </label>
                         <input
                           type="number"
                           step="any"
                           required
                           value={lng}
                           onChange={(e) => setLng(parseFloat(e.target.value))}
-                          className="input-field"
+                          className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                       </div>
                     </div>
@@ -413,17 +413,17 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                 </div>
               </div>
 
-              <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="modal-footer">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                  className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                  className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
                 >
                   <Check size={15} /> Save Destination
                 </button>
@@ -436,49 +436,71 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
       {/* QR Code Signage Export Modal */}
       {isQRModalOpen && selectedSpot && (
         <div className="modal-overlay" onClick={() => setIsQRModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, borderRadius: 8 }}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Tourist Landmark QR Plaque</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <QrCode size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Official QR Landmark Signage
+                  </h3>
+                  <p className="text-xs text-slate-400 truncate max-w-[240px]">
+                    {selectedSpot.name}
+                  </p>
+                </div>
+              </div>
+
               <button 
+                type="button"
                 onClick={() => setIsQRModalOpen(false)} 
-                className="w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="modal-body" style={{ textAlign: 'center', background: '#fff', color: '#191c1e', padding: 24 }}>
-              <div style={{ fontWeight: 900, fontSize: '1.2rem', color: '#00346F' }}>
-                PASADAGUIDE TOURIST QR
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#666', marginTop: 4 }}>
-                {selectedSpot.name}
+            <div className="modal-body text-center bg-slate-50 dark:bg-slate-900/50 p-6 space-y-4">
+              <div className="p-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-3 inline-block mx-auto max-w-xs w-full">
+                <div className="text-[10px] font-black uppercase tracking-widest text-[#0052d1] dark:text-sky-400">
+                  PASADAGUIDE MUNICIPAL TOURISM
+                </div>
+                <div className="font-black text-sm text-slate-900 dark:text-white">
+                  {selectedSpot.name}
+                </div>
+
+                <div className="p-4 bg-white rounded-md border-2 border-slate-200 inline-block shadow-inner">
+                  <QRCodeSVG
+                    value={`https://pasadaguide.ph/spot/${selectedSpot.id}`}
+                    size={180}
+                    level="H"
+                  />
+                </div>
+
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  Scan for audio guide &amp; fare matrix
+                </div>
               </div>
 
-              <div style={{ margin: '20px auto', display: 'inline-block', padding: 16, background: '#f8fafc', borderRadius: 8, border: '2px solid #e2e8f0' }}>
-                <QRCodeSVG
-                  value={`https://pasadaguide.ph/spot/${selectedSpot.id}`}
-                  size={180}
-                  level="H"
-                />
-              </div>
-
-              <p style={{ fontSize: '0.78rem', color: '#444' }}>
-                Print and mount this official QR plaque at landmark entrance for instant passenger audio playback and regulated tricycle fare calculation.
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Print and mount this official QR plaque at the destination gate for direct commuter audio playback and regulated tariff calculation.
               </p>
             </div>
 
-            <div className="modal-footer flex items-center justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="modal-footer">
               <button 
+                type="button" 
                 onClick={() => window.print()} 
-                className="h-9 px-4 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
+                className="h-9 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95"
               >
                 Print Plaque
               </button>
               <button 
+                type="button" 
                 onClick={() => setIsQRModalOpen(false)} 
-                className="h-9 px-4 rounded-md bg-[#0052d1] hover:bg-[#0041a8] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-xs"
+                className="h-9 px-5 rounded-lg bg-[#0052d1] hover:bg-[#206afa] text-white font-bold text-xs cursor-pointer inline-flex items-center transition-all active:scale-95 shadow-md shadow-[#0052d1]/20"
               >
                 Close
               </button>
