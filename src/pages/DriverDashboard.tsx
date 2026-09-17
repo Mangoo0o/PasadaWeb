@@ -22,6 +22,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
+import { getDistanceKm, MAX_DISPATCH_RADIUS_KM } from '../services/geoProximityService';
 
 import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
 
@@ -39,9 +40,40 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
   };
 
   const isOnline = driverProfile?.is_available ?? true;
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number }>({
+    lat: Number(driverProfile?.current_lat) || 16.5333,
+    lng: Number(driverProfile?.current_lng) || 120.3333
+  });
+  const [rawDispatches, setRawDispatches] = useState<Booking[]>([]);
   const [openDispatches, setOpenDispatches] = useState<Booking[]>([]);
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [activeOngoingTrip, setActiveOngoingTrip] = useState<Booking | null>(null);
+
+  // Live driver location tracking
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setDriverLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, []);
+
+  // Sync external/simulated location updates
+  useEffect(() => {
+    const handleLocUpdate = (e: any) => {
+      const payload = e?.detail;
+      if (payload?.lat && payload?.lng && (!driverProfile?.id || payload.driverId === driverProfile.id)) {
+        setDriverLocation({ lat: payload.lat, lng: payload.lng });
+      }
+    };
+    window.addEventListener('pasada_driver_location', handleLocUpdate);
+    return () => window.removeEventListener('pasada_driver_location', handleLocUpdate);
+  }, [driverProfile?.id]);
 
   useEffect(() => {
     const loadDispatches = async () => {
@@ -50,7 +82,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
           fetchOpenDispatches(),
           fetchActiveTrip(user.id, true)
         ]);
-        setOpenDispatches(dispatches);
+        setRawDispatches(dispatches);
         setActiveOngoingTrip(active);
       }
     };
@@ -64,7 +96,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       }
 
       if (detail.status && detail.status !== 'searching') {
-        setOpenDispatches(prev => prev.filter(b => b.id !== detail.id));
+        setRawDispatches(prev => prev.filter(b => b.id !== detail.id));
         setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
         try {
           const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
@@ -79,13 +111,22 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       }
     });
 
-    // Relaxed 30-second synchronization heartbeat instead of aggressive 3s polling
     const interval = setInterval(loadDispatches, 30000);
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
   }, [user?.id]);
+
+  // Dynamic 1.0 km Proximity Filter
+  useEffect(() => {
+    const filtered = rawDispatches.filter((bk) => {
+      if (!bk.origin_lat || !bk.origin_lng) return false;
+      const dist = getDistanceKm(driverLocation.lat, driverLocation.lng, bk.origin_lat, bk.origin_lng);
+      return dist <= MAX_DISPATCH_RADIUS_KM;
+    });
+    setOpenDispatches(filtered);
+  }, [rawDispatches, driverLocation.lat, driverLocation.lng]);
 
   // Auto-dismiss preview modal if booking was cancelled by passenger or accepted by another driver
   useEffect(() => {
@@ -353,11 +394,12 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       {previewBooking && (
         <BookingPreviewModal
           booking={previewBooking}
-          driverLat={driverProfile?.current_lat}
-          driverLng={driverProfile?.current_lng}
+          driverLat={driverLocation.lat}
+          driverLng={driverLocation.lng}
           onClose={() => setPreviewBooking(null)}
           onAccept={async (bk) => {
             setPreviewBooking(null);
+            setRawDispatches(prev => prev.filter(b => b.id !== bk.id));
             setOpenDispatches(prev => prev.filter(b => b.id !== bk.id));
             try {
               const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');

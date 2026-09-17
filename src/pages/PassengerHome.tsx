@@ -43,6 +43,7 @@ import {
 } from '../services/bookingService';
 import { setAppLanguage } from '../i18n/config';
 import { soundService } from '../services/soundNotificationService';
+import { getDistanceKm, MAX_DISPATCH_RADIUS_KM } from '../services/geoProximityService';
 import { InTripChatModal } from '../components/booking/InTripChatModal';
 import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
 import { subscribeToTripChat, fetchTripMessages } from '../services/tripChatService';
@@ -468,6 +469,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     }, 1200);
   };
 
+  const nearbyDriversWithin1Km = activeDrivers.filter(d => 
+    getDistanceKm(originLat, originLng, d.lat, d.lng) <= MAX_DISPATCH_RADIUS_KM
+  );
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
       {/* 1. Full Screen Interactive Map — position:fixed anchors to physical screen edge, behind status bar */}
@@ -710,21 +715,35 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
           {/* Searching Dispatch State */}
           {bookingState === 'searching' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-3 sm:p-4 text-center space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-3.5 sm:p-4 text-center space-y-3 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0052d1] animate-ping"></span>
+                  <span>1.0 KM RADAR DISPATCH</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                  {nearbyDriversWithin1Km.length > 0
+                    ? `${nearbyDriversWithin1Km.length} ${i18n.language === 'en' ? 'driver(s) in 1km' : 'drayber sa 1km'}`
+                    : (i18n.language === 'en' ? 'Scanning 1km zone...' : 'Naka-antabay sa 1km...')}
+                </span>
+              </div>
+
               <div className="flex items-center justify-center gap-2.5 sm:gap-3">
-                <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center">
+                <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
                   <div className="absolute inset-0 rounded-full bg-sky-200 animate-ping"></div>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0052d1] text-white flex items-center justify-center relative z-10 shadow">
-                    <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400] animate-bounce" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#0052d1] text-white flex items-center justify-center relative z-10 shadow">
+                    <Bike className="w-4 h-4 text-[#fcd400] animate-bounce" />
                   </div>
                 </div>
-                <div className="text-left min-w-0">
+                <div className="text-left min-w-0 flex-1">
                   <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                    {i18n.language === 'en' ? 'Searching for Driver in Bauang...' : 'Naghahanap ng Driver sa Bauang...'}
+                    {nearbyDriversWithin1Km.length > 0
+                      ? (i18n.language === 'en' ? 'Notifying drivers within 1.0 km...' : 'Inaabisuhan ang mga drayber sa 1.0 km...')
+                      : (i18n.language === 'en' ? 'Waiting for drivers in 1.0 km zone...' : 'Naka-antabay sa drayber sa 1.0 km...')}
                   </h4>
-                  <p className="text-[11px] sm:text-xs text-slate-500 truncate flex items-center gap-1.5 flex-wrap">
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 flex-wrap mt-0.5">
                     <span>{selectedLocationFare?.location_name || destinationName} •</span>
-                    <strong>₱{currentFare}.00</strong>
+                    <strong className="text-slate-700 dark:text-slate-200">₱{currentFare}.00</strong>
                     {isDiscountEligible && (
                       <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                         -20% {passengerTypeInfo.label}
@@ -733,6 +752,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   </p>
                 </div>
               </div>
+
+              {nearbyDriversWithin1Km.length === 0 && (
+                <div className="text-[10px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 p-2 rounded-xl border border-sky-200/70 dark:border-sky-800/60 text-left flex items-start gap-1.5 leading-tight">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400 shrink-0 mt-0.5" />
+                  <span>
+                    {i18n.language === 'en'
+                      ? 'No drivers currently inside 1.0 km. Your booking remains active and will instantly alert any driver who drives into your 1.0 km pickup area!'
+                      : 'Kasalukuyang walang drayber sa loob ng 1.0 km. Naka-abang ang iyong biyahe at agad aabisuhan ang sinumang drayber na papasok sa 1.0 km!'}
+                  </span>
+                </div>
+              )}
 
               <button
                 onClick={handleCancelBooking}

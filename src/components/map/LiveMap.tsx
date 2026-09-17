@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Terminal, LocationFare } from '../../types/database.types';
@@ -392,6 +392,21 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             </div>
           </Popup>
         </Marker>
+
+        {/* 1.0 km Dispatch Perimeter Radar Circle when Searching for Drivers */}
+        {bookingStatus === 'searching' && (
+          <Circle
+            center={[originLat, originLng]}
+            radius={1000}
+            pathOptions={{
+              color: '#0052d1',
+              fillColor: '#38bdf8',
+              fillOpacity: 0.14,
+              weight: 2,
+              dashArray: '6, 6'
+            }}
+          />
+        )}
 
         {/* Assigned Driver Marker (When Trip Active) */}
         {hasAssignedDriver && (

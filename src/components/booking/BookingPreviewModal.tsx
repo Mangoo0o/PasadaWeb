@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Booking } from '../../types/database.types';
 import { getPassengerTypeInfo, isDiscountEligibleType } from '../../services/fareService';
+import { getDistanceKm, formatProximityDistance, MAX_DISPATCH_RADIUS_KM } from '../../services/geoProximityService';
 
 interface BookingPreviewModalProps {
   booking: Booking | null;
@@ -152,7 +153,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
   onClose,
   onAccept,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!booking) return null;
 
   const passengerType = booking?.passenger?.passenger_type || (booking as any)?.passenger_type;
@@ -205,13 +206,13 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     destinationDropCoords,
   ]);
 
-  const driverDistanceToPickup = getGeoDistanceKm(
+  const driverDistanceToPickup = getDistanceKm(
     driverCoords[0],
     driverCoords[1],
     passengerPickupCoords[0],
     passengerPickupCoords[1]
   );
-  const isDriverNearby = driverDistanceToPickup <= 15; // within Bauang service area
+  const isDriverWithin1Km = driverDistanceToPickup <= MAX_DISPATCH_RADIUS_KM;
 
   useEffect(() => {
     let active = true;
@@ -229,7 +230,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
     return () => {
       active = false;
     };
-  }, [booking.id, driverCoords[0], driverCoords[1], isDriverNearby]);
+  }, [booking.id, driverCoords[0], driverCoords[1], isDriverWithin1Km]);
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 pb-16 sm:pb-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200 font-sans">
@@ -275,8 +276,8 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               dropoff={destinationDropCoords}
             />
 
-            {/* Marker 1: Driver Current Location (if nearby in Bauang) */}
-            {isDriverNearby && (
+            {/* Marker 1: Driver Current Location (if within 1.0 km) */}
+            {isDriverWithin1Km && (
               <Marker position={driverCoords} icon={createDriverTricycleIcon()}>
                 <Popup>
                   <div className="text-xs font-semibold">
@@ -307,8 +308,8 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               </Popup>
             </Marker>
 
-            {/* ═══════════ LEG 1: Driver to Passenger Road Path (Cyan / Sky Blue) (If Nearby) ═══════════ */}
-            {isDriverNearby && driverToPassengerRoad.length > 0 && (
+            {/* ═══════════ LEG 1: Driver to Passenger Road Path (Cyan / Sky Blue) (If Within 1.0 km) ═══════════ */}
+            {isDriverWithin1Km && driverToPassengerRoad.length > 0 && (
               <>
                 <Polyline
                   positions={driverToPassengerRoad}
@@ -422,11 +423,38 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
           )}
 
+          {/* 1.0 km Proximity Verification Badge */}
+          {isDriverWithin1Km ? (
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-[10px] text-[#003f87] dark:text-[#00C1FD] font-semibold">
+              <div className="flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-[#00A3FF]" />
+                <span>
+                  {formatProximityDistance(driverDistanceToPickup, i18n.language)} {i18n.language === 'en' ? 'to pickup' : 'papuntang sakayan'}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-black text-[9px]">
+                {i18n.language === 'en' ? 'Within 1.0 km Zone' : 'Nasa 1.0 km Zone'}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
+              <span className="shrink-0 text-xs">⚠️</span>
+              <span>
+                {formatProximityDistance(driverDistanceToPickup, i18n.language)} {i18n.language === 'en' ? 'away. You are outside the 1.0 km pickup zone for this request.' : 'ang layo. Nasa labas ka na ng 1.0 km pickup zone para sa biyaheng ito.'}
+              </span>
+            </div>
+          )}
+
           {/* Action CTA Button */}
           <div>
             <button
               onClick={() => onAccept(booking)}
-              className="w-full py-2.5 sm:py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#003f87]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+              disabled={!isDriverWithin1Km}
+              className={`w-full py-2.5 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition-all ${
+                isDriverWithin1Km
+                  ? 'bg-[#003f87] hover:bg-[#0056b3] text-white shadow-[#003f87]/25 active:scale-98 cursor-pointer'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-75'
+              }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
               <span>{t('driver.acceptModalBtn', 'Tanggapin ang Biyahe')}</span>
