@@ -233,6 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } else if (profile.role === 'admin' || (profile.role as string) === 'super_admin') {
           localStorage.setItem('pasada_active_tab', 'admin');
+          localStorage.setItem('pasada_admin_profile', JSON.stringify(resolvedProfile));
         } else {
           localStorage.setItem('pasada_active_tab', 'home');
         }
@@ -273,8 +274,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch {}
           setDriverProfile(defaultDriver);
           localStorage.setItem('pasada_auth_driver', JSON.stringify(defaultDriver));
-        } else if (metaRole === 'admin') {
+        } else if (metaRole === 'admin' || (metaRole as string) === 'super_admin') {
           localStorage.setItem('pasada_active_tab', 'admin');
+          localStorage.setItem('pasada_admin_profile', JSON.stringify(metaProfile));
         } else {
           localStorage.setItem('pasada_active_tab', 'home');
         }

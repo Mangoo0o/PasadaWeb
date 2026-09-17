@@ -24,15 +24,19 @@ export const App: React.FC = () => {
   };
 
   const [activeTab, setActiveTab] = useState<string>(() => {
+    // 1. Role priority: Admins and Super Admins always default to admin dashboard
+    if (user?.role === 'admin' || (user?.role as string) === 'super_admin') {
+      return 'admin';
+    }
+    // 2. Drivers default to driver portal
+    if (user?.role === 'driver') {
+      const saved = localStorage.getItem('pasada_active_tab');
+      return (saved && ['driver', 'dispatch', 'profile', 'history'].includes(saved)) ? saved : 'driver';
+    }
+    // 3. Passengers default to explore home
     const saved = localStorage.getItem('pasada_active_tab');
-    if (user?.role === 'driver' && ['driver', 'dispatch', 'profile', 'history'].includes(saved || '')) {
-      return saved || 'driver';
-    }
-    if (user?.role === 'passenger' && ['home', 'pasada', 'history', 'profile'].includes(saved || '')) {
-      return saved || 'home';
-    }
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
-      return saved || 'admin';
+    if (saved && ['home', 'pasada', 'history', 'profile'].includes(saved)) {
+      return saved;
     }
     return getRoleDefaultTab(user?.role);
   });
@@ -47,21 +51,21 @@ export const App: React.FC = () => {
     handleSetActiveTab('pasada');
   };
 
-  // Sync role-based tab whenever user logs in or switches account
+  // Role Gatekeeper: Check role first and direct to corresponding primary portal
   useEffect(() => {
-    if (user?.role === 'driver') {
+    if (!user) return;
+
+    if (user.role === 'admin' || (user.role as string) === 'super_admin') {
+      // Always direct Super Admin and Admin to the Admin Dashboard
+      handleSetActiveTab('admin');
+    } else if (user.role === 'driver') {
       const savedTab = localStorage.getItem('pasada_active_tab');
-      if (!savedTab || !['driver', 'dispatch', 'profile', 'history'].includes(savedTab) || savedTab === 'home' || savedTab === 'pasada') {
+      if (!savedTab || !['driver', 'dispatch', 'profile', 'history'].includes(savedTab) || savedTab === 'home' || savedTab === 'pasada' || savedTab === 'admin') {
         handleSetActiveTab('driver');
       }
-    } else if (user?.role === 'admin' || user?.role === 'super_admin') {
+    } else if (user.role === 'passenger') {
       const savedTab = localStorage.getItem('pasada_active_tab');
-      if (!savedTab || !['admin', 'home', 'pasada', 'history', 'profile'].includes(savedTab)) {
-        handleSetActiveTab('admin');
-      }
-    } else if (user?.role === 'passenger') {
-      const savedTab = localStorage.getItem('pasada_active_tab');
-      if (!savedTab || !['home', 'pasada', 'history', 'profile'].includes(savedTab) || ['driver', 'dispatch'].includes(savedTab)) {
+      if (!savedTab || !['home', 'pasada', 'history', 'profile'].includes(savedTab) || ['driver', 'dispatch', 'admin'].includes(savedTab)) {
         handleSetActiveTab('home');
       }
     }
@@ -114,6 +118,12 @@ export const App: React.FC = () => {
     // Role guard: if user is passenger and on driver-only tabs, render DiscoveryHome
     if (user?.role === 'passenger' && (activeTab === 'driver' || activeTab === 'dispatch')) {
       return <DiscoveryHome setActiveTab={handleSetActiveTab} onSelectDestination={handleSelectSpotForRide} />;
+    }
+    // Role guard: if non-admin tries to access admin tab, redirect to appropriate home
+    if (activeTab === 'admin' && user?.role !== 'admin' && (user?.role as string) !== 'super_admin') {
+      return user?.role === 'driver' 
+        ? <DriverDashboard setActiveTab={handleSetActiveTab} />
+        : <DiscoveryHome setActiveTab={handleSetActiveTab} onSelectDestination={handleSelectSpotForRide} />;
     }
 
     switch (activeTab) {

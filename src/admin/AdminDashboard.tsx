@@ -13,6 +13,7 @@ import { BookingsPage } from './pages/BookingsPage';
 import { TouristSpotsPage } from './pages/TouristSpotsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
+import { LoginPage } from './pages/LoginPage';
 
 import { supabase, isConfigured } from '../api/supabaseClient';
 import { fetchLocationFares, saveLocationFare, deleteLocationFare } from '../services/fareService';
@@ -270,8 +271,9 @@ const AdminContent: React.FC = () => {
     );
   }
 
-  if (!user) {
-    return null;
+  // Role Gatekeeper: Check role first. Only super_admin or admin can access the admin dashboard
+  if (!user || (user.role !== 'admin' && (user.role as string) !== 'super_admin')) {
+    return <LoginPage />;
   }
 
   // --- Actions & State Updates ---

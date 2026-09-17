@@ -31,13 +31,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (profile) {
-        const fullProfile: Profile = {
-          ...profile,
-          email: email || profile.email
-        };
-        setUser(fullProfile);
-        localStorage.setItem('pasada_admin_profile', JSON.stringify(fullProfile));
-        return fullProfile;
+        if (profile.role === 'admin' || (profile.role as string) === 'super_admin') {
+          const fullProfile: Profile = {
+            ...profile,
+            email: email || profile.email
+          };
+          setUser(fullProfile);
+          localStorage.setItem('pasada_admin_profile', JSON.stringify(fullProfile));
+          return fullProfile;
+        } else {
+          setUser(null);
+          localStorage.removeItem('pasada_admin_profile');
+          return null;
+        }
       }
     } catch (err) {
       console.error('Error fetching admin profile:', err);

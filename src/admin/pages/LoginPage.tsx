@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowRight, Lock, Mail, User, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AdminAuthContext';
 
@@ -14,6 +14,21 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const clearForm = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setShowPassword(false);
+  };
+
+  // Always ensure form inputs are completely blank on mount
+  useEffect(() => {
+    clearForm();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,14 +51,20 @@ export const LoginPage: React.FC = () => {
 
       const res = await registerAdmin(email, password, fullName);
       if (!res.success) {
+        setPassword('');
+        setConfirmPassword('');
         setErrorMessage(res.error || 'Failed to create Super Admin account.');
       } else {
+        clearForm();
         setSuccessMessage('Super Admin account created successfully! Logging in...');
       }
     } else {
       const res = await login(email, password);
       if (!res.success) {
+        setPassword('');
         setErrorMessage(res.error || 'Invalid credentials or login failed.');
+      } else {
+        clearForm();
       }
     }
   };
@@ -132,7 +153,7 @@ export const LoginPage: React.FC = () => {
         }}>
           <button
             type="button"
-            onClick={() => { setActiveTab('signin'); setErrorMessage(null); }}
+            onClick={() => { setActiveTab('signin'); clearForm(); }}
             style={{
               flex: 1,
               padding: '8px 0',
@@ -152,7 +173,7 @@ export const LoginPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => { setActiveTab('signup'); setErrorMessage(null); }}
+            onClick={() => { setActiveTab('signup'); clearForm(); }}
             style={{
               flex: 1,
               padding: '8px 0',
@@ -210,7 +231,7 @@ export const LoginPage: React.FC = () => {
         )}
 
         {/* Form Container */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form onSubmit={handleSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {activeTab === 'signup' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>
@@ -221,6 +242,7 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   placeholder="e.g. Engr. Juan Dela Cruz (BPLO/MITO)"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -248,19 +270,20 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 required
+                autoComplete="off"
                 placeholder="admin@bauang.gov.ph"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
-                  width: '100%',
-                  padding: '9px 12px 9px 36px',
-                  borderRadius: 6,
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.86rem',
-                  color: '#0f172a',
-                  outline: 'none',
-                  background: '#f8fafc'
-                }}
+                    width: '100%',
+                    padding: '9px 12px 9px 36px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.86rem',
+                    color: '#0f172a',
+                    outline: 'none',
+                    background: '#f8fafc'
+                  }}
               />
             </div>
           </div>
@@ -274,6 +297,7 @@ export const LoginPage: React.FC = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -317,6 +341,7 @@ export const LoginPage: React.FC = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
