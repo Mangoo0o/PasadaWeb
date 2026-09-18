@@ -263,9 +263,18 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
       await fetchTouristSpots();
 
+      const getFilteredDrivers = (driverList: Array<{ id: string; lat: number; lng: number; bodyNumber?: string }>) => {
+        let localDriverId: string | null = null;
+        try {
+          const cached = localStorage.getItem('pasada_auth_driver');
+          if (cached) localDriverId = JSON.parse(cached)?.id || null;
+        } catch {}
+        return driverList.filter(d => d.id !== user?.id && (!localDriverId || d.id !== localDriverId));
+      };
+
       const drivers = await fetchActiveDrivers();
       if (isMounted) {
-        setActiveDrivers(drivers);
+        setActiveDrivers(getFilteredDrivers(drivers));
       }
     };
 
@@ -276,7 +285,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     const interval = setInterval(async () => {
       const drivers = await fetchActiveDrivers();
       if (isMounted) {
-        setActiveDrivers(drivers);
+        let localDriverId: string | null = null;
+        try {
+          const cached = localStorage.getItem('pasada_auth_driver');
+          if (cached) localDriverId = JSON.parse(cached)?.id || null;
+        } catch {}
+        const filtered = drivers.filter(d => d.id !== user?.id && (!localDriverId || d.id !== localDriverId));
+        setActiveDrivers(filtered);
       }
     }, 10000);
 

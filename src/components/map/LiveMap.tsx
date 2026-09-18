@@ -41,18 +41,24 @@ const createTerminalIcon = () => {
 
 const createPickupIcon = () => {
   return L.divIcon({
-    className: 'custom-pickup-pin',
+    className: 'custom-passenger-location-pin',
     html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; width: 36px; height: 36px; background-color: rgba(0, 82, 209, 0.3); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="background-color: #0052d1; color: #fcd400; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,82,209,0.4); border: 2.5px solid #ffffff; z-index: 2;">
-          <div style="width: 8px; height: 8px; background-color: #fcd400; border-radius: 50%;"></div>
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div style="position: absolute; top: -3px; width: 44px; height: 44px; background-color: rgba(0, 82, 209, 0.28); border-radius: 50%; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="background: linear-gradient(135deg, #0052d1 0%, #1e40af 100%); color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,82,209,0.55); border: 2.5px solid #ffffff; z-index: 10;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
         </div>
+        <span style="margin-top: 2px; background: #0052d1; color: #ffffff; font-size: 9px; font-weight: 900; padding: 1px 6px; border-radius: 9999px; border: 1.5px solid #ffffff; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3); text-transform: uppercase; letter-spacing: 0.05em; z-index: 11;">
+          Ikaw
+        </span>
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -12],
+    iconSize: [44, 54],
+    iconAnchor: [22, 27],
+    popupAnchor: [0, -27],
   });
 };
 
@@ -396,12 +402,21 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         <MapFocusDestination destLat={destLat} destLng={destLng} disabled={hasAssignedDriver} />
         <AutoFitPassengerBounds points={passengerFocusPoints} triggerKey={`${bookingStatus}-${hasAssignedDriver}`} />
 
-        {/* Current Location / Pickup Marker */}
-        <Marker position={[originLat, originLng]} icon={createPickupIcon()}>
+        {/* Current Location / Passenger Marker */}
+        <Marker 
+          position={[originLat, originLng]} 
+          icon={createPickupIcon()}
+          zIndexOffset={1000}
+        >
           <Popup>
-            <div className="text-xs font-bold text-primary p-1 text-center">
-              📍 Kasalukuyang Lokasyon<br />
-              <span className="text-[10px] text-slate-500 font-normal">Saan ka sasakay (Pickup Point)</span>
+            <div className="text-xs font-bold text-[#0052d1] p-1 text-center space-y-0.5">
+              <div className="flex items-center justify-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#0052d1] animate-ping"></span>
+                <span className="font-extrabold text-slate-900 dark:text-white">Ikaw (Pasahero)</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-normal">
+                📍 Kasalukuyang Lokasyon (Pickup Point)
+              </div>
             </div>
           </Popup>
         </Marker>
