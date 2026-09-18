@@ -96,8 +96,21 @@ const getGeoDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number
   return R * c;
 };
 
-// Check if coordinates fall in Bauang vicinity
-const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+// Helper to validate geographic coordinates (non-null, non-zero, within valid global boundaries)
+const isValidCoord = (lat?: number | null, lng?: number | null): boolean => {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    !isNaN(lat) &&
+    !isNaN(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+};
 
 // Auto focus specifically on the trip bounds (Driver, Pickup & Destination)
 const FitPreviewBounds: React.FC<{ 
@@ -160,24 +173,24 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
   const hasDiscount = isDiscountEligibleType(passengerType);
   const typeInfo = getPassengerTypeInfo(passengerType);
 
-  const rawDriverLat = Number(driverLat) || 16.5333;
-  const rawDriverLng = Number(driverLng) || 120.3333;
-  const initialDriverLat = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
-  const initialDriverLng = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
+  const rawDriverLat = Number(driverLat);
+  const rawDriverLng = Number(driverLng);
+  const initialDriverLat = isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
+  const initialDriverLng = isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
   const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
-  const rawOriginLat = Number(booking.origin_lat) || 16.5310;
-  const rawOriginLng = Number(booking.origin_lng) || 120.3320;
+  const rawOriginLat = Number(booking.origin_lat);
+  const rawOriginLng = Number(booking.origin_lng);
   const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
-  const rawDestLat = Number(booking.destination_lat) || 16.5385;
-  const rawDestLng = Number(booking.destination_lng) || 120.3250;
+  const rawDestLat = Number(booking.destination_lat);
+  const rawDestLng = Number(booking.destination_lng);
   const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
 
   // Try live GPS for driver
@@ -187,7 +200,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          if (isBauangVicinity(lat, lng)) {
+          if (isValidCoord(lat, lng)) {
             setDriverCoords([lat, lng]);
           }
         },

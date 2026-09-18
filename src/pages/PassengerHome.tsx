@@ -221,6 +221,31 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     }
   }, []);
 
+  // Continuous background GPS tracking for moving passenger
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        // Keep origin updated to moving passenger when trip is not active
+        if (!activeBooking) {
+          setOriginLat(userLat);
+          setOriginLng(userLng);
+        }
+      },
+      (err) => {
+        console.warn('Geolocation watch note:', err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activeBooking]);
+
   // Load live terminals, tourist spots, location fares, and online drivers from Supabase
   useEffect(() => {
     let isMounted = true;

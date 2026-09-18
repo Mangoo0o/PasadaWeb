@@ -23,6 +23,7 @@ import { Booking } from '../types/database.types';
 import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus, fetchActiveTrip } from '../services/bookingService';
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { getDistanceKm, MAX_DISPATCH_RADIUS_KM } from '../services/geoProximityService';
+import { broadcastDriverLocation } from '../services/driverTrackingService';
 
 import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
 
@@ -33,6 +34,7 @@ interface DriverDashboardProps {
 export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }) => {
   const { t, i18n } = useTranslation();
   const { user, driverProfile, toggleDriverAvailability, signOut, setLanguage } = useAuth();
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'fil' ? 'en' : 'fil';
@@ -49,19 +51,30 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [activeOngoingTrip, setActiveOngoingTrip] = useState<Booking | null>(null);
 
-  // Live driver location tracking
+  // Live driver location tracking & broadcasting
   useEffect(() => {
     if ('geolocation' in navigator) {
+      const activeId = driverProfile?.id || user?.id;
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          setDriverLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setDriverLocation({ lat, lng });
+          if (activeId) {
+            broadcastDriverLocation(activeId, {
+              lat,
+              lng,
+              heading: pos.coords.heading,
+              speed: pos.coords.speed
+            });
+          }
         },
         () => {},
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, []);
+  }, [driverProfile?.id, user?.id]);
 
   // Sync external/simulated location updates
   useEffect(() => {

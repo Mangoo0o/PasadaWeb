@@ -13,7 +13,9 @@ import {
   AlertCircle,
   AlertTriangle,
   LocateFixed,
-  MessageSquare
+  MessageSquare,
+  Play,
+  Square
 } from 'lucide-react';
 import { Booking } from '../types/database.types';
 import { updateBookingStatus } from '../services/bookingService';
@@ -33,18 +35,35 @@ interface DriverTravelPageProps {
   onExitTravel: () => void;
 }
 
-// Custom Driver Tricycle Icon
+// Vehicle Marker Icon (Bauang Tricycle with high-visibility badge)
 const createDriverTricycleIcon = () => {
   return L.divIcon({
-    className: 'custom-driver-pin',
+    className: 'custom-driver-vehicle-pin',
     html: `
-      <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #00A3FF; opacity: 0.35; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="width: 36px; height: 36px; border-radius: 9999px; background-color: #003f87; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+      <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #fcd400; opacity: 0.35; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="width: 38px; height: 38px; border-radius: 9999px; background-color: #fcd400; border: 3px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: #705d00;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/>
             <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
           </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+};
+
+// Pickup Location Icon (Cyan Target Pin)
+const createPassengerPickupIcon = () => {
+  return L.divIcon({
+    className: 'custom-driver-pickup-pin',
+    html: `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; width: 40px; height: 40px; background-color: rgba(0, 163, 255, 0.35); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="background-color: #00A3FF; color: #ffffff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,163,255,0.45); border: 2.5px solid #ffffff; z-index: 2;">
+          <div style="width: 10px; height: 10px; background-color: #ffffff; border-radius: 50%;"></div>
         </div>
       </div>
     `,
@@ -53,26 +72,7 @@ const createDriverTricycleIcon = () => {
   });
 };
 
-// Custom Passenger Pickup Icon
-const createPassengerPickupIcon = () => {
-  return L.divIcon({
-    className: 'custom-pickup-pin',
-    html: `
-      <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: #00A3FF; opacity: 0.25; animation: pulse 2s infinite;"></div>
-        <div style="width: 32px; height: 32px; border-radius: 9999px; background-color: #00A3FF; border: 2.5px solid #ffffff; box-shadow: 0 4px 10px rgba(0,163,255,0.45); display: flex; align-items: center; justify-content: center; color: #ffffff;">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-        </div>
-      </div>
-    `,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-  });
-};
-
-// Custom Destination Drop-off Icon
+// Destination Location Icon (Orange Target Pin)
 const createDestinationIcon = () => {
   return L.divIcon({
     className: 'custom-dest-pin',
@@ -91,8 +91,21 @@ const createDestinationIcon = () => {
   });
 };
 
-// Helper to check if coordinate is in Bauang vicinity
-const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+// Helper to validate geographic coordinates (non-null, non-zero, within valid global boundaries)
+const isValidCoord = (lat?: number | null, lng?: number | null): boolean => {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    !isNaN(lat) &&
+    !isNaN(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+};
 
 // Safe Auto-Fit Route Camera Bounds (Fits both driver and destination/pickup in view)
 const AutoFitRoute: React.FC<{ 
@@ -152,28 +165,32 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const { user, driverProfile } = useAuth();
   const activeDriverId = driverProfile?.id || booking.driver_id || user?.id;
 
-  // 1. Initial coordinates with Bauang vicinity safety fallback
-  const rawDriverLat = Number(driverLat) || 16.5333;
-  const rawDriverLng = Number(driverLng) || 120.3333;
-  const initialDriverLat = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
-  const initialDriverLng = isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
+  // 1. Initial coordinates with safe fallback
+  const rawDriverLat = Number(driverLat);
+  const rawDriverLng = Number(driverLng);
+  const initialDriverLat = isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333;
+  const initialDriverLng = isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333;
   const [driverCoords, setDriverCoords] = useState<[number, number]>([initialDriverLat, initialDriverLng]);
 
-  const rawOriginLat = Number(booking.origin_lat) || 16.5310;
-  const rawOriginLng = Number(booking.origin_lng) || 120.3320;
+  const rawOriginLat = Number(booking.origin_lat);
+  const rawOriginLng = Number(booking.origin_lng);
   const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
-  const rawDestLat = Number(booking.destination_lat) || 16.5385;
-  const rawDestLng = Number(booking.destination_lng) || 120.3250;
+  const rawDestLat = Number(booking.destination_lat);
+  const rawDestLng = Number(booking.destination_lng);
   const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
 
-  // Real-time live GPS tracking for driver movement (with Bauang check)
+  // Simulation mode state for testing / demo without driving
+  const [isSimulating, setIsSimulating] = useState(false);
+  const simStepRef = React.useRef(0);
+
+  // Real-time live GPS tracking for driver movement
   useEffect(() => {
     let watchId: number | null = null;
     if ('geolocation' in navigator) {
@@ -181,19 +198,22 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          if (isBauangVicinity(lat, lng)) {
-            setDriverCoords([lat, lng]);
-            if (activeDriverId) {
-              broadcastDriverLocation(activeDriverId, {
-                lat,
-                lng,
-                heading: pos.coords.heading,
-                speed: pos.coords.speed
-              });
+          if (isValidCoord(lat, lng)) {
+            // Only update from hardware GPS if simulation is not currently running
+            if (!isSimulating) {
+              setDriverCoords([lat, lng]);
+              if (activeDriverId) {
+                broadcastDriverLocation(activeDriverId, {
+                  lat,
+                  lng,
+                  heading: pos.coords.heading,
+                  speed: pos.coords.speed
+                });
+              }
             }
           }
         },
-        () => {},
+        (err) => console.warn('Driver GPS watch error:', err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
       );
     }
@@ -202,7 +222,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [activeDriverId]);
+  }, [activeDriverId, isSimulating]);
 
   const [tripState, setTripState] = useState<'assigned' | 'arrived' | 'in_transit' | 'completed'>(() => {
     if (booking.status === 'driver_arrived') return 'arrived';
@@ -254,6 +274,44 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const handleRecenterMap = () => {
     setFocusKey((k) => k + 1);
   };
+
+  // Reset simulation step when trip phase changes
+  useEffect(() => {
+    simStepRef.current = 0;
+  }, [tripState]);
+
+  // Movement simulation effect: steps along the active road polyline
+  useEffect(() => {
+    if (!isSimulating) return;
+
+    const isHeadingToPickup = tripState === 'assigned' || tripState === 'arrived';
+    const activeRoad = isHeadingToPickup ? roadToPickup : roadToDestination;
+
+    if (!activeRoad || activeRoad.length < 2) return;
+
+    const interval = setInterval(() => {
+      simStepRef.current += 1;
+      if (simStepRef.current >= activeRoad.length) {
+        simStepRef.current = activeRoad.length - 1;
+        setIsSimulating(false); // Reached destination
+      }
+
+      const nextCoord = activeRoad[simStepRef.current];
+      if (nextCoord && isValidCoord(nextCoord[0], nextCoord[1])) {
+        setDriverCoords(nextCoord);
+        if (activeDriverId) {
+          broadcastDriverLocation(activeDriverId, {
+            lat: nextCoord[0],
+            lng: nextCoord[1],
+            heading: 45,
+            speed: 28
+          }, true);
+        }
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isSimulating, tripState, roadToPickup, roadToDestination, activeDriverId]);
 
   // Dynamically update road polyline matching the active phase
   useEffect(() => {
@@ -496,8 +554,31 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         </MapContainer>
       </div>
 
-      {/* Floating Re-center / Focus Button */}
-      <div className="absolute right-3 sm:right-4 bottom-28 sm:bottom-36 z-[10000] pointer-events-auto">
+      {/* Floating Re-center & Simulation Controls */}
+      <div className="absolute right-3 sm:right-4 bottom-28 sm:bottom-36 z-[10000] pointer-events-auto flex flex-col items-end gap-2">
+        {/* Simulation Mode Toggle Button */}
+        <button
+          onClick={() => setIsSimulating((prev) => !prev)}
+          className={`h-9 sm:h-10 px-3 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-2xl border flex items-center gap-1.5 text-xs font-black transition-all cursor-pointer ${
+            isSimulating
+              ? 'bg-amber-500 text-white border-amber-300 ring-2 ring-amber-400/50 animate-pulse'
+              : 'bg-white/95 dark:bg-slate-900/95 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95'
+          }`}
+          title="Simulate vehicle moving along road (Demo/Testing)"
+        >
+          {isSimulating ? (
+            <>
+              <Square className="w-3.5 h-3.5 fill-current text-white" />
+              <span>Huminto (Stop)</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-3.5 h-3.5 fill-current text-amber-500" />
+              <span>Simulate Ride</span>
+            </>
+          )}
+        </button>
+
         <button
           onClick={handleRecenterMap}
           className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-2xl border border-slate-200/90 dark:border-slate-800 text-[#003f87] dark:text-[#00C1FD] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"

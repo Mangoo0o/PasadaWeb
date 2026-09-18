@@ -125,27 +125,40 @@ export const DriverActiveTripMap: React.FC<DriverActiveTripMapProps> = ({
   driverLng,
   tripState,
 }) => {
-  const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+  const isValidCoord = (lat?: number | null, lng?: number | null): boolean => {
+    return (
+      typeof lat === 'number' &&
+      typeof lng === 'number' &&
+      !isNaN(lat) &&
+      !isNaN(lng) &&
+      lat !== 0 &&
+      lng !== 0 &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  };
 
-  const rawDriverLat = driverLat || 16.5333;
-  const rawDriverLng = driverLng || 120.3333;
+  const rawDriverLat = Number(driverLat);
+  const rawDriverLng = Number(driverLng);
   const currentDriverCoords: [number, number] = [
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333,
-    isBauangVicinity(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333,
+    isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLat : 16.5333,
+    isValidCoord(rawDriverLat, rawDriverLng) ? rawDriverLng : 120.3333,
   ];
 
-  const rawOriginLat = booking.origin_lat || 16.5310;
-  const rawOriginLng = booking.origin_lng || 120.3320;
+  const rawOriginLat = Number(booking.origin_lat);
+  const rawOriginLng = Number(booking.origin_lng);
   const passengerPickupCoords: [number, number] = [
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
-    isBauangVicinity(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLat : 16.5310,
+    isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
-  const rawDestLat = booking.destination_lat || 16.5385;
-  const rawDestLng = booking.destination_lng || 120.3250;
+  const rawDestLat = Number(booking.destination_lat);
+  const rawDestLng = Number(booking.destination_lng);
   const destinationDropCoords: [number, number] = [
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
-    isBauangVicinity(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
+    isValidCoord(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
 
   const [roadToPickup, setRoadToPickup] = useState<[number, number][]>([

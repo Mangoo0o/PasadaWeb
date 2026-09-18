@@ -93,8 +93,21 @@ const createLocationFareIcon = (loc: LocationFare, isSelected: boolean) => {
   });
 };
 
-// Helper to check if coordinate is in Bauang vicinity
-const isBauangVicinity = (lat: number, lng: number) => lat >= 16.40 && lat <= 16.65 && lng >= 120.25 && lng <= 120.45;
+// Helper to validate geographic coordinates (non-null, non-zero, within valid global boundaries)
+const isValidCoord = (lat?: number | null, lng?: number | null): boolean => {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    !isNaN(lat) &&
+    !isNaN(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+};
 
 const createAssignedDriverIcon = (bodyNumber?: string) => {
   return L.divIcon({
@@ -245,7 +258,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
 
     const unsubscribe = subscribeToDriverLocation(assignedDriver.id, (coords) => {
-      if (coords.lat && coords.lng && isBauangVicinity(coords.lat, coords.lng)) {
+      if (isValidCoord(coords.lat, coords.lng)) {
         setLiveDriverCoords([coords.lat, coords.lng]);
       }
     });
@@ -259,8 +272,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const rawAssignedLat = liveDriverCoords ? liveDriverCoords[0] : (Number(assignedDriver?.current_lat) || 16.5333);
   const rawAssignedLng = liveDriverCoords ? liveDriverCoords[1] : (Number(assignedDriver?.current_lng) || 120.3333);
   const assignedDriverCoords: [number, number] = [
-    isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLat : 16.5333,
-    isBauangVicinity(rawAssignedLat, rawAssignedLng) ? rawAssignedLng : 120.3333,
+    isValidCoord(rawAssignedLat, rawAssignedLng) ? rawAssignedLat : 16.5333,
+    isValidCoord(rawAssignedLat, rawAssignedLng) ? rawAssignedLng : 120.3333,
   ];
 
   const hasAssignedDriver = !!assignedDriver && (bookingStatus === 'assigned' || bookingStatus === 'arrived' || bookingStatus === 'in_transit');
