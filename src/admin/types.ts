@@ -103,7 +103,7 @@ export interface FareMatrix {
 
 export interface LocationFare {
   id: string;
-  origin_terminal_id: string;
+  origin_terminal_id?: string | null;
   location_name: string;
   lat: number;
   lng: number;

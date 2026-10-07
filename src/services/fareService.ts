@@ -116,6 +116,11 @@ export const fetchLocationFares = async (originTerminalId?: string): Promise<Loc
   }
 };
 
+export const isValidUuid = (val?: string | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+};
+
 // Create or update a location fare record with robust column + notes fallback
 export const saveLocationFare = async (
   fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }
@@ -130,11 +135,15 @@ export const saveLocationFare = async (
 
   const coverUrl = fare.cover_image_url || formattedImages[0] || '';
 
+  // Crucial: Only pass origin_terminal_id if it's a valid UUID; otherwise null so Postgres doesn't throw syntax or constraint errors
+  const safeTerminalId = isValidUuid(fare.origin_terminal_id) ? fare.origin_terminal_id : null;
+  const isUpdating = isValidUuid(fare.id);
+
   // Try 1: Save with full payload including media columns
   try {
     const fullPayload: any = {
-      origin_terminal_id: fare.origin_terminal_id && fare.origin_terminal_id.trim() !== '' ? fare.origin_terminal_id : null,
-      location_name: fare.location_name,
+      origin_terminal_id: safeTerminalId,
+      location_name: fare.location_name.trim(),
       description: fare.description || '',
       cover_image_url: coverUrl,
       images: formattedImages,
@@ -151,13 +160,20 @@ export const saveLocationFare = async (
       updated_at: new Date().toISOString()
     };
 
-    if (fare.id && !fare.id.startsWith('loc-fare-temp-')) {
-      const { data, error } = await supabase
+    if (isUpdating) {
+      let { data, error } = await supabase
         .from('location_fares')
         .update(fullPayload)
         .eq('id', fare.id)
         .select()
         .single();
+
+      if (error && error.code === '23503' && fullPayload.origin_terminal_id) {
+        fullPayload.origin_terminal_id = null;
+        const retry = await supabase.from('location_fares').update(fullPayload).eq('id', fare.id).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return { 
@@ -173,11 +189,18 @@ export const saveLocationFare = async (
         }
       };
     } else {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('location_fares')
         .insert(fullPayload)
         .select()
         .single();
+
+      if (error && error.code === '23503' && fullPayload.origin_terminal_id) {
+        fullPayload.origin_terminal_id = null;
+        const retry = await supabase.from('location_fares').insert(fullPayload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return { 
@@ -199,8 +222,8 @@ export const saveLocationFare = async (
     // Try 2: If optional media or icon columns need simpler payload
     try {
       const fallbackPayload: any = {
-        origin_terminal_id: fare.origin_terminal_id && fare.origin_terminal_id.trim() !== '' ? fare.origin_terminal_id : null,
-        location_name: fare.location_name,
+        origin_terminal_id: safeTerminalId,
+        location_name: fare.location_name.trim(),
         description: fare.description || '',
         cover_image_url: coverUrl,
         images: formattedImages,
@@ -216,13 +239,20 @@ export const saveLocationFare = async (
         updated_at: new Date().toISOString()
       };
 
-      if (fare.id && !fare.id.startsWith('loc-fare-temp-')) {
-        const { data, error } = await supabase
+      if (isUpdating) {
+        let { data, error } = await supabase
           .from('location_fares')
           .update(fallbackPayload)
           .eq('id', fare.id)
           .select()
           .single();
+
+        if (error && error.code === '23503' && fallbackPayload.origin_terminal_id) {
+          fallbackPayload.origin_terminal_id = null;
+          const retry = await supabase.from('location_fares').update(fallbackPayload).eq('id', fare.id).select().single();
+          data = retry.data;
+          error = retry.error;
+        }
 
         if (error) throw error;
         return { 
@@ -238,11 +268,18 @@ export const saveLocationFare = async (
           }
         };
       } else {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('location_fares')
           .insert(fallbackPayload)
           .select()
           .single();
+
+        if (error && error.code === '23503' && fallbackPayload.origin_terminal_id) {
+          fallbackPayload.origin_terminal_id = null;
+          const retry = await supabase.from('location_fares').insert(fallbackPayload).select().single();
+          data = retry.data;
+          error = retry.error;
+        }
 
         if (error) throw error;
         return { 
@@ -261,8 +298,8 @@ export const saveLocationFare = async (
     } catch (fallbackErr: any) {
       console.warn('Saving in local state fallback:', fallbackErr.message);
       const fallbackSaved: LocationFare = {
-        id: fare.id || `loc-fare-${Date.now()}`,
-        origin_terminal_id: fare.origin_terminal_id || 'term-bauang-central',
+        id: isUpdating ? (fare.id as string) : `loc-fare-${Date.now()}`,
+        origin_terminal_id: safeTerminalId,
         location_name: fare.location_name,
         description: fare.description || '',
         cover_image_url: coverUrl,
@@ -279,7 +316,10 @@ export const saveLocationFare = async (
         is_active: fare.is_active !== false,
         updated_at: new Date().toISOString()
       };
-      return { data: fallbackSaved };
+      return { 
+        data: fallbackSaved, 
+        error: fallbackErr.message || 'Database error, temporary local save applied.' 
+      };
     }
   }
 };
@@ -287,16 +327,18 @@ export const saveLocationFare = async (
 // Delete a location fare record
 export const deleteLocationFare = async (id: string): Promise<{ success: boolean; error?: string }> => {
   try {
-    const { error } = await supabase
-      .from('location_fares')
-      .delete()
-      .eq('id', id);
+    if (isValidUuid(id)) {
+      const { error } = await supabase
+        .from('location_fares')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) throw error;
+    }
     return { success: true };
   } catch (err: any) {
     console.warn('DB delete note:', err.message);
-    return { success: true };
+    return { success: false, error: err.message || 'Failed to delete location fare' };
   }
 };
 

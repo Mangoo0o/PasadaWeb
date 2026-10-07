@@ -279,31 +279,51 @@ const AdminContent: React.FC = () => {
   // --- Actions & State Updates ---
 
   const handleSaveLocationFare = async (fareData: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => {
-    const res = await saveLocationFare(fareData);
-    if (res.data) {
-      setLocationFares(prev => {
-        const exists = prev.some(f => f.id === res.data!.id);
-        if (exists) {
-          return prev.map(f => f.id === res.data!.id ? res.data! : f);
-        }
-        return [res.data!, ...prev];
-      });
-    }
+    try {
+      const res = await saveLocationFare(fareData);
+      if (res.error && !res.data) {
+        notifyError('Tariff Point Registration Note', res.error);
+        throw new Error(res.error);
+      }
+      if (res.data) {
+        setLocationFares(prev => {
+          const exists = prev.some(f => f.id === res.data!.id);
+          if (exists) {
+            return prev.map(f => f.id === res.data!.id ? res.data! : f);
+          }
+          return [res.data!, ...prev];
+        });
+      }
 
-    // Log in Audit Trail
-    await logAdminMovement(user, 'SAVE_LOCATION_FARE', 'location_fares', res.data?.id, { 
-      location: fareData.location_name, 
-      standard_fare: fareData.standard_fare, 
-      proximity_radius_meters: fareData.proximity_radius_meters,
-      icon: fareData.icon || 'pin'
-    });
+      // Log in Audit Trail
+      await logAdminMovement(user, 'SAVE_LOCATION_FARE', 'location_fares', res.data?.id, { 
+        location: fareData.location_name, 
+        standard_fare: fareData.standard_fare, 
+        proximity_radius_meters: fareData.proximity_radius_meters,
+        icon: fareData.icon || 'pin'
+      });
+    } catch (err: any) {
+      console.error('Error saving location fare:', err);
+      notifyError('Tariff Point Registration Note', err.message || String(err));
+      throw err;
+    }
   };
 
   const handleDeleteLocationFare = async (id: string) => {
-    await deleteLocationFare(id);
-    setLocationFares(prev => prev.filter(f => f.id !== id));
+    try {
+      const res = await deleteLocationFare(id);
+      if (res.error) {
+        notifyError('Delete Location Note', res.error);
+        throw new Error(res.error);
+      }
+      setLocationFares(prev => prev.filter(f => f.id !== id));
 
-    await logAdminMovement(user, 'DELETE_LOCATION_FARE', 'location_fares', id, { id });
+      await logAdminMovement(user, 'DELETE_LOCATION_FARE', 'location_fares', id, { id });
+    } catch (err: any) {
+      console.error('Error deleting location fare:', err);
+      notifyError('Delete Location Note', err.message || String(err));
+      throw err;
+    }
   };
 
   const handleUpdateFare = async (updated: FareMatrix) => {

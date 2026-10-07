@@ -40,8 +40,8 @@ interface FareMatrixPageProps {
   locationFares: LocationFare[];
   terminals: Terminal[];
   drivers?: Driver[];
-  onSaveLocationFare: (fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => void;
-  onDeleteLocationFare: (id: string) => void;
+  onSaveLocationFare: (fare: Partial<LocationFare> & { location_name: string; lat: number; lng: number; standard_fare: number; icon?: string }) => Promise<void> | void;
+  onDeleteLocationFare: (id: string) => Promise<void> | void;
 }
 
 const createAdminLocPin = (loc: LocationFare) => {
@@ -196,12 +196,18 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 }) => {
   const [selectedFare, setSelectedFare] = useState<LocationFare | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+
+  // Delete Confirmation State
+  const [locationToDelete, setLocationToDelete] = useState<LocationFare | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Form State
   const [locationName, setLocationName] = useState('');
   const [description, setDescription] = useState('');
-  const [originTerminalId, setOriginTerminalId] = useState(terminals[0]?.id || 'term-bauang-central');
+  const [originTerminalId, setOriginTerminalId] = useState<string>(terminals[0]?.id || '');
   const [standardFare, setStandardFare] = useState<number>(20);
   const [discountedFare, setDiscountedFare] = useState<number>(16);
   const [proximityRadius, setProximityRadius] = useState<number>(800);
@@ -241,7 +247,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     setCoverImageUrl('');
     setAudioUrl('');
     setVideoUrl('');
-    setOriginTerminalId(terminals[0]?.id || 'term-bauang-central');
+    setOriginTerminalId(terminals[0]?.id || '');
     setStandardFare(25);
     setDiscountedFare(20);
     setProximityRadius(800);
@@ -343,32 +349,60 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!locationName || locationName.trim() === '') {
       setCurrentStep(1);
       setFormError('Please provide a destination location name in Step 1.');
       return;
     }
     setFormError(null);
-    onSaveLocationFare({
-      id: selectedFare?.id,
-      origin_terminal_id: originTerminalId,
-      location_name: locationName,
-      description,
-      cover_image_url: coverImageUrl || images[0] || '',
-      images,
-      audio_url: audioUrl,
-      video_url: videoUrl,
-      standard_fare: standardFare,
-      discounted_fare: discountedFare,
-      proximity_radius_meters: proximityRadius,
-      lat,
-      lng,
-      icon,
-      notes
-    });
-    setIsModalOpen(false);
+    setIsSaving(true);
+    try {
+      await onSaveLocationFare({
+        id: selectedFare?.id,
+        origin_terminal_id: originTerminalId && originTerminalId.trim() !== '' ? originTerminalId : undefined,
+        location_name: locationName.trim(),
+        description,
+        cover_image_url: coverImageUrl || images[0] || '',
+        images,
+        audio_url: audioUrl,
+        video_url: videoUrl,
+        standard_fare: standardFare,
+        discounted_fare: discountedFare,
+        proximity_radius_meters: proximityRadius,
+        lat,
+        lng,
+        icon,
+        notes
+      });
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save location tariff point. Please check database connection.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!locationToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDeleteLocationFare(locationToDelete.id);
+      if (selectedLocation?.id === locationToDelete.id) {
+        setSelectedLocation(null);
+      }
+      if (selectedFare?.id === locationToDelete.id) {
+        setIsModalOpen(false);
+        setSelectedFare(null);
+      }
+      setLocationToDelete(null);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete location tariff point.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const [selectedLocation, setSelectedLocation] = useState<LocationFare | null>(null);
@@ -496,6 +530,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DISCOUNT FARE</th>
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">PROXIMITY RADIUS</th>
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">STATUS</th>
+                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right pr-2">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -565,6 +600,27 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                             Inactive
                           </span>
                         )}
+                      </td>
+
+                      <td className="py-4 text-right pr-2">
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(loc)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-[#0052d1] hover:bg-[#0052d1]/10 dark:hover:text-sky-400 dark:hover:bg-sky-950/40 transition-colors cursor-pointer"
+                            title={`Edit ${loc.location_name}`}
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLocationToDelete(loc)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title={`Delete ${loc.location_name}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -716,13 +772,25 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={() => activeLocation && handleOpenEdit(activeLocation)}
-              className="w-full h-9 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-            >
-              <ShieldCheck size={16} />
-              <span>Edit Location Rate</span>
-            </button>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => activeLocation && handleOpenEdit(activeLocation)}
+                className="flex-1 h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ShieldCheck size={15} />
+                <span>Edit Rate</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => activeLocation && setLocationToDelete(activeLocation)}
+                className="h-9 px-3.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-300 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Delete this location"
+              >
+                <Trash2 size={14} />
+                <span>Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -853,6 +921,24 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                           />
                         </div>
                       </div>
+
+                      {terminals && terminals.length > 0 && (
+                        <div>
+                          <label className="block text-xs font-black text-slate-800 dark:text-slate-200 mb-1 uppercase tracking-wider">
+                            Origin Terminal (Optional)
+                          </label>
+                          <select
+                            value={originTerminalId}
+                            onChange={(e) => setOriginTerminalId(e.target.value)}
+                            className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-medium text-slate-900 dark:text-white outline-none focus:border-[#0052d1] transition-all"
+                          >
+                            <option value="">Standalone / Unassigned</option>
+                            {terminals.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {/* Location Icon Category Pins (Compact 3-column Grid) */}
                       <div>
@@ -1237,32 +1323,47 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               </div>
 
               {/* Stepper Footer Controls */}
-              <div className="modal-footer px-6 sm:px-8 py-3.5 bg-slate-50/60 dark:bg-slate-900/60">
-                <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)} 
-                  className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs"
-                >
-                  Cancel
-                </button>
+              <div className="modal-footer px-6 sm:px-8 py-3.5 bg-slate-50/60 dark:bg-slate-900/60 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsModalOpen(false)} 
+                    disabled={isSaving}
+                    className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer inline-flex items-center transition-colors shadow-2xs disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  {selectedFare && (
+                    <button
+                      type="button"
+                      onClick={() => setLocationToDelete(selectedFare)}
+                      disabled={isSaving}
+                      className="h-9 px-3.5 rounded-md bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-300 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
+                      title="Delete this location tariff"
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete Location</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2.5">
                   {currentStep === 2 && (
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
+                      disabled={isSaving}
                       className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
                     >
                       <ArrowLeft size={15} /> Back
                     </button>
                   )}
 
-                  {currentStep === 1 ? (
+                  {currentStep === 1 && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        e.stopPropagation();
                         if (!locationName.trim()) {
                           setFormError('Please enter a Destination Location Name.');
                           return;
@@ -1270,23 +1371,94 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                         setFormError(null);
                         setCurrentStep(2);
                       }}
-                      className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
+                      disabled={isSaving}
+                      className="h-9 px-4 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-slate-700"
                     >
-                      <span>Next: Media &amp; Highlights</span>
+                      <span>Next: Media (Optional)</span>
                       <ArrowRight size={15} />
                     </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="h-9 px-5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs"
-                    >
-                      <Check size={16} />
-                      <span>{selectedFare ? 'Save & Enforce Rate' : 'Register Tariff Point'}</span>
-                    </button>
                   )}
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="h-9 px-5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-60"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        <span>{selectedFare ? 'Save & Enforce Rate' : 'Register Tariff Point'}</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {locationToDelete && (
+        <div className="modal-overlay" onClick={() => !isDeleting && setLocationToDelete(null)}>
+          <div 
+            className="modal-content max-w-md w-[92%] p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
+                <Trash2 size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                  Delete Location Tariff Point?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Are you sure you want to permanently remove <strong className="text-slate-800 dark:text-slate-200">{locationToDelete.location_name}</strong>?
+                  This will remove its regulated base rate (₱{Number(locationToDelete.standard_fare).toFixed(2)}) and proximity geofence radius from passenger booking calculations.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-200 text-xs font-semibold">
+                ⚠️ {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setLocationToDelete(null)}
+                disabled={isDeleting}
+                className="h-9 px-4 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs cursor-pointer transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="h-9 px-4 rounded-md bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs cursor-pointer inline-flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-60"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Yes, Delete Location</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
