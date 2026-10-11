@@ -1,5 +1,6 @@
 import { supabase } from '../api/supabaseClient';
 import { TouristSpot } from '../types/database.types';
+import { formatAudioSource } from '../utils/audioUtils';
 
 export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
   try {
@@ -9,7 +10,10 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
     ]);
 
     const baseSpots: TouristSpot[] = (spotsRes.data && Array.isArray(spotsRes.data))
-      ? (spotsRes.data as TouristSpot[])
+      ? (spotsRes.data as TouristSpot[]).map(s => ({
+          ...s,
+          audio_url: formatAudioSource(s.audio_url) || undefined
+        }))
       : [];
 
     // Merge location fares from database
@@ -18,6 +22,7 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
 
       faresRes.data.forEach((fare: any) => {
         const cleanName = fare.location_name?.toLowerCase().trim();
+        const formattedAudio = formatAudioSource(fare.audio_url);
 
         // If it already exists in baseSpots, merge media attributes onto it
         const existingSpotIndex = baseSpots.findIndex(
@@ -29,7 +34,7 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
             ...baseSpots[existingSpotIndex],
             cover_image_url: fare.cover_image_url || baseSpots[existingSpotIndex].cover_image_url,
             images: fare.images || baseSpots[existingSpotIndex].images || (fare.cover_image_url ? [fare.cover_image_url] : []),
-            audio_url: fare.audio_url || baseSpots[existingSpotIndex].audio_url,
+            audio_url: formattedAudio || baseSpots[existingSpotIndex].audio_url,
             video_url: fare.video_url || baseSpots[existingSpotIndex].video_url,
             description: fare.description || baseSpots[existingSpotIndex].description,
             est_tricycle_fare: Number(fare.standard_fare || baseSpots[existingSpotIndex].est_tricycle_fare)
@@ -62,7 +67,7 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
             opening_hours: '6:00 AM - 8:00 PM',
             cover_image_url: fare.cover_image_url || spotImgs[0] || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
             images: spotImgs,
-            audio_url: fare.audio_url || undefined,
+            audio_url: formattedAudio || undefined,
             video_url: fare.video_url || undefined,
             qr_code_ref: `QR-LOC-${fare.id?.slice(0, 8) || 'BAUANG'}`,
             nearest_terminal_name: fare.origin_terminal_id ? 'Bauang Central Terminal' : 'Poblacion Terminal',

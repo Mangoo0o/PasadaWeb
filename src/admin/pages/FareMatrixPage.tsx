@@ -27,6 +27,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { LocationFare, Terminal, Driver } from '../types';
+import { formatAudioSource, uploadAudioFile } from '../../utils/audioUtils';
 import { 
   findMatchingLocationByProximity, 
   calculateHaversineDistanceMeters,
@@ -222,6 +223,8 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
 
@@ -309,14 +312,22 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     });
   };
 
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAudioUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+
+    setIsUploadingAudio(true);
+    setAudioUploadError(null);
+
+    try {
+      const res = await uploadAudioFile(file, 'pasada-media');
+      setAudioUrl(res.url);
+    } catch (err: any) {
+      console.error('Audio upload error:', err);
+      setAudioUploadError(err.message || 'Failed to upload audio file.');
+    } finally {
+      setIsUploadingAudio(false);
+    }
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1284,21 +1295,39 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
 
                     {/* Audio Tour Guide */}
                     <div>
-                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200 mb-2 uppercase tracking-wider">
-                        <Music size={15} className="text-[#0052d1] dark:text-sky-400" />
-                        <span>Spoken Audio Tour Guide</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                          <Music size={15} className="text-[#0052d1] dark:text-sky-400" />
+                          <span>Spoken Audio Tour Guide</span>
+                        </label>
+                        {audioUrl && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
+                            ✓ Audio Ready ({audioUrl.startsWith('http') ? 'Cloud Storage' : 'Audio Data'})
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex gap-3 items-center">
-                        <label className="h-11 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0">
+                        <label className={`h-11 px-4 rounded-lg border text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors shrink-0 ${
+                          isUploadingAudio
+                            ? 'bg-blue-50 text-[#0052d1] border-blue-300 animate-pulse cursor-wait'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}>
                           <UploadCloud size={16} />
-                          <span>Upload MP3 Audio</span>
-                          <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
+                          <span>{isUploadingAudio ? 'Uploading...' : 'Upload MP3 / WAV'}</span>
+                          <input 
+                            type="file" 
+                            accept="audio/*,.mp3,.wav,.m4a" 
+                            onChange={handleAudioUpload} 
+                            disabled={isUploadingAudio}
+                            className="hidden" 
+                          />
                         </label>
                         <input
                           type="text"
                           value={audioUrl}
                           onChange={(e) => setAudioUrl(e.target.value)}
-                          placeholder="Or paste direct audio stream URL…"
+                          placeholder="Or paste direct audio stream URL / Storage URL…"
                           className="flex-1 h-11 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
                         />
                         {audioUrl && (
@@ -1312,9 +1341,24 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                           </button>
                         )}
                       </div>
+
+                      {audioUploadError && (
+                        <p className="mt-1 text-xs text-rose-500 font-semibold">
+                          ⚠️ {audioUploadError}
+                        </p>
+                      )}
+
                       {audioUrl && (
                         <div className="mt-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          <audio controls src={audioUrl} className="w-full h-8" />
+                          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+                            🔊 Preview Audio Player:
+                          </p>
+                          <audio 
+                            controls 
+                            src={formatAudioSource(audioUrl)} 
+                            className="w-full h-8" 
+                            preload="auto"
+                          />
                         </div>
                       )}
                     </div>

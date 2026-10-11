@@ -12,13 +12,19 @@ import {
 import { Modal } from '../components/common/Modal';
 import { TouristSpot } from '../types/database.types';
 import { fetchTouristSpots } from '../services/touristService';
+import { useTouristAudio } from '../services/touristAudioService';
+import { AudioTourPlayerSheet } from '../components/common/AudioTourPlayerSheet';
 
 export const TouristGuide: React.FC = () => {
   const { i18n } = useTranslation();
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeAudioSpotId, setActiveAudioSpotId] = useState<string | null>(null);
+  const {
+    activeSpot: activeAudioSpot,
+    isPlaying: isAudioPlaying,
+    toggleSpot: toggleAudioSpot
+  } = useTouristAudio();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
@@ -45,7 +51,10 @@ export const TouristGuide: React.FC = () => {
     : spots.filter(s => s.category === selectedCategory);
 
   const toggleAudio = (id: string) => {
-    setActiveAudioSpotId(prev => prev === id ? null : id);
+    const spot = spots.find(s => s.id === id);
+    if (spot) {
+      toggleAudioSpot(spot, i18n.language);
+    }
   };
 
   const toggleFavorite = (id: string) => {
@@ -147,15 +156,18 @@ export const TouristGuide: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {featuredSpot.audio_url && (
-                      <button
-                        onClick={() => toggleAudio(featuredSpot.id)}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-xs hover:from-blue-700 hover:to-indigo-700 flex items-center gap-1.5 transition-all shadow-md active:scale-95"
-                      >
-                        {activeAudioSpotId === featuredSpot.id ? <VolumeX className="w-4 h-4 text-[#fcd400]" /> : <Volume2 className="w-4 h-4 text-[#fcd400]" />}
-                        <span>{activeAudioSpotId === featuredSpot.id ? 'Pause Tour' : 'Play Tour'}</span>
-                      </button>
-                    )}
+                    {featuredSpot.audio_url && (() => {
+                      const isFeaturedPlaying = activeAudioSpot?.id === featuredSpot.id && isAudioPlaying;
+                      return (
+                        <button
+                          onClick={() => toggleAudio(featuredSpot.id)}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-xs hover:from-blue-700 hover:to-indigo-700 flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                        >
+                          {isFeaturedPlaying ? <VolumeX className="w-4 h-4 text-[#fcd400]" /> : <Volume2 className="w-4 h-4 text-[#fcd400]" />}
+                          <span>{isFeaturedPlaying ? 'Pause Tour' : 'Play Tour'}</span>
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -164,7 +176,7 @@ export const TouristGuide: React.FC = () => {
 
           {/* Other Cards */}
           {filteredSpots.slice(1).map((spot) => {
-            const isPlaying = activeAudioSpotId === spot.id;
+            const isPlaying = activeAudioSpot?.id === spot.id && isAudioPlaying;
             const isFav = favorites.includes(spot.id);
 
             return (
@@ -240,10 +252,10 @@ export const TouristGuide: React.FC = () => {
               <button
                 key={s.id}
                 onClick={() => {
-                  setActiveAudioSpotId(s.id);
+                  toggleAudio(s.id);
                   setIsQrModalOpen(false);
                 }}
-                className="p-2.5 rounded-xl bg-blue-50 text-[#003f87] font-black text-xs text-left hover:bg-[#003f87] hover:text-white transition-colors line-clamp-1 border border-blue-200"
+                className="p-2.5 rounded-xl bg-blue-50 text-[#003f87] font-black text-xs text-left hover:bg-[#003f87] hover:text-white transition-colors line-clamp-1 border border-blue-200 cursor-pointer"
               >
                 {s.name}
               </button>
@@ -251,6 +263,9 @@ export const TouristGuide: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Floating Audio Tour Player Sheet */}
+      <AudioTourPlayerSheet />
     </div>
   );
 };

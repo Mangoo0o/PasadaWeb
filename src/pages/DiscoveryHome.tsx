@@ -25,6 +25,8 @@ import { TouristSpot } from '../types/database.types';
 import { fetchTouristSpots } from '../services/touristService';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../api/supabaseClient';
+import { useTouristAudio } from '../services/touristAudioService';
+import { AudioTourPlayerSheet } from '../components/common/AudioTourPlayerSheet';
 
 interface DiscoveryHomeProps {
   setActiveTab: (tab: string) => void;
@@ -47,7 +49,12 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [activeAudioSpotId, setActiveAudioSpotId] = useState<string | null>(null);
+  const {
+    activeSpot: activeAudioSpot,
+    isPlaying: isAudioPlaying,
+    toggleSpot: toggleAudioSpot,
+    stop: stopAudio
+  } = useTouristAudio();
   const [modalImageIndex, setModalImageIndex] = useState<number>(0);
   const [modalMediaMode, setModalMediaMode] = useState<'video' | 'photo'>('video');
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
@@ -130,7 +137,10 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
     if (videoRef.current && !videoRef.current.paused) {
       videoRef.current.pause();
     }
-    setActiveAudioSpotId(prev => (prev === id ? null : id));
+    const spot = spots.find(s => s.id === id);
+    if (spot) {
+      toggleAudioSpot(spot, i18n.language);
+    }
   };
 
   const handleVoiceSearch = () => {
@@ -440,7 +450,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             {filteredSpots.map((spot) => {
               const isFav = favorites.includes(spot.id);
-              const isPlaying = activeAudioSpotId === spot.id;
+              const isPlaying = activeAudioSpot?.id === spot.id && isAudioPlaying;
               const cardCover = spot.cover_image_url || (spot.images && spot.images[0]) || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80';
 
               return (
@@ -508,41 +518,7 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
         </div>
 
         {/* Live Audio Audio Player Sheet if Active */}
-        {activeAudioSpotId && (
-          <div className="fixed bottom-22 sm:bottom-24 left-3 right-3 max-w-sm mx-auto z-40 bg-[#0052d1] text-white p-2.5 rounded-xl shadow-2xl border border-white/20 flex items-center justify-between animate-in slide-from-bottom-4 duration-200">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
-                <Volume2 className="w-4 h-4 text-[#fcd400]" />
-              </div>
-              <div className="truncate">
-                <p className="text-[9px] text-sky-200 font-bold uppercase tracking-wider">
-                  {i18n.language === 'en' ? 'Audio Tour Guide' : 'Gabay sa Audio Tour'}
-                </p>
-                <p className="text-xs font-bold text-white truncate">
-                  {spots.find(s => s.id === activeAudioSpotId)?.name || 'Bauang Audio Story'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => {
-                  const s = spots.find(spot => spot.id === activeAudioSpotId);
-                  if (s) handleBookRideToSpot(s);
-                }}
-                className="px-2.5 py-1 rounded-full bg-[#fcd400] text-[#131b2e] font-black text-[10px] shadow-sm"
-              >
-                {i18n.language === 'en' ? 'Book' : 'Sakay'}
-              </button>
-              <button
-                onClick={() => setActiveAudioSpotId(null)}
-                className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 cursor-pointer text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
+        <AudioTourPlayerSheet onBookSpot={handleBookRideToSpot} />
       </main>
 
       {/* Spot Detail Modal (Mounted to document.body with createPortal so it is 100% above navbar) */}
@@ -769,10 +745,22 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
                 <div className="pt-2 flex gap-2.5">
                   <button
                     onClick={() => toggleAudio(selectedSpotModal.id)}
-                    className="flex-1 h-11 sm:h-12 rounded-full border-2 border-[#0052d1] text-[#0052d1] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 hover:bg-sky-50 transition-colors cursor-pointer"
+                    className={`flex-1 h-11 sm:h-12 rounded-full border-2 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      activeAudioSpot?.id === selectedSpotModal.id && isAudioPlaying
+                        ? 'border-amber-400 bg-amber-50 text-[#003f87] dark:bg-amber-950/40 dark:text-amber-300'
+                        : 'border-[#0052d1] text-[#0052d1] hover:bg-sky-50 dark:hover:bg-sky-950/30'
+                    }`}
                   >
-                    <Volume2 className="w-4 h-4" />
-                    <span>{activeAudioSpotId === selectedSpotModal.id ? (i18n.language === 'en' ? 'Stop Audio' : 'Itigil') : (i18n.language === 'en' ? 'Play Audio Guide' : 'Pakinggan')}</span>
+                    {activeAudioSpot?.id === selectedSpotModal.id && isAudioPlaying ? (
+                      <VolumeX className="w-4 h-4 text-[#003f87] dark:text-amber-300" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-[#0052d1] dark:text-sky-400" />
+                    )}
+                    <span>
+                      {activeAudioSpot?.id === selectedSpotModal.id && isAudioPlaying
+                        ? (i18n.language === 'en' ? 'Stop Audio' : 'Itigil')
+                        : (i18n.language === 'en' ? 'Play Audio Guide' : 'Pakinggan')}
+                    </span>
                   </button>
 
                   <button

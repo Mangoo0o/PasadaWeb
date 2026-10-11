@@ -7,6 +7,7 @@
 class SoundNotificationService {
   private audioCtx: AudioContext | null = null;
   private soundEnabled: boolean = true;
+  private isUnlocked: boolean = false;
 
   constructor() {
     try {
@@ -14,6 +15,67 @@ class SoundNotificationService {
       this.soundEnabled = stored !== 'false';
     } catch {
       this.soundEnabled = true;
+    }
+
+    this.initMobileAudioUnlock();
+  }
+
+  /**
+   * Mobile Audio Autoplay Policy Unlocking:
+   * iOS Safari & Android Chrome strictly require a user gesture (tap/click) to unlock AudioContext.
+   * Without this, background/WebSocket Realtime notifications (dispatches, chat) remain muted.
+   */
+  private initMobileAudioUnlock(): void {
+    if (typeof window === 'undefined') return;
+
+    const unlockHandler = () => {
+      this.unlockAudio();
+      if (this.audioCtx && this.audioCtx.state === 'running') {
+        window.removeEventListener('click', unlockHandler);
+        window.removeEventListener('touchstart', unlockHandler);
+        window.removeEventListener('touchend', unlockHandler);
+        window.removeEventListener('pointerdown', unlockHandler);
+        window.removeEventListener('keydown', unlockHandler);
+      }
+    };
+
+    window.addEventListener('click', unlockHandler, { passive: true });
+    window.addEventListener('touchstart', unlockHandler, { passive: true });
+    window.addEventListener('touchend', unlockHandler, { passive: true });
+    window.addEventListener('pointerdown', unlockHandler, { passive: true });
+    window.addEventListener('keydown', unlockHandler, { passive: true });
+
+    // Handle screen unlock or tab visibility change (mobile OS suspends AudioContext when tab hides)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+    });
+  }
+
+  /**
+   * Explicitly unlock audio subsystem via user gesture
+   */
+  public unlockAudio(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    if (!this.isUnlocked) {
+      try {
+        // Play an imperceptible 1-sample silent buffer to activate hardware audio engine
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        this.isUnlocked = true;
+      } catch {
+        // Best effort buffer unlock
+      }
     }
   }
 
@@ -46,6 +108,7 @@ class SoundNotificationService {
     const next = !this.soundEnabled;
     this.setSoundEnabled(next);
     if (next) {
+      this.unlockAudio();
       this.playTone([660, 880], [0.08, 0.12]);
     }
     return next;
@@ -87,34 +150,45 @@ class SoundNotificationService {
   }
 
   /**
-   * Play standard tone sequence via Web Audio API
+   * Play standard tone sequence via Web Audio API with audible gain and mobile fallbacks
    */
-  private playTone(frequencies: number[], durations: number[], type: OscillatorType = 'sine'): void {
+  private async playTone(frequencies: number[], durations: number[], type: OscillatorType = 'sine'): Promise<void> {
     if (!this.soundEnabled) return;
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
-    let startTime = ctx.currentTime + 0.02;
-    frequencies.forEach((freq, idx) => {
-      const duration = durations[idx] || 0.1;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    if (ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch {}
+    }
 
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, startTime);
+    try {
+      let startTime = Math.max(ctx.currentTime + 0.02, 0.02);
+      frequencies.forEach((freq, idx) => {
+        const duration = durations[idx] || 0.1;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      gain.gain.setValueAtTime(0.001, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.28, startTime + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+        // Boost gain for clear visibility through small phone speakers in street noise (0.6 peak)
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.60, startTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-      osc.start(startTime);
-      osc.stop(startTime + duration + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-      startTime += duration + 0.04;
-    });
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.05);
+
+        startTime += duration + 0.04;
+      });
+    } catch (err) {
+      console.warn('Web Audio playTone error:', err);
+    }
 
     // Trigger haptic vibration on mobile devices
     if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {

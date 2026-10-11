@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UploadCloud, CheckCircle, FileAudio, FileText, AlertCircle } from 'lucide-react';
+import { UploadCloud, CheckCircle, FileAudio, FileText, AlertCircle, Volume2 } from 'lucide-react';
 import { supabase } from '../../../api/supabaseClient';
+import { formatAudioSource, uploadAudioFile } from '../../../utils/audioUtils';
 
 interface FileUploaderProps {
   bucketName: string;
@@ -15,7 +16,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(currentUrl ? currentUrl.split('/').pop() || 'Existing File' : null);
+  const [fileName, setFileName] = useState<string | null>(
+    currentUrl ? currentUrl.split('/').pop()?.slice(0, 30) || 'Existing File' : null
+  );
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleFiles = async (files: FileList | null) => {
@@ -26,22 +29,43 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     setFileName(file.name);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${Date.now()}.${fileExt}`;
-      const { error: uploadErr } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file);
+      if (accept.includes('audio')) {
+        // Use intelligent audio uploader with storage & DataURL fallback
+        const res = await uploadAudioFile(file, bucketName);
+        onUploadComplete(res.url);
+      } else {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${Date.now()}.${fileExt}`;
+        const { error: uploadErr } = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, file, { upsert: true });
 
-      if (uploadErr) throw uploadErr;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
-
-      onUploadComplete(publicUrl);
+        if (uploadErr) {
+          // If storage bucket missing, fallback to data url for preview
+          const reader = new FileReader();
+          reader.onload = () => {
+            onUploadComplete(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+          onUploadComplete(publicUrl);
+        }
+      }
     } catch (err: any) {
       console.error('File upload error:', err);
-      setUploadError(err.message || 'Failed to upload file. Check storage bucket permissions.');
+      // Last-ditch DataURL fallback so user never loses file
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          onUploadComplete(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } catch (fallbackErr) {
+        setUploadError(err.message || 'Failed to upload file.');
+      }
     } finally {
       setUploading(false);
     }
@@ -59,7 +83,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           border: `2px dashed ${dragActive ? 'var(--accent-primary)' : 'var(--border-color)'}`,
           background: dragActive ? 'var(--accent-glow)' : 'var(--bg-surface)',
           borderRadius: 12,
-          padding: 20,
+          padding: 16,
           textAlign: 'center',
           cursor: 'pointer',
           transition: 'all 0.2s ease'
@@ -77,15 +101,17 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           {uploading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
               <UploadCloud size={28} className="animate-pulse" color="var(--accent-primary)" />
-              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Uploading to Supabase Storage ({bucketName})...</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Processing & Uploading file...</span>
             </div>
-          ) : fileName ? (
+          ) : fileName || currentUrl ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               {accept.includes('audio') ? <FileAudio size={24} color="var(--info)" /> : <FileText size={24} color="var(--success)" />}
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>{fileName}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {fileName || 'Audio Attached'}
+                </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <CheckCircle size={12} /> File Ready / Uploaded
+                  <CheckCircle size={12} /> Ready to Play & Save
                 </div>
               </div>
             </div>
@@ -96,12 +122,23 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 Drag & Drop or Click to Upload
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Supports {accept} (Supabase Storage Bucket: {bucketName})
+                Supports {accept}
               </span>
             </div>
           )}
         </label>
       </div>
+
+      {/* Audio Playback Preview */}
+      {currentUrl && accept.includes('audio') && (
+        <div style={{ marginTop: 8, padding: 8, background: 'rgba(0, 82, 209, 0.05)', borderRadius: 8, border: '1px solid rgba(0, 82, 209, 0.15)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0052d1', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+            <Volume2 size={12} /> Preview Spoken Audio:
+          </div>
+          <audio controls src={formatAudioSource(currentUrl)} style={{ width: '100%', height: 32 }} preload="auto" />
+        </div>
+      )}
+
       {uploadError && (
         <div style={{
           display: 'flex',

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Compass, Plus, Edit, QrCode, Check, Crosshair, MapPin, X } from 'lucide-react';
+import { Compass, Plus, Edit, QrCode, Check, Crosshair, MapPin, X, Volume2, Music } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { TouristSpot } from '../types';
 import { FileUploader } from '../components/ui/FileUploader';
+import { formatAudioSource } from '../../utils/audioUtils';
 
 interface TouristSpotsPageProps {
   spots: TouristSpot[];
@@ -218,6 +219,11 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                   <div className="text-[11px] text-slate-400 space-y-1 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
                     <div>⏰ Hours: <strong className="text-slate-700 dark:text-slate-300">{spot.opening_hours}</strong></div>
                     <div>🌐 Language: <strong className="text-slate-700 dark:text-slate-300 uppercase">{spot.language || 'fil'}</strong></div>
+                    {spot.audio_url && (
+                      <div className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[10px]">
+                        <Volume2 size={12} /> Spoken Audio Guide Attached
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -309,14 +315,33 @@ export const TouristSpotsPage: React.FC<TouristSpotsPageProps> = ({
                       <span>Category: <strong className="text-[#0052d1] dark:text-sky-400">{category}</strong></span>
                     </div>
 
-                    <div className="pt-1">
+                    <div className="pt-1 space-y-2">
                       <FileUploader
-                        bucketName="tourist-audio"
+                        bucketName="pasada-media"
                         accept="audio/*,.mp3,.wav,.m4a"
                         label="Spoken Audio Guide (MP3/WAV)"
                         currentUrl={audioUrl}
                         onUploadComplete={(url) => setAudioUrl(url)}
                       />
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={audioUrl}
+                          onChange={(e) => setAudioUrl(e.target.value)}
+                          placeholder="Or paste direct audio stream URL / Storage URL..."
+                          className="flex-1 h-8 px-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[11px] font-mono text-slate-900 dark:text-white outline-none focus:border-[#0052d1]"
+                        />
+                        {audioUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setAudioUrl('')}
+                            className="h-8 px-2.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold cursor-pointer hover:bg-rose-100 shrink-0"
+                            title="Remove Audio"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 

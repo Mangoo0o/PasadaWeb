@@ -32,3 +32,8 @@ dist-ssr
 
 # Supabase temp CLI
 supabase/.temp/
+
+# ECC agent scaffolding
+.agents/agents/
+.agents/workflows/
+.agents/.ecc-*
