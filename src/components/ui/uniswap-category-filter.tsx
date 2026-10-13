@@ -172,7 +172,7 @@ export const UniswapCategoryFilter: React.FC<UniswapCategoryFilterProps> = ({
                 </div>
 
                 {/* List */}
-                <div className="custom-scrollbar flex-1 overflow-y-auto pb-4 bg-white dark:bg-[#181818]">
+                <div className="custom-scrollbar no-scrollbar hide-scrollbar scrollbar-none flex-1 overflow-y-auto pb-4 bg-white dark:bg-[#181818]">
                   {filteredCategories.length === 0 ? (
                     <div className="flex h-[150px] flex-col items-center justify-center text-sm text-gray-500 dark:text-[#8d8c8d] space-y-1">
                       <span>{isFil ? 'Walang nahanap na kategorya' : 'No categories found'}</span>

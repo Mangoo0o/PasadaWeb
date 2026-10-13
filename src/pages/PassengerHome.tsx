@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, 
@@ -20,7 +20,9 @@ import {
   Percent,
   Repeat,
   ArrowRight,
-  Plus
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -36,7 +38,10 @@ import {
   LOCATION_ICON_OPTIONS,
   calculateFare,
   getPassengerTypeInfo,
-  isDiscountEligibleType
+  isDiscountEligibleType,
+  matchesLocationSearch,
+  getLocationCategoryMeta,
+  CATEGORY_DEFINITIONS
 } from '../services/fareService';
 import { UniswapCategoryFilter, CategoryOption } from '../components/ui/uniswap-category-filter';
 import { 
@@ -130,11 +135,94 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     return list;
   }, [locationFares, i18n.language]);
 
+  // Category carousel scroll ref & controls
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [isDraggingCategory, setIsDraggingCategory] = useState<boolean>(false);
+  const dragStartX = useRef<number>(0);
+  const dragScrollLeft = useRef<number>(0);
+  const hasDraggedCategory = useRef<boolean>(false);
+
+  const scrollCategoryStrip = (direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const amount = 220;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -amount : amount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleCategoryMouseDown = (e: React.MouseEvent) => {
+    if (!categoryScrollRef.current) return;
+    setIsDraggingCategory(true);
+    hasDraggedCategory.current = false;
+    dragStartX.current = e.pageX - categoryScrollRef.current.offsetLeft;
+    dragScrollLeft.current = categoryScrollRef.current.scrollLeft;
+  };
+
+  const handleCategoryMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingCategory || !categoryScrollRef.current) return;
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const walk = (x - dragStartX.current) * 1.2;
+    if (Math.abs(walk) > 4) {
+      hasDraggedCategory.current = true;
+    }
+    categoryScrollRef.current.scrollLeft = dragScrollLeft.current - walk;
+  };
+
+  const handleCategoryMouseUp = () => {
+    setIsDraggingCategory(false);
+  };
+
+  // Translate vertical mouse wheel to horizontal scrolling on the category strip
+  useEffect(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [isSearchFocused]);
+
   // Filtered location fares for map markers and search list
   const filteredLocationFares = useMemo(() => {
     if (selectedCategory === 'all') return locationFares;
     return locationFares.filter((loc) => resolveLocationCategory(loc) === selectedCategory);
   }, [locationFares, selectedCategory]);
+
+  // Derived destination list for search dropdown (category + keyword matching)
+  const displayedDestinations = useMemo(() => {
+    return locationFares.filter((loc) => {
+      // If a specific category is active, limit to that category
+      if (selectedCategory !== 'all' && resolveLocationCategory(loc) !== selectedCategory) {
+        return false;
+      }
+      // Check query match across name, notes, category ID, and category keywords
+      return matchesLocationSearch(loc, searchQuery);
+    });
+  }, [locationFares, selectedCategory, searchQuery]);
+
+  // Detected category if search query matches a category name or keyword
+  const activeCategoryMatch = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return null;
+    return CATEGORY_DEFINITIONS.find((cat) => {
+      return (
+        cat.id.toLowerCase() === q ||
+        cat.name.toLowerCase().includes(q) ||
+        cat.nameFil.toLowerCase().includes(q) ||
+        cat.keywords.some((k) => k.toLowerCase() === q || (q.length >= 3 && k.toLowerCase().startsWith(q)))
+      );
+    });
+  }, [searchQuery]);
 
   // Preselected tourist spot sync will be handled below alongside tariff resolution
 
@@ -812,72 +900,177 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 </button>
               </div>
 
-              {/* Compact Destination Rows */}
-              <div className="overflow-y-auto max-h-[300px] sm:max-h-[360px] divide-y divide-slate-100/80 dark:divide-slate-800/50">
-                {filteredLocationFares
-                  .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
-                  .map((loc) => {
-                    const calc = calculateFare(Number(loc.standard_fare), isDiscountEligible, loc.discounted_fare);
-                    const price = calc.finalFare;
+              {/* In-Dropdown Horizontal Category Pill Strip with Smooth Scrolling & Arrow Controls */}
+              <div className="relative px-1.5 py-1.5 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center">
+                {/* Scroll Left Arrow */}
+                <button
+                  type="button"
+                  onClick={() => scrollCategoryStrip('left')}
+                  className="h-6 w-6 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#0052d1] hover:bg-slate-50 shrink-0 mx-0.5 z-10 cursor-pointer transition-all active:scale-95"
+                  title="Scroll Left"
+                  aria-label="Scroll Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
 
+                {/* Horizontal Scroll Area */}
+                <div
+                  ref={categoryScrollRef}
+                  onMouseDown={handleCategoryMouseDown}
+                  onMouseMove={handleCategoryMouseMove}
+                  onMouseUp={handleCategoryMouseUp}
+                  onMouseLeave={handleCategoryMouseUp}
+                  className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar hide-scrollbar scrollbar-none py-0.5 px-1 select-none flex-1 scroll-smooth ${
+                    isDraggingCategory ? 'cursor-grabbing' : 'cursor-grab'
+                  }`}
+                  style={{ touchAction: 'pan-x' }}
+                >
+                  {categoryOptions.map((cat) => {
+                    const isSelected = selectedCategory === cat.id;
+                    const label = i18n.language === 'fil' ? cat.nameFil : cat.name;
                     return (
                       <button
-                        key={loc.id}
-                        onClick={() => handleSelectLocationFare(loc)}
-                        className="w-full px-3.5 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between group cursor-pointer"
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          if (!hasDraggedCategory.current) {
+                            setSelectedCategory(isSelected && cat.id !== 'all' ? 'all' : cat.id);
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer select-none active:scale-95 border ${
+                          isSelected
+                            ? 'bg-[#0052d1] text-white border-[#0052d1] shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
+                        }`}
+                        title={label}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <div className="w-6 h-6 rounded-md bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#0052d1] group-hover:text-white dark:group-hover:bg-[#206afa] dark:group-hover:text-white transition-colors text-slate-500 dark:text-slate-400">
-                            <MapPin className="w-3 h-3" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#0052d1] dark:group-hover:text-sky-400 transition-colors">
-                              {loc.location_name}
-                            </div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                              {loc.notes || 'Taripa-regulated location'}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <div className="text-xs font-bold text-[#0052d1] dark:text-sky-400">
-                            ₱{price.toFixed(2)}
-                          </div>
-                          {isDiscountEligible ? (
-                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block leading-tight">
-                              -20% {passengerTypeInfo.label}
-                            </span>
-                          ) : (
-                            <span className="text-[9px] text-slate-400 block leading-tight">
-                              Taripa
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-xs leading-none">{cat.icon}</span>
+                        <span>{label}</span>
+                        {cat.count !== undefined && cat.count > 0 && (
+                          <span
+                            className={`text-[9px] px-1 py-0.2 rounded-full font-black ${
+                              isSelected
+                                ? 'bg-white/25 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                            }`}
+                          >
+                            {cat.count}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
+                </div>
 
-                {filteredLocationFares.filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
-                  <div className="p-4 text-center text-xs text-slate-400 space-y-1">
-                    <p className="font-semibold text-slate-600 dark:text-slate-300 text-xs">
+                {/* Scroll Right Arrow */}
+                <button
+                  type="button"
+                  onClick={() => scrollCategoryStrip('right')}
+                  className="h-6 w-6 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#0052d1] hover:bg-slate-50 shrink-0 mx-0.5 z-10 cursor-pointer transition-all active:scale-95"
+                  title="Scroll Right"
+                  aria-label="Scroll Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Active Category Search Match Callout */}
+              {activeCategoryMatch && selectedCategory === 'all' && (
+                <div className="mx-2.5 mt-2 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center justify-between text-xs animate-in fade-in">
+                  <div className="flex items-center gap-1.5 text-sky-800 dark:text-sky-200 font-semibold text-[11px] truncate mr-1">
+                    <span className="text-sm shrink-0">{activeCategoryMatch.icon}</span>
+                    <span className="truncate">
+                      {i18n.language === 'fil'
+                        ? `Kategorya: ${activeCategoryMatch.nameFil} (${displayedDestinations.length})`
+                        : `Category: ${activeCategoryMatch.name} (${displayedDestinations.length})`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(activeCategoryMatch.id);
+                      setSearchQuery('');
+                    }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#0052d1] text-white hover:bg-[#206afa] transition-colors shrink-0 cursor-pointer"
+                  >
+                    {i18n.language === 'fil' ? 'I-filter sa Mapa' : 'Filter on Map'}
+                  </button>
+                </div>
+              )}
+
+              {/* Compact Destination Rows */}
+              <div className="overflow-y-auto max-h-[300px] sm:max-h-[360px] divide-y divide-slate-100/80 dark:divide-slate-800/50 no-scrollbar hide-scrollbar scrollbar-none">
+                {displayedDestinations.map((loc) => {
+                  const calc = calculateFare(Number(loc.standard_fare), isDiscountEligible, loc.discounted_fare);
+                  const price = calc.finalFare;
+                  const catMeta = getLocationCategoryMeta(loc);
+
+                  return (
+                    <button
+                      key={loc.id}
+                      onClick={() => handleSelectLocationFare(loc)}
+                      className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#0052d1] group-hover:text-white dark:group-hover:bg-[#206afa] dark:group-hover:text-white transition-colors text-sm shadow-2xs">
+                          <span>{catMeta.icon || '📍'}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#0052d1] dark:group-hover:text-sky-400 transition-colors">
+                              {loc.location_name}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                              {i18n.language === 'fil' ? catMeta.nameFil : catMeta.name}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                            {loc.notes || 'Taripa-regulated location'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-bold text-[#0052d1] dark:text-sky-400">
+                          ₱{price.toFixed(2)}
+                        </div>
+                        {isDiscountEligible ? (
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block leading-tight">
+                            -20% {passengerTypeInfo.label}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-slate-400 block leading-tight">
+                            Taripa
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {displayedDestinations.length === 0 && (
+                  <div className="p-5 text-center text-xs text-slate-400 space-y-2">
+                    <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg">
+                      🔍
+                    </div>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 text-xs">
                       {selectedCategory !== 'all'
                         ? (i18n.language === 'fil' ? 'Walang nahanap sa napiling kategorya' : 'No destinations in this category')
-                        : (i18n.language === 'fil' ? 'Walang nahanap na tugmang destinasyon' : 'No matching destinations found')}
+                        : (i18n.language === 'fil' ? 'Walang nahanap na tugmang destinasyon o kategorya' : 'No matching destination or category found')}
                     </p>
-                    <p className="text-[10px]">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                       {selectedCategory !== 'all' ? (
                         <button
                           type="button"
                           onClick={() => setSelectedCategory('all')}
-                          className="text-[#0052d1] dark:text-sky-400 font-bold underline cursor-pointer"
+                          className="text-[#0052d1] dark:text-sky-400 font-bold underline cursor-pointer hover:opacity-80"
                         >
                           {i18n.language === 'fil' ? 'Ipakita ang lahat ng kategorya' : 'Show all categories'}
                         </button>
                       ) : (
                         i18n.language === 'fil'
-                          ? 'Maaari ka ring mag-tap kahit saan sa mapa upang maglagay ng Custom Pin.'
-                          : 'You can also tap anywhere on the map to place a Custom Pin.'
+                          ? 'Subukang maghanap gamit ang pangalan ng barangay o kategorya (hal. Simbahan, Farm, Beach).'
+                          : 'Try searching by barangay name or category (e.g. Church, Farm, Beach).'
                       )}
                     </p>
                   </div>
@@ -973,7 +1166,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
                   <div className="absolute inset-0 rounded-full bg-sky-200 animate-ping"></div>
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#0052d1] text-white flex items-center justify-center relative z-10 shadow">
-                    <Bike className="w-4 h-4 text-[#fcd400] animate-bounce" />
+                    <Bike className="w-4 h-4 text-[#fcd400] animate-pulse" />
                   </div>
                 </div>
                 <div className="text-left min-w-0 flex-1">
@@ -1511,7 +1704,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   type="text"
                   value={rebookSearchQuery}
                   onChange={(e) => setRebookSearchQuery(e.target.value)}
-                  placeholder={i18n.language === 'en' ? 'Search Bauang barangay / landmark...' : 'Maghanap ng barangay o landmark sa Bauang...'}
+                  placeholder={i18n.language === 'en' ? 'Search destination or category (e.g. Church, Farm)...' : 'Maghanap ng destinasyon o kategorya (hal. Simbahan, Farm)...'}
                   className="w-full pl-8 pr-8 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1] outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                 />
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
@@ -1527,17 +1720,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               </div>
 
               {/* Quick Selectable Destination Chips */}
-              <div className="overflow-y-auto max-h-36 sm:max-h-44 pr-1 space-y-1.5 mt-2 custom-scrollbar">
+              <div className="overflow-y-auto max-h-36 sm:max-h-44 pr-1 space-y-1.5 mt-2 no-scrollbar hide-scrollbar scrollbar-none">
                 {(() => {
                   const filtered = locationFares.filter((lf) => {
                     if (!rebookSearchQuery) return true;
-                    return lf.location_name.toLowerCase().includes(rebookSearchQuery.toLowerCase());
+                    return matchesLocationSearch(lf, rebookSearchQuery);
                   });
 
                   if (filtered.length === 0) {
                     return (
                       <div className="text-center py-4 text-slate-400 text-xs">
-                        {i18n.language === 'en' ? 'No destinations found' : 'Walang nahanap na destinasyon'}
+                        {i18n.language === 'en' ? 'No matching destinations or categories found' : 'Walang nahanap na destinasyon o kategorya'}
                       </div>
                     );
                   }
@@ -1545,6 +1738,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   return filtered.map((loc) => {
                     const isSelected = rebookSelectedLocation?.id === loc.id;
                     const fareAmt = Number(loc.standard_fare || 20);
+                    const catMeta = getLocationCategoryMeta(loc);
 
                     return (
                       <button
@@ -1558,13 +1752,24 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0 pr-2">
-                          <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#0052d1]' : 'text-slate-400'}`} />
+                          <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-xs ${
+                            isSelected ? 'bg-[#0052d1] text-white' : 'bg-slate-100 dark:bg-slate-700'
+                          }`}>
+                            <span>{catMeta.icon || '📍'}</span>
+                          </div>
                           <div className="truncate">
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate block">
-                              {loc.location_name}
-                            </span>
-                            {loc.description && (
-                              <span className="text-[10px] text-slate-400 truncate block">{loc.description}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate block">
+                                {loc.location_name}
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 shrink-0">
+                                {i18n.language === 'fil' ? catMeta.nameFil : catMeta.name}
+                              </span>
+                            </div>
+                            {(loc.description || loc.notes) && (
+                              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                                {loc.description || loc.notes}
+                              </span>
                             )}
                           </div>
                         </div>

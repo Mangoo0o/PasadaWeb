@@ -32,7 +32,8 @@ import {
   findMatchingLocationByProximity, 
   calculateHaversineDistanceMeters,
   LOCATION_ICON_OPTIONS, 
-  getLocationIconEmoji 
+  getLocationIconEmoji,
+  matchesLocationSearch
 } from '../../services/fareService';
 import { supabase } from '../../api/supabaseClient';
 import { cn } from '../../lib/utils';
@@ -436,8 +437,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
   };
 
   const filteredLocationFares = locationFares.filter(loc => {
-    const term = searchRule.toLowerCase();
-    return loc.location_name.toLowerCase().includes(term) || (loc.notes && loc.notes.toLowerCase().includes(term));
+    return matchesLocationSearch(loc, searchRule);
   });
 
   const activeLocation = selectedLocation || testResult?.matchedLocation || locationFares[0] || null;

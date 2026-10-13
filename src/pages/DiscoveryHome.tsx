@@ -200,20 +200,51 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
   };
 
   const categories = [
-    { id: 'all', label: 'Must-See' },
-    { id: 'hidden', label: 'Hidden Gem' },
-    { id: 'food', label: 'Food & Cafe' },
-    { id: 'nature', label: 'Grape Farms' },
-    { id: 'recreation', label: 'Beaches & Sunset' },
-    { id: 'historical', label: 'Churches & Heritage' },
+    { id: 'all', label: 'Must-See', labelFil: 'Kailangang Puntahan', icon: '✨' },
+    { id: 'hidden', label: 'Hidden Gem', labelFil: 'Natatagong Yaman', icon: '💎' },
+    { id: 'food', label: 'Food & Cafe', labelFil: 'Pagkain at Kape', icon: '☕' },
+    { id: 'nature', label: 'Grape Farms', labelFil: 'Ubasan at Bukid', icon: '🍇' },
+    { id: 'recreation', label: 'Beaches & Sunset', labelFil: 'Baybayin at Dagat', icon: '🏖️' },
+    { id: 'historical', label: 'Churches & Heritage', labelFil: 'Simbahan at Pamana', icon: '⛪' },
   ];
 
   const filteredSpots = spots.filter(spot => {
-    const matchesSearch = 
-      spot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      spot.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      spot.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) {
+      if (activeCategory === 'all') return true;
+      if (activeCategory === 'hidden') return spot.category === 'nature' || spot.category === 'historical';
+      return spot.category === activeCategory;
+    }
 
+    // Direct search match
+    const nameMatch = spot.name.toLowerCase().includes(q);
+    const descMatch = (spot.description || '').toLowerCase().includes(q);
+    const catMatch = (spot.category || '').toLowerCase().includes(q);
+
+    // Category label & synonym matching
+    const matchedCategoryEntry = categories.find(c => 
+      c.label.toLowerCase().includes(q) || 
+      (c.labelFil && c.labelFil.toLowerCase().includes(q))
+    );
+    const catLabelMatch = matchedCategoryEntry 
+      ? (matchedCategoryEntry.id === 'all' || 
+         (matchedCategoryEntry.id === 'hidden' && (spot.category === 'nature' || spot.category === 'historical')) ||
+         spot.category === matchedCategoryEntry.id)
+      : false;
+
+    // Filipino & English keyword synonyms
+    let synonymMatch = false;
+    if (q.includes('simbahan') || q.includes('parokya') || q.includes('church') || q.includes('chapel')) {
+      synonymMatch = spot.category === 'historical';
+    } else if (q.includes('ubas') || q.includes('farm') || q.includes('grape') || q.includes('vineyard') || q.includes('bukid')) {
+      synonymMatch = spot.category === 'nature';
+    } else if (q.includes('dagat') || q.includes('beach') || q.includes('baybayin') || q.includes('sunset') || q.includes('resort')) {
+      synonymMatch = spot.category === 'recreation';
+    } else if (q.includes('kainan') || q.includes('pagkain') || q.includes('cafe') || q.includes('coffee') || q.includes('food') || q.includes('restaurant')) {
+      synonymMatch = spot.category === 'food';
+    }
+
+    const matchesSearch = nameMatch || descMatch || catMatch || catLabelMatch || synonymMatch;
     if (!matchesSearch) return false;
 
     if (activeCategory === 'all') return true;
@@ -284,13 +315,14 @@ export const DiscoveryHome: React.FC<DiscoveryHomeProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`whitespace-nowrap px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm ${
+                className={`whitespace-nowrap px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-[#fcd400] text-[#131b2e] border border-[#fcd400] shadow-sm'
                     : 'bg-white/85 backdrop-blur-sm text-slate-700 hover:bg-white border border-white/70'
                 }`}
               >
-                {cat.label}
+                <span className="text-xs leading-none">{cat.icon}</span>
+                <span>{i18n.language === 'fil' && cat.labelFil ? cat.labelFil : cat.label}</span>
               </button>
             );
           })}

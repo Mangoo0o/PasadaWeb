@@ -72,6 +72,158 @@ export const resolveLocationCategory = (loc: { icon?: string; location_name?: st
   return 'pin';
 };
 
+export interface CategoryMetadata {
+  id: string;
+  label: string;
+  name: string;
+  nameFil: string;
+  icon: string;
+  keywords: string[];
+}
+
+export const CATEGORY_DEFINITIONS: CategoryMetadata[] = [
+  {
+    id: 'landmark',
+    label: 'Munisipyo / Plaza',
+    name: 'Municipal Hall & Plaza',
+    nameFil: 'Munisipyo at Plaza',
+    icon: '🏛️',
+    keywords: ['plaza', 'munisipyo', 'municipal', 'town hall', 'hall', 'kapitolyo', 'monumento', 'court', 'auditorium', 'civic center', 'sentro'],
+  },
+  {
+    id: 'church',
+    label: 'Simbahan / Church',
+    name: 'Churches & Parishes',
+    nameFil: 'Mga Simbahan at Parokya',
+    icon: '⛪',
+    keywords: ['church', 'simbahan', 'parish', 'parokya', 'peter', 'paul', 'chapel', 'kapilya', 'cathedral', 'shrine', 'katedral', 'sambahan'],
+  },
+  {
+    id: 'market',
+    label: 'Palengke / Market',
+    name: 'Markets & Groceries',
+    nameFil: 'Palengke at Pamilihan',
+    icon: '🛒',
+    keywords: ['market', 'palengke', 'trading', 'grocery', 'supermarket', 'talipapa', 'tiangge', 'bagsakan', 'pamilihan', 'tindahan', 'mall', 'bilihan'],
+  },
+  {
+    id: 'school',
+    label: 'Paaralan / School',
+    name: 'Schools & Universities',
+    nameFil: 'Mga Paaralan at Kolehiyo',
+    icon: '🏫',
+    keywords: ['school', 'paaralan', 'elementary', 'high school', 'college', 'university', 'eskwela', 'academy', 'institute', 'eskuwela', 'pamantasan'],
+  },
+  {
+    id: 'farm',
+    label: 'Farm / Vineyard',
+    name: 'Grape Farms & Vineyards',
+    nameFil: 'Ubasan at Bukid',
+    icon: '🍇',
+    keywords: ['grape', 'grapes', 'farm', 'farms', 'vineyard', 'lomboy', 'ubasan', 'ubas', 'bukid', 'agri', 'agritourism', 'plantation', 'ani'],
+  },
+  {
+    id: 'beach',
+    label: 'Beach / Baybayin',
+    name: 'Beaches & Coastal',
+    nameFil: 'Baybayin at Dagat',
+    icon: '🏖️',
+    keywords: ['beach', 'baybayin', 'dagat', 'sunset', 'baybay', 'bagbag', 'tabing dagat', 'shore', 'coast', 'seashore', 'sand', 'coastal'],
+  },
+  {
+    id: 'resort',
+    label: 'Resort / Coastal',
+    name: 'Resorts & Stays',
+    nameFil: 'Resort at Tuluyan',
+    icon: '🌊',
+    keywords: ['resort', 'hotel', 'staycation', 'paringao', 'coast', 'pool', 'swimming', 'cottage', 'inn', 'transient', 'bakasyon', 'pantalan'],
+  },
+  {
+    id: 'hospital',
+    label: 'Ospital / Health',
+    name: 'Hospitals & Clinics',
+    nameFil: 'Ospital at Health Center',
+    icon: '🏥',
+    keywords: ['hospital', 'clinic', 'health', 'center', 'ospital', 'klinika', 'doctor', 'doktor', 'medical', 'emergency', 'rhu', 'gamutan', 'pagamutan'],
+  },
+  {
+    id: 'barangay',
+    label: 'Barangay / Home',
+    name: 'Barangay Halls & Homes',
+    nameFil: 'Barangay at Komunidad',
+    icon: '🏠',
+    keywords: ['barangay', 'brgy', 'baccuit', 'center', 'home', 'bahay', 'hall', 'sitio', 'purok', 'poblacion', 'residence', 'komunidad'],
+  },
+  {
+    id: 'gas',
+    label: 'Gas / Junction',
+    name: 'Gas Stations & Crossings',
+    nameFil: 'Gasolinahan at Crossing',
+    icon: '⛽',
+    keywords: ['junction', 'highway', 'crossing', 'gas', 'gasoline', 'petron', 'shell', 'caltex', 'quinavite', 'intersection', 'sakayan', 'kalsada'],
+  },
+  {
+    id: 'park',
+    label: 'Park / Nature',
+    name: 'Parks & Nature Spots',
+    nameFil: 'Parke at Kalikasan',
+    icon: '🌲',
+    keywords: ['valley', 'calumbaya', 'park', 'parke', 'nature', 'kalikasan', 'tree', 'bundok', 'bukid', 'green', 'eco', 'ecopark', 'viewdeck'],
+  },
+];
+
+export const getLocationCategoryMeta = (loc: { icon?: string; location_name?: string; notes?: string }): CategoryMetadata => {
+  const catId = resolveLocationCategory(loc);
+  return (
+    CATEGORY_DEFINITIONS.find(c => c.id === catId) || {
+      id: 'pin',
+      label: 'General Pin',
+      name: 'General Location',
+      nameFil: 'Karaniwang Lokasyon',
+      icon: '📍',
+      keywords: [],
+    }
+  );
+};
+
+/**
+ * Checks whether a given location matches a search query by:
+ * 1. Location name (case-insensitive substring)
+ * 2. Notes / landmarks
+ * 3. Its resolved category ID, English/Filipino names, or category keywords/synonyms
+ */
+export const matchesLocationSearch = (
+  loc: { location_name?: string; notes?: string; icon?: string },
+  query: string
+): boolean => {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+
+  // 1. Direct location name match
+  const locName = (loc.location_name || '').toLowerCase();
+  if (locName.includes(q)) return true;
+
+  // 2. Direct notes match
+  const locNotes = (loc.notes || '').toLowerCase();
+  if (locNotes.includes(q)) return true;
+
+  // 3. Resolve category of this location
+  const catId = resolveLocationCategory(loc);
+  if (catId.toLowerCase().includes(q)) return true;
+
+  // 4. Check if query matches category definition (English name, Filipino name, label, or keywords)
+  const catDef = CATEGORY_DEFINITIONS.find(c => c.id === catId);
+  if (catDef) {
+    if (catDef.name.toLowerCase().includes(q)) return true;
+    if (catDef.nameFil.toLowerCase().includes(q)) return true;
+    if (catDef.label.toLowerCase().includes(q)) return true;
+    if (catDef.keywords.some(k => k.toLowerCase().includes(q) || q.includes(k.toLowerCase()))) return true;
+  }
+
+  return false;
+};
+
+
 // No hardcoded seeded data - location fares are dynamically loaded from Supabase database
 export const DEFAULT_LOCATION_FARES: LocationFare[] = [];
 
