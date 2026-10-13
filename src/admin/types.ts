@@ -152,6 +152,13 @@ export interface Booking {
   pickup_name?: string;
   dropoff_name?: string;
   distance_km?: number;
+  base_fare?: number;
+  additional_fare?: number;
+  additional_fare_reason?: string;
+  original_destination_name?: string;
+  original_fare?: number;
+  extension_fare?: number;
+  rebook_count?: number;
 }
 
 export interface FareReceipt {

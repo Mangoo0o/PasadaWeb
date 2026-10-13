@@ -15,10 +15,14 @@ import {
   LocateFixed,
   MessageSquare,
   Play,
-  Square
+  Square,
+  Repeat,
+  Search,
+  Check,
+  Compass
 } from 'lucide-react';
-import { Booking } from '../types/database.types';
-import { updateBookingStatus } from '../services/bookingService';
+import { Booking, LocationFare } from '../types/database.types';
+import { updateBookingStatus, subscribeToBooking, extendBookingDestination } from '../services/bookingService';
 import { useAuth } from '../hooks/useAuth';
 import { broadcastDriverLocation } from '../services/driverTrackingService';
 import { soundService } from '../services/soundNotificationService';
@@ -26,7 +30,14 @@ import { InTripChatModal } from '../components/booking/InTripChatModal';
 import { InPhoneMessageBanner } from '../components/booking/InPhoneMessageBanner';
 import { subscribeToTripChat, fetchTripMessages } from '../services/tripChatService';
 import { useTranslation } from 'react-i18next';
-import { getPassengerTypeInfo, isDiscountEligibleType } from '../services/fareService';
+import { 
+  getPassengerTypeInfo, 
+  isDiscountEligibleType, 
+  calculateTripCompletionFare, 
+  TripCompletionCalculation,
+  fetchLocationFares,
+  calculateFare
+} from '../services/fareService';
 
 interface DriverTravelPageProps {
   booking: Booking;
@@ -179,12 +190,43 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     isValidCoord(rawOriginLat, rawOriginLng) ? rawOriginLng : 120.3320,
   ];
 
-  const rawDestLat = Number(booking.destination_lat);
-  const rawDestLng = Number(booking.destination_lng);
-  const destinationDropCoords: [number, number] = [
+  const [currentBooking, setCurrentBooking] = useState<Booking>(booking);
+  const currentBookingRef = React.useRef<Booking>(booking);
+  useEffect(() => {
+    currentBookingRef.current = currentBooking;
+  }, [currentBooking]);
+
+  const rawDestLat = Number(currentBooking.destination_lat || booking.destination_lat);
+  const rawDestLng = Number(currentBooking.destination_lng || booking.destination_lng);
+  const initialDestCoords: [number, number] = [
     isValidCoord(rawDestLat, rawDestLng) ? rawDestLat : 16.5385,
     isValidCoord(rawDestLat, rawDestLng) ? rawDestLng : 120.3250,
   ];
+  const [destinationCoords, setDestinationCoords] = useState<[number, number]>(initialDestCoords);
+
+  // Real-time banner alert when passenger extends destination
+  const [rebookAlert, setRebookAlert] = useState<{
+    show: boolean;
+    newDestination: string;
+    addedFare: number;
+    totalFare: number;
+  } | null>(null);
+
+  // Driver-side Rebook state (if commuter requests destination extension verbally)
+  const [showDriverRebookModal, setShowDriverRebookModal] = useState(false);
+  const [availableLocations, setAvailableLocations] = useState<LocationFare[]>([]);
+  const [driverRebookSearch, setDriverRebookSearch] = useState('');
+  const [selectedNewLocation, setSelectedNewLocation] = useState<LocationFare | null>(null);
+  const [isSubmittingDriverRebook, setIsSubmittingDriverRebook] = useState(false);
+
+  // Fetch official TODA location fares for driver rebook selection
+  useEffect(() => {
+    fetchLocationFares().then((locs) => {
+      if (locs && locs.length > 0) {
+        setAvailableLocations(locs);
+      }
+    });
+  }, []);
 
   // Simulation mode state for testing / demo without driving
   const [isSimulating, setIsSimulating] = useState(false);
@@ -239,15 +281,141 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   // Phase 2 Route: Driver / Pickup -> Destination Drop-off (Orange)
   const [roadToDestination, setRoadToDestination] = useState<[number, number][]>([
     passengerPickupCoords,
-    destinationDropCoords,
+    destinationCoords,
   ]);
 
   const [completedFare, setCompletedFare] = useState<number | null>(null);
+  const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [additionalFareInput, setAdditionalFareInput] = useState<string>('0');
+  const [additionalFareReason, setAdditionalFareReason] = useState<string>('');
+  const [completedBreakdown, setCompletedBreakdown] = useState<TripCompletionCalculation | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
   const [isCancelling, setIsCancelling] = useState(false);
   const [focusKey, setFocusKey] = useState<number>(0);
+
+  // Commuter discount profile and base tariff resolution (reflects accumulated fare if rebooked)
+  const rawPassengerType = currentBooking.passenger?.passenger_type || (currentBooking as any)?.passenger_type || 'regular';
+  const isEligibleDiscount = isDiscountEligibleType(rawPassengerType);
+  const pTypeInfo = getPassengerTypeInfo(rawPassengerType);
+
+  // Check if trip was rebooked/extended
+  const isRebooked = Boolean(
+    (currentBooking.rebook_count != null && Number(currentBooking.rebook_count) > 0) ||
+    (currentBooking.original_destination_name && currentBooking.original_destination_name !== currentBooking.destination_name) ||
+    (currentBooking.extension_fare != null && Number(currentBooking.extension_fare) > 0)
+  );
+
+  // Original standard tariff before discount (reflects accumulated fare if rebooked)
+  const baseTariff = Number(
+    currentBooking.base_fare || (isEligibleDiscount && currentBooking.estimated_fare === 16 ? 20 : currentBooking.estimated_fare)
+  );
+
+  const parsedAdditionalFare = Math.max(0, Number(additionalFareInput) || 0);
+  const currentSettlementCalc = calculateTripCompletionFare(baseTariff, parsedAdditionalFare, isEligibleDiscount);
+
+  // Subscribe to real-time booking updates (e.g. passenger rebooks or extends destination)
+  useEffect(() => {
+    if (!booking?.id) return;
+
+    const handleBookingUpdate = (latest: Booking) => {
+      if (!latest) return;
+      const prev = currentBookingRef.current;
+
+      const destNameChanged =
+        Boolean(latest.destination_name && latest.destination_name !== prev.destination_name);
+      const destCoordsChanged =
+        (latest.destination_lat && Number(latest.destination_lat) !== Number(prev.destination_lat)) ||
+        (latest.destination_lng && Number(latest.destination_lng) !== Number(prev.destination_lng));
+      const fareChanged =
+        latest.estimated_fare != null && Number(latest.estimated_fare) !== Number(prev.estimated_fare);
+      const rebookCountIncreased =
+        Number(latest.rebook_count || 0) > Number(prev.rebook_count || 0);
+
+      const isRebookDetected = destNameChanged || destCoordsChanged || fareChanged || rebookCountIncreased;
+
+      if (isRebookDetected) {
+        const newLat = Number(latest.destination_lat);
+        const newLng = Number(latest.destination_lng);
+        if (isValidCoord(newLat, newLng)) {
+          setDestinationCoords([newLat, newLng]);
+        }
+
+        // Trigger audio chime alert for driver
+        soundService.playDispatchAlert();
+
+        // Refocus camera bounds to fit new route
+        setFocusKey((k) => k + 1);
+
+        const added = latest.extension_fare != null && Number(latest.extension_fare) > 0
+          ? Number(latest.extension_fare)
+          : Math.max(0, Number(latest.estimated_fare) - Number(prev.estimated_fare || latest.original_fare || 0));
+
+        setRebookAlert({
+          show: true,
+          newDestination: latest.destination_name || 'Bagong Destinasyon',
+          addedFare: added,
+          totalFare: Number(latest.estimated_fare),
+        });
+      }
+
+      setCurrentBooking((current) => ({ ...current, ...latest }));
+    };
+
+    const unsubscribe = subscribeToBooking(booking.id, handleBookingUpdate);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [booking.id]);
+
+  // Driver submits destination rebook / extension (e.g. verbally requested by commuter)
+  const handleConfirmDriverRebook = async () => {
+    if (!selectedNewLocation || !booking?.id) return;
+    setIsSubmittingDriverRebook(true);
+
+    try {
+      const calc = calculateFare(
+        Number(selectedNewLocation.standard_fare || 20),
+        isEligibleDiscount,
+        selectedNewLocation.discounted_fare
+      );
+      const extensionFare = calc.finalFare;
+
+      const res = await extendBookingDestination({
+        bookingId: booking.id,
+        newDestinationName: selectedNewLocation.location_name,
+        newDestinationLat: selectedNewLocation.lat,
+        newDestinationLng: selectedNewLocation.lng,
+        extensionFare: extensionFare,
+        passengerId: currentBooking.passenger_id || booking.passenger_id,
+        passengerName: currentBooking.passenger?.full_name || 'Passenger'
+      });
+
+      if (res.success && res.updatedBooking) {
+        setCurrentBooking(res.updatedBooking);
+        setDestinationCoords([selectedNewLocation.lat, selectedNewLocation.lng]);
+        setFocusKey((k) => k + 1);
+        setShowDriverRebookModal(false);
+        setSelectedNewLocation(null);
+        setDriverRebookSearch('');
+        soundService.playTripCompletedAlert();
+        setRebookAlert({
+          show: true,
+          newDestination: selectedNewLocation.location_name,
+          addedFare: extensionFare,
+          totalFare: Number(res.updatedBooking.estimated_fare),
+        });
+      } else {
+        alert(res.error || 'Failed to extend destination');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error updating destination');
+    } finally {
+      setIsSubmittingDriverRebook(false);
+    }
+  };
 
   useEffect(() => {
     if (!booking?.id) return;
@@ -313,7 +481,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     return () => clearInterval(interval);
   }, [isSimulating, tripState, roadToPickup, roadToDestination, activeDriverId]);
 
-  // Dynamically update road polyline matching the active phase
+  // Dynamically update road polyline matching the active phase & destination coordinates
   useEffect(() => {
     let active = true;
 
@@ -322,9 +490,12 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       fetchOSRMRoute(driverCoords, passengerPickupCoords).then((road) => {
         if (active) setRoadToPickup(road);
       });
+      fetchOSRMRoute(passengerPickupCoords, destinationCoords).then((road) => {
+        if (active) setRoadToDestination(road);
+      });
     } else if (tripState === 'in_transit') {
       // Phase 2: Route from Current Location to Destination
-      fetchOSRMRoute(driverCoords, destinationDropCoords).then((road) => {
+      fetchOSRMRoute(driverCoords, destinationCoords).then((road) => {
         if (active) setRoadToDestination(road);
       });
     }
@@ -332,25 +503,40 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     return () => {
       active = false;
     };
-  }, [tripState, booking.id, driverCoords[0], driverCoords[1]]);
+  }, [tripState, booking.id, driverCoords[0], driverCoords[1], destinationCoords[0], destinationCoords[1]]);
 
   // Stage Action Handlers
   const handleArrivePickup = async () => {
     setTripState('arrived');
-    await updateBookingStatus(booking.id, 'driver_arrived', booking.driver_id);
+    await updateBookingStatus(booking.id, 'driver_arrived', activeDriverId);
   };
 
   const handleStartTrip = async () => {
     setTripState('in_transit');
-    await updateBookingStatus(booking.id, 'in_transit', booking.driver_id);
+    await updateBookingStatus(booking.id, 'in_transit', activeDriverId);
   };
 
-  const handleCompleteTrip = async () => {
-    const fare = booking.estimated_fare;
+  const handleOpenSettlement = () => {
+    setShowSettlementModal(true);
+  };
+
+  const handleConfirmFinalCompletion = async () => {
+    const calc = currentSettlementCalc;
     setTripState('completed');
-    setCompletedFare(fare);
+    setCompletedFare(calc.finalPayableFare);
+    setCompletedBreakdown(calc);
     soundService.playTripCompletedAlert();
-    await updateBookingStatus(booking.id, 'completed', booking.driver_id, fare);
+    setShowSettlementModal(false);
+    await updateBookingStatus(
+      booking.id,
+      'completed',
+      activeDriverId,
+      calc.finalPayableFare,
+      calc.additionalFare,
+      additionalFareReason.trim() || (calc.additionalFare > 0 ? 'Manual Surcharge' : undefined),
+      calc.discountAmount,
+      calc.baseFare
+    );
   };
 
   const handleOpenCancelModal = () => {
@@ -368,7 +554,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const isHeadingToPickup = tripState === 'assigned' || tripState === 'arrived';
   const activeFocusPoints = isHeadingToPickup
     ? [driverCoords, passengerPickupCoords]
-    : [driverCoords, destinationDropCoords];
+    : [driverCoords, destinationCoords];
 
   return (
     <div className="fixed inset-0 z-[9999] w-full h-full bg-slate-950 flex flex-col overflow-hidden font-sans">
@@ -382,8 +568,37 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
           right: '10px',
           zIndex: 10000
         }}
-        className="max-w-2xl mx-auto pointer-events-auto sm:!top-4 sm:!left-4 sm:!right-4"
+        className="max-w-2xl mx-auto pointer-events-auto sm:!top-4 sm:!left-4 sm:!right-4 space-y-2"
       >
+        {/* Real-time Rebook / Destination Extension Alert Banner */}
+        {rebookAlert?.show && (
+          <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 p-2.5 sm:p-3.5 rounded-2xl shadow-2xl border-2 border-white flex items-center justify-between gap-2.5 animate-in slide-in-from-top-3 duration-300">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
+                <Repeat className="w-4 h-4 animate-spin" style={{ animationDuration: '4s' }} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase font-black tracking-wider text-slate-900 flex items-center gap-1">
+                  <span>🔔 Na-update ang Destinasyon!</span>
+                </div>
+                <div className="text-xs sm:text-sm font-black text-slate-950 truncate">
+                  {rebookAlert.newDestination}
+                </div>
+                <div className="text-[10px] font-bold text-slate-900">
+                  Dagdag: +₱{rebookAlert.addedFare.toFixed(2)} • Kabuuang Bayad: ₱{rebookAlert.totalFare.toFixed(2)}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRebookAlert(null)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-950 text-white hover:bg-slate-800 font-black text-[10px] sm:text-[11px] shadow-sm shrink-0 cursor-pointer active:scale-95 transition-all"
+            >
+              Naintindihan
+            </button>
+          </div>
+        )}
+
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
           {/* Header Row: Active Phase Badge + Phone Action + Fare */}
@@ -393,9 +608,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
                 {isHeadingToPickup ? `1. ${t('driver.pickupStage', 'Sunduin sa Sakayan')}` : `2. ${t('driver.dropoffStage', 'Ihatid sa Destinasyon')}`}
               </span>
-              {booking.passenger?.full_name && (
+              {currentBooking.passenger?.full_name && (
                 <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate hidden sm:inline">
-                  • {booking.passenger.full_name}
+                  • {currentBooking.passenger.full_name}
                 </span>
               )}
             </div>
@@ -417,9 +632,9 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   </span>
                 )}
               </button>
-              {booking.passenger?.phone_number && (
+              {currentBooking.passenger?.phone_number && (
                 <a
-                  href={`tel:${booking.passenger.phone_number}`}
+                  href={`tel:${currentBooking.passenger.phone_number}`}
                   className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-transform active:scale-95"
                   title={t('driver.callPassenger', 'Call Passenger')}
                 >
@@ -428,11 +643,16 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               )}
               <div className="text-right">
                 <span className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] block">
-                  ₱{booking.estimated_fare.toFixed(2)}
+                  ₱{Number(currentBooking.estimated_fare || booking.estimated_fare).toFixed(2)}
                 </span>
-                {isDiscountEligibleType(booking.passenger?.passenger_type || (booking as any)?.passenger_type) && (
+                {isRebooked && (
+                  <span className="text-[8px] font-black text-amber-600 dark:text-amber-400 block leading-tight">
+                    +₱{Number(currentBooking.extension_fare || (Number(currentBooking.estimated_fare) - Number(currentBooking.original_fare || 0))).toFixed(2)} Rebooked
+                  </span>
+                )}
+                {isDiscountEligibleType(currentBooking.passenger?.passenger_type || (currentBooking as any)?.passenger_type) && (
                   <span className="text-[8px] sm:text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded inline-block">
-                    -20% {getPassengerTypeInfo(booking.passenger?.passenger_type || (booking as any)?.passenger_type).label}
+                    -20% {getPassengerTypeInfo(currentBooking.passenger?.passenger_type || (currentBooking as any)?.passenger_type).label}
                   </span>
                 )}
               </div>
@@ -453,7 +673,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
-                  {booking.origin_name}
+                  {currentBooking.origin_name || booking.origin_name}
                 </span>
               </div>
             </div>
@@ -467,14 +687,27 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 !isHeadingToPickup ? 'ring-2 sm:ring-4 ring-[#FF6B00]/25 shadow-sm' : 'opacity-70'
               }`}></div>
               <div className="min-w-0 flex-1">
-                <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] block tracking-wider leading-none">
-                  {t('driver.dropoff', 'BABAAN')}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[8px] sm:text-[9px] uppercase font-black text-[#FF6B00] tracking-wider leading-none">
+                    {t('driver.dropoff', 'BABAAN')}
+                  </span>
+                  {isRebooked && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-sm flex items-center gap-1 animate-pulse">
+                      <Repeat className="w-2.5 h-2.5 shrink-0" />
+                      <span>{t('driver.rebookedBadge', 'BAGONG DESTINASYON')}</span>
+                    </span>
+                  )}
+                </div>
                 <span className={`text-[11px] sm:text-xs truncate block mt-0.5 ${
                   !isHeadingToPickup ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-medium'
                 }`}>
-                  {booking.destination_name}
+                  {currentBooking.destination_name || booking.destination_name}
                 </span>
+                {isRebooked && currentBooking.original_destination_name && currentBooking.original_destination_name !== (currentBooking.destination_name || booking.destination_name) && (
+                  <span className="text-[9px] text-slate-400 line-through block truncate mt-0.5">
+                    {t('driver.originalDestination', 'Dati')}: {currentBooking.original_destination_name}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -485,7 +718,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
       {/* 2. FULL-BLEED 100% ROAD MAP */}
       <div className="absolute inset-0 w-full h-full z-0">
         <MapContainer
-          center={isHeadingToPickup ? passengerPickupCoords : destinationDropCoords}
+          center={isHeadingToPickup ? passengerPickupCoords : destinationCoords}
           zoom={15}
           className="w-full h-full"
           zoomControl={false}
@@ -548,7 +781,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 }}
               />
               <Marker position={driverCoords} icon={createDriverTricycleIcon()} />
-              <Marker position={destinationDropCoords} icon={createDestinationIcon()} />
+              <Marker position={destinationCoords} icon={createDestinationIcon()} />
             </>
           )}
         </MapContainer>
@@ -646,10 +879,28 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             {tripState !== 'completed' && (
               <button
                 onClick={handleOpenCancelModal}
-                className="px-3 py-2.5 sm:px-4 sm:py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] sm:text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-2.5 sm:px-3 sm:py-3.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] sm:text-xs border border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
+                title={t('driver.cancelTripBtn', 'I-cancel')}
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{t('driver.cancelTripBtn', 'I-cancel')}</span>
+                <span className="hidden sm:inline">{t('driver.cancelTripBtn', 'I-cancel')}</span>
+              </button>
+            )}
+
+            {/* Driver Rebook Destination Button */}
+            {tripState !== 'completed' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedNewLocation(null);
+                  setDriverRebookSearch('');
+                  setShowDriverRebookModal(true);
+                }}
+                className="px-2.5 py-2.5 sm:px-3.5 sm:py-3.5 rounded-full bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] sm:text-xs border border-amber-300 dark:border-amber-700 shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1.5"
+                title="Palawigin o baguhin ang destinasyon (Rebook)"
+              >
+                <Repeat className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>{t('driver.rebookBtn', 'Rebook')}</span>
               </button>
             )}
 
@@ -677,7 +928,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
               {tripState === 'in_transit' && (
                 <button
-                  onClick={handleCompleteTrip}
+                  onClick={handleOpenSettlement}
                   className="w-full py-2.5 sm:py-3.5 px-3 sm:px-4 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-md shadow-[#003f87]/25 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C1FD]" />
@@ -690,7 +941,168 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         </div>
       </div>
 
-      {/* 4. TRIP COMPLETED SETTLEMENT MODAL */}
+      {/* 4. STEP 3: SETTLEMENT & OPTIONAL ADDITIONAL SURCHARGE MODAL */}
+      {showSettlementModal && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#003f87] text-[#00C1FD] flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                    Pagtatapos ng Byahe
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                    Kumpirmahin ang taripa at karagdagang singil
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettlementModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Base Tariff Notice */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 pr-2">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">
+                    Regulated Taripa {isRebooked ? '(May Rebook Extension)' : ''}
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block">
+                    {currentBooking.destination_name || booking.destination_name}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-sm font-black text-slate-900 dark:text-white">
+                    ₱{currentSettlementCalc.baseFare.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              {isRebooked && (
+                <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] space-y-0.5 text-slate-500 dark:text-slate-400">
+                  <div className="flex justify-between">
+                    <span>1. Dati / Unang Booking ({currentBooking.original_destination_name || 'Unang Destinasyon'}):</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">₱{Number(currentBooking.original_fare || 20).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700 dark:text-amber-400 font-bold">
+                    <span>2. Rebook Extension ({currentBooking.destination_name}):</span>
+                    <span>+₱{Number(currentBooking.extension_fare || (Number(currentBooking.estimated_fare) - Number(currentBooking.original_fare || 20))).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional Additional Surcharge Numeric Input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                  <span>Karagdagang Singil (Opsyonal)</span>
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Dagdag pasahero / karga
+                </span>
+              </div>
+
+              {/* Large Numeric Input */}
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-base font-black text-slate-400 pointer-events-none">
+                  ₱
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={additionalFareInput}
+                  onChange={(e) => setAdditionalFareInput(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-8 pr-12 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#003f87] transition-all"
+                />
+                {Number(additionalFareInput) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAdditionalFareInput('0')}
+                    className="absolute right-3 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Optional Reason Input if Additional Fare > 0 */}
+              {Number(additionalFareInput) > 0 && (
+                <input
+                  type="text"
+                  value={additionalFareReason}
+                  onChange={(e) => setAdditionalFareReason(e.target.value)}
+                  placeholder="Dahilan (Hal. +1 pasahero, mabigat na bagahi)"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#003f87]"
+                />
+              )}
+            </div>
+
+            {/* Live Calculation Breakdown Card */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-sky-50/40 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-200/80 dark:border-slate-700 space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span>Base Taripa:</span>
+                <span className="font-bold">₱{currentSettlementCalc.baseFare.toFixed(2)}</span>
+              </div>
+
+              {currentSettlementCalc.additionalFare > 0 && (
+                <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                  <span>Dagdag na Singil:</span>
+                  <span>+₱{currentSettlementCalc.additionalFare.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between text-slate-700 dark:text-slate-200 font-bold pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                <span>Subtotal (Bago Diskwento):</span>
+                <span>₱{currentSettlementCalc.subtotalGross.toFixed(2)}</span>
+              </div>
+
+              {currentSettlementCalc.isDiscounted && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-black">
+                  <span>-20% Diskwento ({pTypeInfo.label}):</span>
+                  <span>-₱{currentSettlementCalc.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex items-baseline justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-[11px] font-black uppercase text-slate-800 dark:text-white">
+                  Kolektahing Pamasahe:
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  ₱{currentSettlementCalc.finalPayableFare.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Confirm Settlement Button */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={handleConfirmFinalCompletion}
+                className="w-full py-3 sm:py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Kumpirmahin at Tapusin (₱{currentSettlementCalc.finalPayableFare.toFixed(2)})</span>
+              </button>
+              <button
+                onClick={() => setShowSettlementModal(false)}
+                className="w-full py-2 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer text-center"
+              >
+                Bumalik sa Mapa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. TRIP COMPLETED SETTLEMENT MODAL */}
       {completedFare !== null && (
         <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
@@ -707,13 +1119,59 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
-              <span className="text-[10px] uppercase font-black text-emerald-800 dark:text-emerald-300">
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-2">
+              <span className="text-[10px] uppercase font-black text-emerald-800 dark:text-emerald-300 block">
                 {t('driver.collectFareCash', 'Singiling Pamasahe (Cash)')}
               </span>
               <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                 ₱{completedFare.toFixed(2)}
               </div>
+
+              {/* Rebook Details on Completion Receipt */}
+              {isRebooked && (
+                <div className="p-2 rounded-xl bg-amber-100/70 dark:bg-amber-900/40 text-[10px] text-amber-950 dark:text-amber-200 text-left space-y-0.5 border border-amber-300/60 dark:border-amber-700/60">
+                  <div className="font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Repeat className="w-3 h-3 text-amber-600" />
+                      <span>Rebooked Extension</span>
+                    </span>
+                    <span className="font-mono text-[9px] bg-amber-200 dark:bg-amber-800 px-1 rounded">{currentBooking.rebook_count ? `${currentBooking.rebook_count}x` : '1x'}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>1. Dating Babaan ({currentBooking.original_destination_name || 'Unang Booking'}):</span>
+                    <span className="font-semibold">₱{Number(currentBooking.original_fare || 20).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-amber-800 dark:text-amber-300">
+                    <span>2. Bagong Babaan ({currentBooking.destination_name}):</span>
+                    <span>+₱{Number(currentBooking.extension_fare || (Number(currentBooking.estimated_fare) - Number(currentBooking.original_fare || 20))).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {completedBreakdown && (completedBreakdown.additionalFare > 0 || completedBreakdown.isDiscounted) && (
+                <div className="pt-2 border-t border-emerald-200/80 dark:border-emerald-800/80 text-[10px] text-emerald-900 dark:text-emerald-200 space-y-0.5 text-left font-medium">
+                  <div className="flex justify-between">
+                    <span>Base Taripa:</span>
+                    <span>₱{completedBreakdown.baseFare.toFixed(2)}</span>
+                  </div>
+                  {completedBreakdown.additionalFare > 0 && (
+                    <div className="flex justify-between font-semibold">
+                      <span>Karagdagang Singil:</span>
+                      <span>+₱{completedBreakdown.additionalFare.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>Subtotal:</span>
+                    <span>₱{completedBreakdown.subtotalGross.toFixed(2)}</span>
+                  </div>
+                  {completedBreakdown.isDiscounted && (
+                    <div className="flex justify-between text-emerald-700 dark:text-emerald-300 font-bold">
+                      <span>-20% Diskwento ({pTypeInfo.label}):</span>
+                      <span>-₱{completedBreakdown.discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
@@ -763,6 +1221,167 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         </div>
       )}
 
+      {/* 5.5 DRIVER REBOOK / DESTINATION EXTENSION MODAL */}
+      {showDriverRebookModal && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 text-left max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm">
+                  <Repeat className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                    {t('driver.rebookModalTitle', 'Baguhin ang Destinasyon')}
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                    {t('driver.rebookModalSubtitle', 'Palawigin ang biyahe at i-update ang taripa')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDriverRebookModal(false);
+                  setSelectedNewLocation(null);
+                }}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Destination Card */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between shrink-0">
+              <div className="min-w-0 pr-2">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">
+                  Kasalukuyang Babaan
+                </span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                  {currentBooking.destination_name || booking.destination_name}
+                </span>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-xs font-black text-[#003f87] dark:text-[#00C1FD]">
+                  ₱{Number(currentBooking.estimated_fare || 20).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Search Input for Destinations */}
+            <div className="relative shrink-0">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={driverRebookSearch}
+                onChange={(e) => setDriverRebookSearch(e.target.value)}
+                placeholder="Maghanap ng bagong babaan..."
+                className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003f87]"
+              />
+            </div>
+
+            {/* Destination Selection List */}
+            <div className="space-y-1.5 overflow-y-auto flex-1 pr-1 min-h-[140px] max-h-[220px]">
+              {availableLocations
+                .filter((loc) =>
+                  !driverRebookSearch.trim() ||
+                  loc.location_name.toLowerCase().includes(driverRebookSearch.toLowerCase())
+                )
+                .slice(0, 20)
+                .map((loc) => {
+                  const isSelected = selectedNewLocation?.id === loc.id;
+                  const isCurrent =
+                    loc.location_name.toLowerCase() ===
+                    (currentBooking.destination_name || '').toLowerCase();
+                  const locFare = isEligibleDiscount
+                    ? Number(loc.discounted_fare || loc.standard_fare || 20)
+                    : Number(loc.standard_fare || 20);
+
+                  return (
+                    <button
+                      key={loc.id}
+                      type="button"
+                      disabled={isCurrent}
+                      onClick={() => setSelectedNewLocation(loc)}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[#003f87] bg-[#003f87]/10 dark:bg-[#003f87]/20 ring-1 ring-[#003f87]'
+                          : isCurrent
+                          ? 'border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-[#FF6B00] shrink-0" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                          {loc.location_name} {isCurrent ? '(Kasalukuyan)' : ''}
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0 flex items-center gap-1.5">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          +₱{locFare.toFixed(2)}
+                        </span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#003f87] dark:text-[#00C1FD]" />}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+
+            {/* Selected Destination Summary & Confirm */}
+            {selectedNewLocation && (
+              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 space-y-1 text-xs shrink-0">
+                <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                  <span>Bagong Babaan:</span>
+                  <span className="text-[#FF6B00] font-black">{selectedNewLocation.location_name}</span>
+                </div>
+                <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                  <span>Dagdag Taripa:</span>
+                  <span className="text-amber-700 dark:text-amber-400 font-black">
+                    +₱{calculateFare(Number(selectedNewLocation.standard_fare || 20), isEligibleDiscount, selectedNewLocation.discounted_fare).finalFare.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between font-black text-slate-900 dark:text-white pt-1 border-t border-amber-200 dark:border-amber-800/60">
+                  <span>Bagong Kabuuang Pamasahe:</span>
+                  <span className="text-sm text-emerald-600 dark:text-emerald-400">
+                    ₱{(
+                      Number(currentBooking.estimated_fare || 20) +
+                      calculateFare(Number(selectedNewLocation.standard_fare || 20), isEligibleDiscount, selectedNewLocation.discounted_fare).finalFare
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="space-y-1.5 pt-1 shrink-0">
+              <button
+                type="button"
+                disabled={!selectedNewLocation || isSubmittingDriverRebook}
+                onClick={handleConfirmDriverRebook}
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isSubmittingDriverRebook ? (
+                  <span>Ina-update ang destinasyon...</span>
+                ) : (
+                  <>
+                    <Repeat className="w-4 h-4" />
+                    <span>Kumpirmahin ang Bagong Destinasyon</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDriverRebookModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs cursor-pointer"
+              >
+                Kanselahin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 6. IN-TRIP CHAT MODAL */}
       <InTripChatModal
         isOpen={showChatModal}
@@ -771,8 +1390,8 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
         currentUserId={activeDriverId || 'driver'}
         currentUserRole="driver"
         currentUserName={driverProfile?.tricycle_model ? `Driver (${driverProfile.body_number || 'Tricycle'})` : 'Driver'}
-        otherPartyName={booking.passenger?.full_name || 'Pasahero'}
-        otherPartySubtitle={`${booking.origin_name} ➔ ${booking.destination_name}`}
+        otherPartyName={currentBooking.passenger?.full_name || booking.passenger?.full_name || 'Pasahero'}
+        otherPartySubtitle={`${currentBooking.origin_name || booking.origin_name} ➔ ${currentBooking.destination_name || booking.destination_name}`}
       />
 
       {/* 7. IN-PHONE MESSAGE NOTIFICATION BANNER (HEADS-UP TOAST) */}

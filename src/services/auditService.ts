@@ -104,6 +104,174 @@ export async function logAdminMovement(
 }
 
 /**
+ * Records an official audit log entry when a trip is completed with an additional surcharge.
+ */
+export async function logTripSurchargeAudit(details: {
+  bookingId: string;
+  driverId?: string;
+  driverName?: string;
+  passengerId?: string;
+  passengerName?: string;
+  passengerType?: string;
+  baseFare: number;
+  additionalFare: number;
+  additionalFareReason?: string;
+  discountAmount: number;
+  finalFare: number;
+  origin?: string;
+  destination?: string;
+}): Promise<AdminAction> {
+  const timestamp = new Date().toISOString();
+  const logId = `act-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+  const enrichedDetails = {
+    ...details,
+    admin_name: details.driverName || 'Tricycle Operator',
+    admin_email: 'driver-dispatch@pasadaguide.ph',
+    admin_role: 'driver',
+    department: 'TODA Driver Operations'
+  };
+
+  const actionRecord: AdminAction = {
+    id: logId,
+    admin_id: details.driverId || '',
+    action_type: 'TRIP_ADDITIONAL_FARE_APPLIED',
+    target_table: 'bookings',
+    target_id: details.bookingId,
+    details_json: enrichedDetails,
+    created_at: timestamp,
+    admin: {
+      id: details.driverId || '',
+      full_name: details.driverName || 'Tricycle Operator',
+      email: 'driver-dispatch@pasadaguide.ph',
+      role: 'driver'
+    } as Profile
+  };
+
+  // 1. Attempt persistent Supabase DB insert if configured
+  if (isConfigured) {
+    try {
+      const payload = {
+        admin_id: isValidUuid(details.driverId) ? details.driverId : null,
+        action_type: 'TRIP_ADDITIONAL_FARE_APPLIED',
+        target_table: 'bookings',
+        target_id: details.bookingId,
+        details_json: enrichedDetails
+      };
+
+      const { data, error } = await supabase
+        .from('admin_actions')
+        .insert(payload)
+        .select('id, created_at')
+        .maybeSingle();
+
+      if (!error && data) {
+        actionRecord.id = data.id;
+      }
+    } catch (err) {
+      console.warn('Trip surcharge audit insert note:', err);
+    }
+  }
+
+  // 2. Cache in localStorage for immediate offline & refresh resilience
+  try {
+    const cachedLogs: AdminAction[] = JSON.parse(localStorage.getItem(AUDIT_CACHE_KEY) || '[]');
+    const deduplicated = [actionRecord, ...cachedLogs.filter(c => c.id !== actionRecord.id)].slice(0, 200);
+    localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify(deduplicated));
+  } catch {}
+
+  // 3. Notify app components via browser event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('pasada_audit_log_added', { detail: actionRecord }));
+  }
+
+  return actionRecord;
+}
+
+/**
+ * Records an official audit log entry when a trip destination is rebooked or extended by the passenger.
+ */
+export async function logTripRebookExtensionAudit(details: {
+  bookingId: string;
+  driverId?: string;
+  driverName?: string;
+  passengerId?: string;
+  passengerName?: string;
+  previousDestination: string;
+  newDestination: string;
+  previousFare: number;
+  extensionFare: number;
+  accumulatedFare: number;
+  rebookCount?: number;
+}): Promise<AdminAction> {
+  const timestamp = new Date().toISOString();
+  const logId = `act-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+  const enrichedDetails = {
+    ...details,
+    admin_name: details.passengerName || 'Passenger Commuter',
+    admin_email: 'passenger-app@pasadaguide.ph',
+    admin_role: 'passenger',
+    department: 'Commuter Destination Extensions'
+  };
+
+  const actionRecord: AdminAction = {
+    id: logId,
+    admin_id: details.passengerId || details.driverId || '',
+    action_type: 'TRIP_DESTINATION_REBOOKED',
+    target_table: 'bookings',
+    target_id: details.bookingId,
+    details_json: enrichedDetails,
+    created_at: timestamp,
+    admin: {
+      id: details.passengerId || details.driverId || '',
+      full_name: details.passengerName || 'Passenger Commuter',
+      email: 'passenger-app@pasadaguide.ph',
+      role: 'passenger'
+    } as Profile
+  };
+
+  // 1. Attempt persistent Supabase DB insert if configured
+  if (isConfigured) {
+    try {
+      const payload = {
+        admin_id: isValidUuid(details.passengerId) ? details.passengerId : (isValidUuid(details.driverId) ? details.driverId : null),
+        action_type: 'TRIP_DESTINATION_REBOOKED',
+        target_table: 'bookings',
+        target_id: details.bookingId,
+        details_json: enrichedDetails
+      };
+
+      const { data, error } = await supabase
+        .from('admin_actions')
+        .insert(payload)
+        .select('id, created_at')
+        .maybeSingle();
+
+      if (!error && data) {
+        actionRecord.id = data.id;
+      }
+    } catch (err) {
+      console.warn('Trip rebook audit insert note:', err);
+    }
+  }
+
+  // 2. Cache in localStorage for immediate offline & refresh resilience
+  try {
+    const cachedLogs: AdminAction[] = JSON.parse(localStorage.getItem(AUDIT_CACHE_KEY) || '[]');
+    const deduplicated = [actionRecord, ...cachedLogs.filter(c => c.id !== actionRecord.id)].slice(0, 200);
+    localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify(deduplicated));
+  } catch {}
+
+  // 3. Notify app components via browser event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('pasada_audit_log_added', { detail: actionRecord }));
+  }
+
+  return actionRecord;
+}
+
+/**
  * Fetches all audit logs from Supabase and merges with local actions
  */
 export async function fetchAuditLogs(): Promise<AdminAction[]> {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, 
@@ -17,7 +17,10 @@ import {
   Navigation,
   AlertTriangle,
   MessageSquare,
-  Percent
+  Percent,
+  Repeat,
+  ArrowRight,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -29,17 +32,21 @@ import {
   findMatchingLocationByProximity, 
   ProximityMatchResult,
   getLocationIconEmoji,
+  resolveLocationCategory,
+  LOCATION_ICON_OPTIONS,
   calculateFare,
   getPassengerTypeInfo,
   isDiscountEligibleType
 } from '../services/fareService';
+import { UniswapCategoryFilter, CategoryOption } from '../components/ui/uniswap-category-filter';
 import { 
   createBookingRequest, 
   subscribeToBooking, 
   updateBookingStatus, 
   fetchActiveDrivers,
   fetchActiveTrip,
-  submitPassengerRating
+  submitPassengerRating,
+  extendBookingDestination
 } from '../services/bookingService';
 import { setAppLanguage } from '../i18n/config';
 import { soundService } from '../services/soundNotificationService';
@@ -81,13 +88,55 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (preselectedSpot) {
-      setDestLat(preselectedSpot.lat);
-      setDestLng(preselectedSpot.lng);
-      setDestinationName(preselectedSpot.name);
-    }
-  }, [preselectedSpot]);
+  // 2.1 Category Filter State & Filtered Sets (Uniswap Dialog Filter on Map)
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // Derive category options with live counts from location fares & terminals
+  const categoryOptions = useMemo<CategoryOption[]>(() => {
+    const counts: Record<string, number> = {};
+    locationFares.forEach((loc) => {
+      const cat = resolveLocationCategory(loc);
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    const isFil = i18n.language === 'fil';
+    const totalCount = locationFares.length;
+
+    const list: CategoryOption[] = [
+      {
+        id: 'all',
+        name: 'All Categories',
+        nameFil: 'Lahat ng Kategorya',
+        icon: '✨',
+        description: isFil ? 'Ipakita ang lahat ng destinasyon sa mapa' : 'Show all destinations on map',
+        count: totalCount,
+      },
+    ];
+
+    LOCATION_ICON_OPTIONS.forEach((opt) => {
+      if (opt.id === 'pin') return;
+      const count = counts[opt.id] || 0;
+      const parts = opt.label.split('/');
+      list.push({
+        id: opt.id,
+        name: (parts[1] || parts[0]).trim(),
+        nameFil: parts[0].trim(),
+        icon: opt.icon,
+        description: `${count} ${isFil ? 'destinasyong nakatala' : 'destinations recorded'}`,
+        count,
+      });
+    });
+
+    return list;
+  }, [locationFares, i18n.language]);
+
+  // Filtered location fares for map markers and search list
+  const filteredLocationFares = useMemo(() => {
+    if (selectedCategory === 'all') return locationFares;
+    return locationFares.filter((loc) => resolveLocationCategory(loc) === selectedCategory);
+  }, [locationFares, selectedCategory]);
+
+  // Preselected tourist spot sync will be handled below alongside tariff resolution
 
   // 3. Location-Based Pricing State
   const [currentFare, setCurrentFare] = useState<number>(20);
@@ -108,6 +157,18 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   // Cancel Confirmation Modal State
   const [showPassengerCancelModal, setShowPassengerCancelModal] = useState<boolean>(false);
   const [isCancellingBooking, setIsCancellingBooking] = useState<boolean>(false);
+
+  // Rebook / Destination Extension State
+  const [showRebookModal, setShowRebookModal] = useState<boolean>(false);
+  const [rebookSearchQuery, setRebookSearchQuery] = useState<string>('');
+  const [rebookSelectedLocation, setRebookSelectedLocation] = useState<LocationFare | null>(null);
+  const [isSubmittingRebook, setIsSubmittingRebook] = useState<boolean>(false);
+
+  const handleOpenRebookModal = () => {
+    setRebookSearchQuery('');
+    setRebookSelectedLocation(null);
+    setShowRebookModal(true);
+  };
 
   // In-Trip Chat Modal & Notification State
   const [showChatModal, setShowChatModal] = useState<boolean>(false);
@@ -165,6 +226,59 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     selectedLocationFare?.standard_fare || proximityResult?.standardFare || 20
   );
 
+  // Resolve Price via Location Proximity or Name Match
+  const resolveLocationFare = useCallback((
+    targetLat: number,
+    targetLng: number,
+    allLocations: LocationFare[],
+    explicitName?: string
+  ) => {
+    if (!allLocations || allLocations.length === 0) return;
+
+    // 1. Check exact name match first if provided (e.g. from tourist spot or landmark title)
+    let exactNameMatch: LocationFare | undefined;
+    if (explicitName) {
+      const norm = explicitName.toLowerCase().trim();
+      exactNameMatch = allLocations.find(l => l.location_name.toLowerCase().trim() === norm);
+    }
+
+    if (exactNameMatch) {
+      setSelectedLocationFare(exactNameMatch);
+      const calc = calculateFare(Number(exactNameMatch.standard_fare), isDiscountEligible, exactNameMatch.discounted_fare);
+      setCurrentFare(calc.finalFare);
+      return;
+    }
+
+    // 2. Resolve via geographic proximity
+    const match = findMatchingLocationByProximity(targetLat, targetLng, allLocations);
+    setProximityResult(match);
+
+    if (match) {
+      setSelectedLocationFare(match.matchedLocation);
+      const calc = calculateFare(Number(match.standardFare), isDiscountEligible, match.discountedFare);
+      setCurrentFare(calc.finalFare);
+    }
+  }, [isDiscountEligible]);
+
+  // Synchronize preselected tourist spot from Explore page with tariff resolution
+  useEffect(() => {
+    if (preselectedSpot) {
+      setDestLat(preselectedSpot.lat);
+      setDestLng(preselectedSpot.lng);
+      setDestinationName(preselectedSpot.name);
+      if (locationFares.length > 0) {
+        resolveLocationFare(preselectedSpot.lat, preselectedSpot.lng, locationFares, preselectedSpot.name);
+      }
+    }
+  }, [preselectedSpot, locationFares, resolveLocationFare]);
+
+  // Automatically resolve location tariff when destination coordinates exist and locationFares become available
+  useEffect(() => {
+    if (destLat !== undefined && destLng !== undefined && locationFares.length > 0 && !selectedLocationFare) {
+      resolveLocationFare(destLat, destLng, locationFares, destinationName);
+    }
+  }, [destLat, destLng, locationFares, selectedLocationFare, destinationName, resolveLocationFare]);
+
   // Automatically recalculate currentFare whenever destination, proximity result, or discount status updates
   useEffect(() => {
     if (selectedLocationFare) {
@@ -181,26 +295,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
         proximityResult.discountedFare
       );
       setCurrentFare(calc.finalFare);
-    }
-  }, [isDiscountEligible, selectedLocationFare, proximityResult]);
-
-  // Resolve Price via Location Proximity
-  const resolveLocationFare = useCallback((
-    targetLat: number,
-    targetLng: number,
-    allLocations: LocationFare[]
-  ) => {
-    if (!allLocations || allLocations.length === 0) return;
-
-    const match = findMatchingLocationByProximity(targetLat, targetLng, allLocations);
-    setProximityResult(match);
-
-    if (match) {
-      setSelectedLocationFare(match.matchedLocation);
-      const calc = calculateFare(Number(match.standardFare), isDiscountEligible, match.discountedFare);
+    } else {
+      // Baseline default fare with passenger account discount applied automatically
+      const calc = calculateFare(20, isDiscountEligible);
       setCurrentFare(calc.finalFare);
     }
-  }, [isDiscountEligible]);
+  }, [isDiscountEligible, selectedLocationFare, proximityResult]);
 
   // GPS Geolocation Auto-Detect in Background
   const handleUseCurrentGPS = useCallback(() => {
@@ -305,34 +405,53 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   useEffect(() => {
     let isMounted = true;
     const initPassengerActiveTrip = async () => {
+      let ongoing: Booking | null = null;
       if (user?.id) {
-        const ongoing = await fetchActiveTrip(user.id, false);
-        if (ongoing && isMounted) {
-          setActiveBooking(ongoing);
-          if (ongoing.origin_lat && ongoing.origin_lng) {
-            setOriginLat(ongoing.origin_lat);
-            setOriginLng(ongoing.origin_lng);
-            if (ongoing.origin_name) setOriginName(ongoing.origin_name);
-          }
-          if (ongoing.destination_lat && ongoing.destination_lng) {
-            setDestLat(ongoing.destination_lat);
-            setDestLng(ongoing.destination_lng);
-            if (ongoing.destination_name) {
-              setDestinationName(ongoing.destination_name);
-              setSearchQuery(ongoing.destination_name);
+        ongoing = await fetchActiveTrip(user.id, false);
+      }
+      if (!ongoing) {
+        try {
+          const evRaw = localStorage.getItem('pasada_active_trip_event');
+          if (evRaw) {
+            const ev = JSON.parse(evRaw);
+            if (ev?.id && ev.status && ev.status !== 'completed' && ev.status !== 'cancelled') {
+              const stored = localStorage.getItem(`pasada_booking_${ev.id}`);
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (!user?.id || !parsed.passenger_id || parsed.passenger_id === user.id) {
+                  ongoing = parsed;
+                }
+              }
             }
           }
-          if (ongoing.estimated_fare) setCurrentFare(ongoing.estimated_fare);
-          if (ongoing.estimated_distance_km) setEstimatedDistance(ongoing.estimated_distance_km);
+        } catch {}
+      }
 
-          if (ongoing.status === 'searching') setBookingState('searching');
-          else if (ongoing.status === 'driver_assigned') setBookingState('assigned');
-          else if (ongoing.status === 'driver_arrived') setBookingState('arrived');
-          else if (ongoing.status === 'in_transit') setBookingState('in_transit');
-          else if (ongoing.status === 'completed') {
-            setBookingState('completed');
-            setShowRatingModal(true);
+      if (ongoing && isMounted) {
+        setActiveBooking(ongoing);
+        if (ongoing.origin_lat && ongoing.origin_lng) {
+          setOriginLat(ongoing.origin_lat);
+          setOriginLng(ongoing.origin_lng);
+          if (ongoing.origin_name) setOriginName(ongoing.origin_name);
+        }
+        if (ongoing.destination_lat && ongoing.destination_lng) {
+          setDestLat(ongoing.destination_lat);
+          setDestLng(ongoing.destination_lng);
+          if (ongoing.destination_name) {
+            setDestinationName(ongoing.destination_name);
+            setSearchQuery(ongoing.destination_name);
           }
+        }
+        if (ongoing.estimated_fare) setCurrentFare(ongoing.estimated_fare);
+        if (ongoing.estimated_distance_km) setEstimatedDistance(ongoing.estimated_distance_km);
+
+        if (ongoing.status === 'searching') setBookingState('searching');
+        else if (ongoing.status === 'driver_assigned') setBookingState('assigned');
+        else if (ongoing.status === 'driver_arrived') setBookingState('arrived');
+        else if (ongoing.status === 'in_transit') setBookingState('in_transit');
+        else if (ongoing.status === 'completed') {
+          setBookingState('completed');
+          setShowRatingModal(true);
         }
       }
     };
@@ -485,6 +604,46 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     setActiveBooking(null);
   };
 
+  const handleConfirmRebook = async () => {
+    if (!activeBooking || !rebookSelectedLocation) return;
+    setIsSubmittingRebook(true);
+
+    try {
+      const calc = calculateFare(
+        Number(rebookSelectedLocation.standard_fare || 20),
+        isDiscountEligible,
+        rebookSelectedLocation.discounted_fare
+      );
+      const extensionFare = calc.finalFare;
+
+      const res = await extendBookingDestination({
+        bookingId: activeBooking.id,
+        newDestinationName: rebookSelectedLocation.location_name,
+        newDestinationLat: rebookSelectedLocation.lat,
+        newDestinationLng: rebookSelectedLocation.lng,
+        extensionFare: extensionFare,
+        passengerId: user?.id,
+        passengerName: user?.full_name || 'Passenger'
+      });
+
+      if (res.success && res.updatedBooking) {
+        setActiveBooking(res.updatedBooking);
+        setDestinationName(res.updatedBooking.destination_name);
+        setDestLat(res.updatedBooking.destination_lat);
+        setDestLng(res.updatedBooking.destination_lng);
+        setSelectedLocationFare(rebookSelectedLocation);
+        setShowRebookModal(false);
+        soundService.playTripCompletedAlert();
+      } else {
+        alert(res.error || (i18n.language === 'en' ? 'Failed to extend destination' : 'Hindi ma-update ang bagong destinasyon'));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error extending destination');
+    } finally {
+      setIsSubmittingRebook(false);
+    }
+  };
+
   const handleSubmitRating = async () => {
     if (!activeBooking || !user) return;
     setIsSubmittingRating(true);
@@ -530,9 +689,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           originLat={originLat}
           originLng={originLng}
           destLat={destLat}
-          destLng={destLng}
           terminals={terminals}
-          locationFares={locationFares}
+          locationFares={filteredLocationFares}
           selectedLocationFare={selectedLocationFare}
           onSelectMapLocation={handleMapClick}
           onSelectTerminal={handleSelectTerminal}
@@ -623,15 +781,32 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               
               {/* Minimal Header */}
               <div className="px-3.5 py-1.5 bg-slate-50/80 dark:bg-slate-800/40 flex items-center justify-between border-b border-slate-100/60 dark:border-slate-800/50">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <MapPin className="w-3 h-3 text-[#0052d1] dark:text-sky-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 text-slate-400 min-w-0">
+                  <MapPin className="w-3 h-3 text-[#0052d1] dark:text-sky-400 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                     {searchQuery ? (i18n.language === 'en' ? `Results for "${searchQuery}"` : `Resulta para sa "${searchQuery}"`) : (i18n.language === 'en' ? 'Bauang Destinations' : 'Mga Destinasyon sa Bauang')}
                   </span>
+                  {selectedCategory !== 'all' && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#0052d1]/10 text-[#0052d1] dark:bg-sky-500/20 dark:text-sky-300 flex items-center gap-1 shrink-0">
+                      <span>{categoryOptions.find(c => c.id === selectedCategory)?.icon}</span>
+                      <span>{i18n.language === 'fil' ? categoryOptions.find(c => c.id === selectedCategory)?.nameFil : categoryOptions.find(c => c.id === selectedCategory)?.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory('all');
+                        }}
+                        className="hover:text-rose-500 ml-0.5 cursor-pointer"
+                        title={i18n.language === 'fil' ? 'Alisin ang Filter' : 'Remove Filter'}
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={() => setIsSearchFocused(false)}
-                  className="text-[10px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700"
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700 shrink-0"
                 >
                   {i18n.language === 'en' ? 'Close' : 'Isara'}
                 </button>
@@ -639,7 +814,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
               {/* Compact Destination Rows */}
               <div className="overflow-y-auto max-h-[300px] sm:max-h-[360px] divide-y divide-slate-100/80 dark:divide-slate-800/50">
-                {locationFares
+                {filteredLocationFares
                   .filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase())))
                   .map((loc) => {
                     const calc = calculateFare(Number(loc.standard_fare), isDiscountEligible, loc.discounted_fare);
@@ -683,13 +858,27 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                     );
                   })}
 
-                {locationFares.filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
+                {filteredLocationFares.filter(l => l.location_name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.notes && l.notes.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
                   <div className="p-4 text-center text-xs text-slate-400 space-y-1">
                     <p className="font-semibold text-slate-600 dark:text-slate-300 text-xs">
-                      Walang nahanap na tugmang destinasyon
+                      {selectedCategory !== 'all'
+                        ? (i18n.language === 'fil' ? 'Walang nahanap sa napiling kategorya' : 'No destinations in this category')
+                        : (i18n.language === 'fil' ? 'Walang nahanap na tugmang destinasyon' : 'No matching destinations found')}
                     </p>
                     <p className="text-[10px]">
-                      Maaari ka ring mag-tap kahit saan sa mapa upang maglagay ng Custom Pin.
+                      {selectedCategory !== 'all' ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategory('all')}
+                          className="text-[#0052d1] dark:text-sky-400 font-bold underline cursor-pointer"
+                        >
+                          {i18n.language === 'fil' ? 'Ipakita ang lahat ng kategorya' : 'Show all categories'}
+                        </button>
+                      ) : (
+                        i18n.language === 'fil'
+                          ? 'Maaari ka ring mag-tap kahit saan sa mapa upang maglagay ng Custom Pin.'
+                          : 'You can also tap anywhere on the map to place a Custom Pin.'
+                      )}
                     </p>
                   </div>
                 )}
@@ -697,6 +886,18 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             </div>
           )}
         </div>
+
+        {/* ─── CATEGORY FILTER (UNISWAP-STYLE DIALOG) BELOW SEARCH BAR ON LEFT SIDE ─── */}
+        {!isSearchFocused && (
+          <div className="mt-2 flex items-center gap-1.5 justify-start">
+            <UniswapCategoryFilter
+              categories={categoryOptions}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              totalLocationsCount={locationFares.length}
+            />
+          </div>
+        )}
       </div>
 
       {/* 4. BOTTOM FLOATING ACTION BAR & DISPATCH TRACKER */}
@@ -883,13 +1084,23 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 </div>
               </div>
 
-              <button
-                onClick={handleCancelBooking}
-                className="w-full py-1.5 sm:py-2 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{i18n.language === 'en' ? 'Cancel Ride' : 'Kanselahin ang Byahe'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenRebookModal}
+                  className="flex-1 py-1.5 sm:py-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0052d1] dark:text-sky-300 font-bold text-[11px] sm:text-xs hover:bg-sky-100 border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Rebook / Extend' : 'Rebook / Dagdag Destinasyon'}</span>
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  className="py-1.5 sm:py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kanselahin'}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -913,14 +1124,23 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   className="flex-1 py-1.5 sm:py-2 rounded-xl bg-white text-[#0052d1] font-bold text-[11px] sm:text-xs shadow-sm hover:bg-sky-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe sa Driver'}</span>
+                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenRebookModal}
+                  className="py-1.5 sm:py-2 px-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  title="Rebook / Extend Destination"
+                >
+                  <Repeat className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Rebook' : 'Rebook'}</span>
                 </button>
                 <button
                   onClick={handleCancelBooking}
-                  className="py-1.5 sm:py-2 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="py-1.5 sm:py-2 px-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] sm:text-xs border border-white/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
                 >
                   <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kanselahin'}</span>
+                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kansel'}</span>
                 </button>
               </div>
             </div>
@@ -935,8 +1155,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 </span>
                 <div className="text-right">
                   <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400 block">
-                    ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                    ₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}
                   </span>
+                  {activeBooking.additional_fare != null && Number(activeBooking.additional_fare) > 0 && (
+                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block">
+                      +₱{Number(activeBooking.additional_fare).toFixed(2)} Dagdag
+                    </span>
+                  )}
                   {isDiscountEligible && (
                     <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block -mt-0.5">
                       -20% {passengerTypeInfo.label}
@@ -948,6 +1173,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {i18n.language === 'en' ? 'Heading to:' : 'Patungong:'} {selectedLocationFare?.location_name || destinationName}
               </div>
 
+              {activeBooking.rebook_count != null && Number(activeBooking.rebook_count) > 0 && (
+                <div className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/50">
+                  <Repeat className="w-3 h-3 shrink-0" />
+                  <span>Destinasyon ay na-rebook (+₱{Number(activeBooking.extension_fare || 0).toFixed(2)})</span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
@@ -955,14 +1187,22 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   className="flex-1 py-1.5 sm:py-2 rounded-xl bg-sky-50 text-[#0052d1] dark:bg-sky-950/60 dark:text-sky-300 font-bold text-[11px] sm:text-xs border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe sa Driver'}</span>
+                  <span>{i18n.language === 'en' ? 'Chat Driver' : 'Mensahe'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenRebookModal}
+                  className="flex-1 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[11px] sm:text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Repeat className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{i18n.language === 'en' ? 'Extend Route' : 'Dagdag Destinasyon'}</span>
                 </button>
                 <button
                   onClick={handleCancelBooking}
-                  className="py-1.5 sm:py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="py-1.5 sm:py-2 px-2.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-[11px] sm:text-xs hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center justify-center gap-1"
                 >
                   <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kanselahin'}</span>
+                  <span>{i18n.language === 'en' ? 'Cancel' : 'Kansel'}</span>
                 </button>
               </div>
             </div>
@@ -1004,19 +1244,123 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 </div>
 
                 {/* E-Receipt Strip */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
-                  <div className="text-left">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{i18n.language === 'en' ? 'Fare Paid' : 'Bayad na Pamasahe'}</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {activeBooking.destination_name}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xl font-black text-[#0052d1] dark:text-sky-400">
-                      ₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
+                {(() => {
+                  let storedEvent: any = null;
+                  try {
+                    const ev = JSON.parse(localStorage.getItem('pasada_active_trip_event') || '{}');
+                    if (ev?.id === activeBooking.id) storedEvent = ev;
+                    if (!storedEvent) {
+                      const bk = JSON.parse(localStorage.getItem(`pasada_booking_${activeBooking.id}`) || '{}');
+                      if (bk?.id === activeBooking.id) storedEvent = bk;
+                    }
+                  } catch {}
+
+                  const originalDest = activeBooking.original_destination_name || storedEvent?.original_destination_name;
+                  const origFare = Number(activeBooking.original_fare || storedEvent?.original_fare || 20);
+                  const rebookCount = Number(activeBooking.rebook_count || storedEvent?.rebook_count || 0);
+                  const isRebooked = Boolean(
+                    rebookCount > 0 ||
+                    (originalDest && originalDest !== activeBooking.destination_name) ||
+                    (activeBooking.extension_fare || storedEvent?.extension_fare)
+                  );
+                  const extensionFare = Number(
+                    activeBooking.extension_fare ||
+                    storedEvent?.extension_fare ||
+                    Math.max(0, Number(activeBooking.estimated_fare) - origFare)
+                  );
+
+                  const rawAddFare = activeBooking.additional_fare ?? storedEvent?.additional_fare;
+                  const effectiveAddFare = rawAddFare != null 
+                    ? Number(rawAddFare) 
+                    : Math.max(0, Number(activeBooking.final_fare || storedEvent?.final_fare || 0) - Number(activeBooking.base_fare || storedEvent?.base_fare || activeBooking.estimated_fare || 20));
+
+                  const effectiveBaseFare = Number(activeBooking.base_fare || storedEvent?.base_fare || activeBooking.estimated_fare || 20);
+                  const effectiveReason = activeBooking.additional_fare_reason || storedEvent?.additional_fare_reason || '';
+                  const effectiveDiscount = Number(activeBooking.discount_amount ?? storedEvent?.discount_amount ?? 0);
+                  const effectiveFinalFare = Number(activeBooking.final_fare || storedEvent?.final_fare || activeBooking.estimated_fare || 20);
+
+                  return (
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 text-xs space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-left min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                              {i18n.language === 'en' ? 'Fare Paid' : 'Bayad na Pamasahe'}
+                            </span>
+                            {isRebooked && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
+                                <Repeat className="w-2.5 h-2.5" />
+                                <span>Rebooked</span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 block truncate mt-0.5">
+                            {activeBooking.destination_name}
+                          </span>
+                          {isRebooked && originalDest && (
+                            <span className="text-[10px] text-slate-400 line-through block truncate">
+                              {i18n.language === 'en' ? 'Original Booking' : 'Dating Destinasyon'}: {originalDest}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-xl font-black text-[#0052d1] dark:text-sky-400">
+                            ₱{effectiveFinalFare.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Rebooking Route History Details (Shows Past Booked + Extension) */}
+                      {isRebooked && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 space-y-1 text-[11px] text-left">
+                          <div className="flex items-center justify-between text-amber-900 dark:text-amber-300 font-extrabold">
+                            <span className="flex items-center gap-1">
+                              <Repeat className="w-3 h-3" />
+                              <span>{i18n.language === 'en' ? 'Rebooking History' : 'Detalye ng Rebooking'}</span>
+                            </span>
+                            <span className="text-[9px] bg-amber-200 dark:bg-amber-800/80 px-1.5 py-0.2 rounded-full font-black">
+                              {rebookCount ? `${rebookCount}x Rebooked` : 'Extended'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                            <span>1. {i18n.language === 'en' ? 'Initial Booking' : 'Unang Nai-book'} ({originalDest || 'Dating Babaan'}):</span>
+                            <span className="font-bold">₱{origFare.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-amber-800 dark:text-amber-300 font-bold">
+                            <span>2. {i18n.language === 'en' ? 'Extension' : 'Rebook Extension'} ({activeBooking.destination_name}):</span>
+                            <span>+₱{extensionFare.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Itemized Surcharge & Discount Breakdown */}
+                      {(effectiveAddFare > 0 || isRebooked || effectiveDiscount > 0) && (
+                        <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 text-[10px] text-slate-600 dark:text-slate-300 space-y-0.5 text-left font-medium">
+                          <div className="flex justify-between">
+                            <span>{i18n.language === 'en' ? 'Base Tariff' : 'Base Taripa'} {isRebooked ? `(${i18n.language === 'en' ? 'Cumulative' : 'Pinagsama'})` : ''}:</span>
+                            <span>₱{effectiveBaseFare.toFixed(2)}</span>
+                          </div>
+                          {effectiveAddFare > 0 && (
+                            <div className="flex justify-between font-semibold text-amber-700 dark:text-amber-400">
+                              <span>{i18n.language === 'en' ? 'Additional Surcharge' : 'Karagdagang Singil'} {effectiveReason ? `(${effectiveReason})` : ''}:</span>
+                              <span>+₱{effectiveAddFare.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-slate-400">
+                            <span>{i18n.language === 'en' ? 'Subtotal (Gross)' : 'Subtotal (Bago Diskwento)'}:</span>
+                            <span>₱{(effectiveBaseFare + effectiveAddFare).toFixed(2)}</span>
+                          </div>
+                          {effectiveDiscount > 0 && (
+                            <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                              <span>Diskwento (-20% {getPassengerTypeInfo(activeBooking.passenger?.passenger_type).label}):</span>
+                              <span>-₱{effectiveDiscount.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Interactive 5-Star Selector */}
                 <div className="space-y-2 pt-1">
@@ -1100,6 +1444,215 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 {i18n.language === 'en' ? 'Keep Ride (Do Not Cancel)' : 'Huwag Kanselahin (Ipagpatuloy ang Biyahe)'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PASSENGER REBOOK / EXTEND DESTINATION MODAL */}
+      {showRebookModal && activeBooking && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in font-sans">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Repeat className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-tight">
+                    {i18n.language === 'en' ? 'Rebook / Extend Destination' : 'Rebook / Dagdag Destinasyon'}
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+                    {i18n.language === 'en' ? 'Add drop-off location to current trip' : 'Dagdagan ang biyahe patungo sa bagong destinasyon'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRebookModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Ride Status Pill */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between text-xs">
+              <div className="min-w-0 pr-2">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
+                  {i18n.language === 'en' ? 'CURRENT DESTINATION' : 'KASALUKUYANG DESTINASYON'}
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate block text-[11px] sm:text-xs">
+                  {activeBooking.destination_name}
+                </span>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
+                  {i18n.language === 'en' ? 'CURRENT FARE' : 'BAYAD NGAYON'}
+                </span>
+                <span className="font-mono font-black text-slate-700 dark:text-slate-300 text-xs sm:text-sm">
+                  ₱{Number(activeBooking.estimated_fare).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Search / Destination Input */}
+            <div className="space-y-1.5 flex-1 min-h-0 flex flex-col">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>{i18n.language === 'en' ? 'Choose New Destination' : 'Pumili ng Bagong Destinasyon'}:</span>
+                {rebookSelectedLocation && (
+                  <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">✓ Naipili</span>
+                )}
+              </label>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={rebookSearchQuery}
+                  onChange={(e) => setRebookSearchQuery(e.target.value)}
+                  placeholder={i18n.language === 'en' ? 'Search Bauang barangay / landmark...' : 'Maghanap ng barangay o landmark sa Bauang...'}
+                  className="w-full pl-8 pr-8 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[#0052d1] focus:ring-1 focus:ring-[#0052d1] outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                {rebookSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setRebookSearchQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Selectable Destination Chips */}
+              <div className="overflow-y-auto max-h-36 sm:max-h-44 pr-1 space-y-1.5 mt-2 custom-scrollbar">
+                {(() => {
+                  const filtered = locationFares.filter((lf) => {
+                    if (!rebookSearchQuery) return true;
+                    return lf.location_name.toLowerCase().includes(rebookSearchQuery.toLowerCase());
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-4 text-slate-400 text-xs">
+                        {i18n.language === 'en' ? 'No destinations found' : 'Walang nahanap na destinasyon'}
+                      </div>
+                    );
+                  }
+
+                  return filtered.map((loc) => {
+                    const isSelected = rebookSelectedLocation?.id === loc.id;
+                    const fareAmt = Number(loc.standard_fare || 20);
+
+                    return (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => setRebookSelectedLocation(loc)}
+                        className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#0052d1]/10 border-[#0052d1] ring-1 ring-[#0052d1]'
+                            : 'bg-white dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#0052d1]' : 'text-slate-400'}`} />
+                          <div className="truncate">
+                            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate block">
+                              {loc.location_name}
+                            </span>
+                            {loc.description && (
+                              <span className="text-[10px] text-slate-400 truncate block">{loc.description}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            +₱{fareAmt.toFixed(2)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Live Cumulative Fare Calculation Preview Card */}
+            {rebookSelectedLocation && (() => {
+              const calc = calculateFare(
+                Number(rebookSelectedLocation.standard_fare || 20),
+                isDiscountEligible,
+                rebookSelectedLocation.discounted_fare
+              );
+              const currentFare = Number(activeBooking.estimated_fare || 20);
+              const extensionFare = calc.finalFare;
+              const accumulatedTotal = currentFare + extensionFare;
+
+              return (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                    <span>Kasalukuyang Pamasahe:</span>
+                    <span className="font-mono font-semibold">₱{currentFare.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-amber-800 dark:text-amber-300 font-medium">
+                    <span>Dagdag Patungong {rebookSelectedLocation.location_name}:</span>
+                    <span className="font-mono font-bold">+₱{extensionFare.toFixed(2)}</span>
+                  </div>
+                  {calc.isDiscounted && (
+                    <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                      <span>-20% Commuter Diskwento:</span>
+                      <span>-₱{calc.discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-amber-200/80 dark:border-amber-800/80 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-black text-amber-900 dark:text-amber-200 block">
+                        {i18n.language === 'en' ? 'New Total Fare' : 'Bagong Kabuuang Bayad'}
+                      </span>
+                      <span className="text-[9px] text-slate-500">
+                        {i18n.language === 'en' ? 'Cumulative addition to current ride' : 'Pinagsamang bayad sa orihinal at extension'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-[#0052d1] dark:text-sky-400 font-mono">
+                        ₱{accumulatedTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Modal Actions */}
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowRebookModal(false)}
+                disabled={isSubmittingRebook}
+                className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+              >
+                {i18n.language === 'en' ? 'Back / Cancel' : 'Bumalik'}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRebook}
+                disabled={!rebookSelectedLocation || isSubmittingRebook}
+                className="flex-1 py-2 rounded-xl bg-[#0052d1] hover:bg-[#003f9e] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isSubmittingRebook ? (
+                  <span>{i18n.language === 'en' ? 'Updating...' : 'Ina-update...'}</span>
+                ) : (
+                  <>
+                    <Repeat className="w-3.5 h-3.5" />
+                    <span>{i18n.language === 'en' ? 'Confirm Extension' : 'Kumpirmahin'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
       )}

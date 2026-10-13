@@ -192,7 +192,26 @@ const AdminContent: React.FC = () => {
       }
 
       if (resBookings.data) {
-        setBookings(resBookings.data as Booking[]);
+        const mergedBookings = (resBookings.data as any[]).map(b => {
+          try {
+            const raw = localStorage.getItem(`pasada_booking_${b.id}`);
+            if (raw) {
+              const localObj = JSON.parse(raw);
+              return {
+                ...b,
+                original_destination_name: localObj.original_destination_name || b.original_destination_name,
+                original_fare: localObj.original_fare != null ? localObj.original_fare : b.original_fare,
+                extension_fare: localObj.extension_fare != null ? localObj.extension_fare : b.extension_fare,
+                rebook_count: localObj.rebook_count != null ? localObj.rebook_count : b.rebook_count,
+                additional_fare: localObj.additional_fare != null ? localObj.additional_fare : b.additional_fare,
+                additional_fare_reason: localObj.additional_fare_reason || b.additional_fare_reason,
+                base_fare: localObj.base_fare != null ? localObj.base_fare : b.base_fare,
+              };
+            }
+          } catch {}
+          return b;
+        });
+        setBookings(mergedBookings as Booking[]);
       }
 
       // Map complaints cleanly with real names & body numbers

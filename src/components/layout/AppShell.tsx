@@ -30,7 +30,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         {/* Floating button to quickly return to Passenger / Driver App */}
         <div className="fixed bottom-4 right-4 z-50">
           <button
-            onClick={() => setActiveTab('home')}
+            onClick={() => setActiveTab('pasada')}
             className={cn(
               'flex items-center gap-2 h-9 px-4 rounded-md font-bold text-xs shadow-lg transition-all active:scale-95 cursor-pointer',
               'bg-[#0052d1] hover:bg-[#206afa] text-white border border-sky-400/40 shadow-[#0052d1]/30 backdrop-blur-md'

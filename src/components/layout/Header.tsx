@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuthModal, activeTab, setA
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-2">
         {/* Brand */}
         <div 
-          onClick={() => setActiveTab('home')}
+          onClick={() => setActiveTab(user?.role === 'driver' ? 'driver' : 'pasada')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-white shadow-md shadow-primary/20 group-hover:scale-105 transition-transform">

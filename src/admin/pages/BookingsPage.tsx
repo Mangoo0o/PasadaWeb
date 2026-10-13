@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Receipt, Printer, X, Search } from 'lucide-react';
+import { History, Receipt, Printer, X, Search, Repeat } from 'lucide-react';
 import type { Booking } from '../types';
 import { cn } from '../../lib/utils';
 
@@ -276,77 +276,156 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                 </div>
               </div>
 
-              {/* Route Itinerary Flow */}
-              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0 mt-1" />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] text-slate-400 uppercase font-black block">Pickup</span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
-                      {selectedBooking.origin_name || selectedBooking.pickup_name || 'Pickup Point'}
-                    </span>
-                  </div>
-                </div>
+              {/* Route Itinerary Flow & Rebooking Trace */}
+              {(() => {
+                const originalDest = selectedBooking.original_destination_name;
+                const currentDest = selectedBooking.destination_name || selectedBooking.dropoff_name || 'Dropoff Point';
+                const origFare = Number(selectedBooking.original_fare || 20);
+                const extFare = Number(
+                  selectedBooking.extension_fare != null
+                    ? selectedBooking.extension_fare
+                    : (selectedBooking.rebook_count || (originalDest && originalDest !== currentDest))
+                      ? Math.max(0, Number(selectedBooking.final_fare || selectedBooking.estimated_fare || 0) - origFare)
+                      : 0
+                );
+                const isRebooked = Boolean(
+                  (selectedBooking.rebook_count && selectedBooking.rebook_count > 0) ||
+                  (originalDest && originalDest !== currentDest) ||
+                  extFare > 0
+                );
 
-                <div className="ml-1.25 border-l-2 border-dashed border-slate-300 dark:border-slate-700 h-3" />
+                return (
+                  <>
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0 mt-1" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] text-slate-400 uppercase font-black block">Pickup Point</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
+                            {selectedBooking.origin_name || selectedBooking.pickup_name || 'Pickup Point'}
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="flex items-start gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#0052d1] ring-4 ring-[#0052d1]/20 shrink-0 mt-1" />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] text-slate-400 uppercase font-black block">Dropoff</span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
-                      {selectedBooking.destination_name || selectedBooking.dropoff_name || 'Dropoff Point'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                      {/* If rebooked, display original past dropoff */}
+                      {isRebooked && originalDest && (
+                        <>
+                          <div className="ml-1.25 border-l-2 border-dashed border-amber-300 dark:border-amber-700 h-3" />
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-400/20 shrink-0 mt-1" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[10px] text-amber-700 dark:text-amber-400 uppercase font-black block">
+                                Initial Booked Destination (Past Dropoff)
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500 line-through truncate block">
+                                {originalDest}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
 
-              {/* Ride Metadata Grid */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Passenger</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate block">
-                    {selectedBooking.passenger?.full_name || 'Passenger'}
-                  </span>
-                </div>
+                      <div className="ml-1.25 border-l-2 border-dashed border-slate-300 dark:border-slate-700 h-3" />
 
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Driver &amp; Plate</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate block">
-                    {selectedBooking.driver?.profile?.full_name || 'Driver'}
-                  </span>
-                  <span className="font-mono text-[10px] text-slate-400">
-                    {selectedBooking.driver?.plate_number || 'Tricycle'}
-                  </span>
-                </div>
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#0052d1] ring-4 ring-[#0052d1]/20 shrink-0 mt-1" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] text-slate-400 uppercase font-black block">
+                              {isRebooked ? 'Extended Dropoff Destination' : 'Dropoff'}
+                            </span>
+                            {isRebooked && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
+                                <Repeat className="w-2.5 h-2.5" />
+                                <span>Rebooked ({selectedBooking.rebook_count ? `${selectedBooking.rebook_count}x` : '1x'})</span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
+                            {currentDest}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Distance</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white">
-                    {selectedBooking.estimated_distance_km || selectedBooking.distance_km || 2.0} km
-                  </span>
-                </div>
+                    {/* Ride Metadata Grid */}
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Passenger</span>
+                        <span className="font-extrabold text-slate-900 dark:text-white truncate block">
+                          {selectedBooking.passenger?.full_name || 'Passenger'}
+                        </span>
+                      </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Status</span>
-                  <div>{getStatusBadge(selectedBooking.status)}</div>
-                </div>
-              </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Driver &amp; Plate</span>
+                        <span className="font-extrabold text-slate-900 dark:text-white truncate block">
+                          {selectedBooking.driver?.profile?.full_name || 'Driver'}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400">
+                          {selectedBooking.driver?.plate_number || 'Tricycle'}
+                        </span>
+                      </div>
 
-              {/* Regulated Fare Total Banner */}
-              <div className="p-4 rounded-lg bg-[#0052d1]/5 dark:bg-[#0052d1]/10 border border-[#0052d1]/20 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
-                    Regulated Municipal Fare
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Certified LGU Tariff Ordinance
-                  </span>
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-[#0052d1] dark:text-sky-400 tabular-nums tracking-tight">
-                  ₱{Number(selectedBooking.final_fare || selectedBooking.computed_fare || selectedBooking.estimated_fare || 0).toFixed(2)}
-                </div>
-              </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Distance</span>
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          {selectedBooking.estimated_distance_km || selectedBooking.distance_km || 2.0} km
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Status</span>
+                        <div>{getStatusBadge(selectedBooking.status)}</div>
+                      </div>
+                    </div>
+
+                    {/* Rebooking & Taripa Breakdown Details */}
+                    {isRebooked && (
+                      <div className="p-3 rounded-lg bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 space-y-1.5 text-xs text-left">
+                        <div className="flex items-center justify-between text-amber-900 dark:text-amber-300 font-extrabold">
+                          <span className="flex items-center gap-1 text-[11px]">
+                            <Repeat className="w-3.5 h-3.5" />
+                            <span>Rebooking Audit Breakdown</span>
+                          </span>
+                          <span className="text-[9px] bg-amber-200 dark:bg-amber-800/80 px-1.5 py-0.2 rounded-full font-black">
+                            {selectedBooking.rebook_count ? `${selectedBooking.rebook_count}x Extension` : 'Extended'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-300 text-[11px]">
+                          <span>1. Initial Booked Dropoff ({originalDest || 'Original'}):</span>
+                          <span className="font-bold">₱{origFare.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-800 dark:text-amber-300 font-bold text-[11px]">
+                          <span>2. Rebooked Extension ({currentDest}):</span>
+                          <span>+₱{extFare.toFixed(2)}</span>
+                        </div>
+                        {selectedBooking.additional_fare && Number(selectedBooking.additional_fare) > 0 ? (
+                          <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold text-[11px]">
+                            <span>3. Additional Surcharge {selectedBooking.additional_fare_reason ? `(${selectedBooking.additional_fare_reason})` : ''}:</span>
+                            <span>+₱{Number(selectedBooking.additional_fare).toFixed(2)}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {/* Regulated Fare Total Banner */}
+                    <div className="p-4 rounded-lg bg-[#0052d1]/5 dark:bg-[#0052d1]/10 border border-[#0052d1]/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
+                          Regulated Municipal Fare
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          {isRebooked ? 'Includes Cumulative Extension Tariff' : 'Certified LGU Tariff Ordinance'}
+                        </span>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-black text-[#0052d1] dark:text-sky-400 tabular-nums tracking-tight">
+                        ₱{Number(selectedBooking.final_fare || selectedBooking.computed_fare || selectedBooking.estimated_fare || 0).toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Modal Footer */}

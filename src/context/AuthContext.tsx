@@ -160,9 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profile && !error) {
         const localSavedDiscount = localStorage.getItem('pasada_discount_type') as any;
-        const resolvedPassengerType = (profile.passenger_type && profile.passenger_type !== 'regular')
+        const resolvedPassengerType = profile.passenger_type
           ? profile.passenger_type
-          : (authUser?.user_metadata?.passenger_type || localSavedDiscount || profile.passenger_type || 'regular');
+          : (authUser?.user_metadata?.passenger_type || localSavedDiscount || 'regular');
 
         const resolvedProfile: Profile = {
           ...profile,
@@ -235,7 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('pasada_active_tab', 'admin');
           localStorage.setItem('pasada_admin_profile', JSON.stringify(resolvedProfile));
         } else {
-          localStorage.setItem('pasada_active_tab', 'home');
+          localStorage.setItem('pasada_active_tab', 'pasada');
         }
       } else if (authUser?.user_metadata?.role) {
         // Fallback from auth metadata
@@ -245,7 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: metaRole,
           full_name: authUser.user_metadata.full_name || (metaRole === 'driver' ? 'Bauang Tricycle Driver' : 'Ka-Pasada Commuter'),
           phone_number: authUser.user_metadata.phone_number || authUser.phone,
-          passenger_type: authUser.user_metadata.passenger_type || 'regular',
+          passenger_type: authUser.user_metadata.passenger_type || (typeof window !== 'undefined' ? localStorage.getItem('pasada_discount_type') : null) || 'regular',
           language_pref: 'fil',
           created_at: new Date().toISOString()
         };
@@ -278,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('pasada_active_tab', 'admin');
           localStorage.setItem('pasada_admin_profile', JSON.stringify(metaProfile));
         } else {
-          localStorage.setItem('pasada_active_tab', 'home');
+          localStorage.setItem('pasada_active_tab', 'pasada');
         }
       }
     } catch (err) {

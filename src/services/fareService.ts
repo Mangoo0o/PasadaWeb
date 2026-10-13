@@ -50,6 +50,28 @@ export const getLocationIconEmoji = (iconId?: string, locationName?: string): st
   return '📍';
 };
 
+export const resolveLocationCategory = (loc: { icon?: string; location_name?: string; notes?: string }): string => {
+  if (loc.icon) {
+    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === loc.icon || opt.icon === loc.icon);
+    if (found) return found.id;
+  }
+  const name = (loc.location_name || '').toLowerCase();
+  const notes = (loc.notes || '').toLowerCase();
+  const combined = `${name} ${notes}`;
+  if (combined.includes('plaza') || combined.includes('munisipyo') || combined.includes('hall')) return 'landmark';
+  if (combined.includes('church') || combined.includes('parish') || combined.includes('peter')) return 'church';
+  if (combined.includes('market') || combined.includes('palengke') || combined.includes('trading')) return 'market';
+  if (combined.includes('school') || combined.includes('elementary') || combined.includes('high') || combined.includes('college')) return 'school';
+  if (combined.includes('grape') || combined.includes('farm') || combined.includes('vineyard') || combined.includes('lomboy')) return 'farm';
+  if (combined.includes('beach') || combined.includes('sunset') || combined.includes('baybay') || combined.includes('bagbag')) return 'beach';
+  if (combined.includes('resort') || combined.includes('coast') || combined.includes('paringao')) return 'resort';
+  if (combined.includes('hospital') || combined.includes('clinic') || combined.includes('health') || combined.includes('center')) return 'hospital';
+  if (combined.includes('barangay') || combined.includes('baccuit') || combined.includes('home')) return 'barangay';
+  if (combined.includes('junction') || combined.includes('gas') || combined.includes('highway') || combined.includes('quinavite')) return 'gas';
+  if (combined.includes('valley') || combined.includes('park') || combined.includes('nature') || combined.includes('calumbaya')) return 'park';
+  return 'pin';
+};
+
 // No hardcoded seeded data - location fares are dynamically loaded from Supabase database
 export const DEFAULT_LOCATION_FARES: LocationFare[] = [];
 
@@ -523,10 +545,15 @@ export const calculateFare = (
     };
   }
 
-  // If a preset discounted tariff exists (e.g. 16 for 20), use it; otherwise compute official 20% discount
-  const computedDisc = customDiscountedFare !== undefined && customDiscountedFare > 0
+  // If a preset discounted tariff exists (e.g. 16 for 20) and is strictly less than standard fare, use it;
+  // otherwise compute official 20% statutory discount under Philippine Republic Acts
+  const hasValidCustom = customDiscountedFare !== undefined && 
+    Number(customDiscountedFare) > 0 && 
+    Number(customDiscountedFare) < std;
+
+  const computedDisc = hasValidCustom
     ? Number(customDiscountedFare)
-    : Math.round(std * 0.8);
+    : Math.max(1, Math.round(std * 0.8));
 
   const discountAmount = Math.max(0, std - computedDisc);
 
@@ -534,8 +561,57 @@ export const calculateFare = (
     standardFare: std,
     finalFare: computedDisc,
     discountAmount,
-    isDiscounted: true,
+    isDiscounted: discountAmount > 0,
     passengerType: pType
   };
 };
 
+export interface TripCompletionCalculation {
+  baseFare: number;
+  additionalFare: number;
+  subtotalGross: number;
+  discountPercent: number;
+  discountAmount: number;
+  finalPayableFare: number;
+  isDiscounted: boolean;
+  passengerType: string;
+}
+
+/**
+ * Calculates trip completion fare with optional additional surcharge.
+ * The 20% statutory discount for students/seniors/PWDs is strictly computed
+ * on the gross subtotal (Base Taripa + Additional Fare) before final cash collection.
+ */
+export const calculateTripCompletionFare = (
+  baseFare: number,
+  additionalFare: number = 0,
+  passengerTypeOrEligible?: string | boolean | null
+): TripCompletionCalculation => {
+  const base = Math.max(0, Number(baseFare) || 20);
+  const add = Math.max(0, Number(additionalFare) || 0);
+  const subtotal = base + add;
+
+  const isEligible = typeof passengerTypeOrEligible === 'boolean'
+    ? passengerTypeOrEligible
+    : isDiscountEligibleType(passengerTypeOrEligible);
+
+  const pType = typeof passengerTypeOrEligible === 'string'
+    ? passengerTypeOrEligible
+    : (isEligible ? 'discounted' : 'regular');
+
+  const discountPercent = isEligible ? 20 : 0;
+  // 20% discount computed on total gross subtotal (Base + Additional)
+  const discountAmount = isEligible ? Math.round(subtotal * 0.20) : 0;
+  const finalPayableFare = Math.max(1, subtotal - discountAmount);
+
+  return {
+    baseFare: base,
+    additionalFare: add,
+    subtotalGross: subtotal,
+    discountPercent,
+    discountAmount,
+    finalPayableFare,
+    isDiscounted: isEligible && discountAmount > 0,
+    passengerType: pType,
+  };
+};

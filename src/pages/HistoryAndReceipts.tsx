@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   MessageSquareWarning,
   User,
-  ShieldAlert
+  ShieldAlert,
+  Repeat
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Modal } from '../components/common/Modal';
@@ -195,6 +196,18 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
               minute: '2-digit'
             });
 
+            const originalDest = b.original_destination_name;
+            const origFare = Number(b.original_fare || 20);
+            const isRebooked = Boolean(
+              (b.rebook_count != null && Number(b.rebook_count) > 0) ||
+              (originalDest && originalDest !== b.destination_name) ||
+              (b.extension_fare != null && Number(b.extension_fare) > 0)
+            );
+            const extFare = Number(
+              b.extension_fare ||
+              (isRebooked ? Math.max(0, standardSubtotal - origFare) : 0)
+            );
+
             return (
               <div 
                 key={b.id}
@@ -211,9 +224,22 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                     </div>
 
                     <div className="min-w-0 space-y-0.5">
-                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
-                        {b.destination_name || 'Bauang Route'}
-                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                          {b.destination_name || 'Bauang Route'}
+                        </h4>
+                        {isRebooked && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
+                            <Repeat className="w-2.5 h-2.5" />
+                            <span>Rebooked</span>
+                          </span>
+                        )}
+                      </div>
+                      {isRebooked && originalDest && (
+                        <p className="text-[10px] text-slate-400 line-through truncate">
+                          Dati: {originalDest}
+                        </p>
+                      )}
                       <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
                         <Calendar className="w-3 h-3" />
                         <span>{dateFormatted}</span>
@@ -255,9 +281,80 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                 {isExpanded && (
                   <div className="border-t border-slate-100 dark:border-slate-800 px-3.5 py-3 bg-slate-50/70 dark:bg-slate-800/40 space-y-2.5 animate-in fade-in text-xs">
                     
+                    {/* Rebooking Route History Details (Shows Past Booked + Extension) */}
+                    {isRebooked && (
+                      <div className="p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 space-y-1 text-[11px] text-left">
+                        <div className="flex items-center justify-between text-amber-900 dark:text-amber-300 font-extrabold">
+                          <span className="flex items-center gap-1">
+                            <Repeat className="w-3 h-3" />
+                            <span>Detalye ng Rebooking / Extension</span>
+                          </span>
+                          <span className="text-[9px] bg-amber-200 dark:bg-amber-800/80 px-1.5 py-0.2 rounded-full font-black">
+                            {b.rebook_count ? `${b.rebook_count}x Rebooked` : 'Extended'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                          <span>1. Unang Nai-book ({originalDest || 'Dating Babaan'}):</span>
+                          <span className="font-bold">₱{origFare.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-800 dark:text-amber-300 font-bold">
+                          <span>2. Rebook Extension ({b.destination_name}):</span>
+                          <span>+₱{extFare.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Taripa Breakdown */}
                     <div className="space-y-1 text-slate-600 dark:text-slate-400">
-                      {isDiscounted ? (
+                      {isRebooked ? (
+                        <>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span>Base Taripa (Unang Booking)</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-200">₱{origFare.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                            <span>Rebook Extension Taripa</span>
+                            <span>+₱{extFare.toFixed(2)}</span>
+                          </div>
+                          {b.additional_fare && Number(b.additional_fare) > 0 ? (
+                            <div className="flex justify-between items-center text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                              <span>Karagdagang Singil {b.additional_fare_reason ? `(${b.additional_fare_reason})` : ''}</span>
+                              <span>+₱{Number(b.additional_fare).toFixed(2)}</span>
+                            </div>
+                          ) : null}
+                          <div className="flex justify-between items-center text-[11px] text-slate-400">
+                            <span>Subtotal (Bago Diskwento)</span>
+                            <span>₱{(origFare + extFare + Number(b.additional_fare || 0)).toFixed(2)}</span>
+                          </div>
+                          {isDiscounted && (
+                            <div className="flex justify-between items-center text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                              <span>Diskwento (20% {typeInfo.label})</span>
+                              <span>-₱{discountDeduction.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : b.additional_fare && Number(b.additional_fare) > 0 ? (
+                        <>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span>Base Taripa</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-200">₱{Number(b.base_fare || 20).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                            <span>Karagdagang Singil {b.additional_fare_reason ? `(${b.additional_fare_reason})` : ''}</span>
+                            <span>+₱{Number(b.additional_fare).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-slate-400">
+                            <span>Subtotal (Bago Diskwento)</span>
+                            <span>₱{(Number(b.base_fare || 20) + Number(b.additional_fare)).toFixed(2)}</span>
+                          </div>
+                          {isDiscounted && (
+                            <div className="flex justify-between items-center text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                              <span>Diskwento (20% {typeInfo.label})</span>
+                              <span>-₱{Number(b.discount_amount || (Number(b.base_fare || 20) + Number(b.additional_fare)) * 0.2).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : isDiscounted ? (
                         <>
                           <div className="flex justify-between items-center text-[11px]">
                             <span>Regulated Taripa Subtotal</span>

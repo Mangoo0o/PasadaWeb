@@ -91,7 +91,7 @@ export const DriverDispatch: React.FC = () => {
   useEffect(() => {
     const loadDispatches = async () => {
       if (user?.id) {
-        const existingActive = await fetchActiveTrip(user.id, true);
+        const existingActive = await fetchActiveTrip(driverProfile?.id || user.id, true);
         if (existingActive) {
           setActiveTrip(existingActive);
           if (existingActive.status === 'driver_assigned') setTripState('assigned');
@@ -134,7 +134,55 @@ export const DriverDispatch: React.FC = () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [user?.id]);
+  }, [user?.id, driverProfile?.id]);
+
+  // Synchronize active trip if passenger rebooks destination or updates fare
+  useEffect(() => {
+    if (!activeTrip?.id) return;
+
+    const handleActiveBookingUpdate = (e: any) => {
+      const detail = e?.detail;
+      if (detail && (detail.id === activeTrip.id || detail.bookingId === activeTrip.id)) {
+        if (detail.updatedBooking) {
+          setActiveTrip((prev) => (prev ? { ...prev, ...detail.updatedBooking } : detail.updatedBooking));
+        } else if (detail.destination_name || detail.estimated_fare) {
+          setActiveTrip((prev) => (prev ? {
+            ...prev,
+            destination_name: detail.destination_name || prev.destination_name,
+            destination_lat: detail.destination_lat || prev.destination_lat,
+            destination_lng: detail.destination_lng || prev.destination_lng,
+            estimated_fare: detail.estimated_fare || prev.estimated_fare,
+            rebook_count: detail.rebookCount || prev.rebook_count || 1,
+            extension_fare: detail.extensionFare || prev.extension_fare
+          } : prev));
+        }
+      }
+    };
+
+    window.addEventListener('pasada_booking_updated', handleActiveBookingUpdate);
+    window.addEventListener('pasada_rebook_extended', handleActiveBookingUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('pasada_booking_sync_channel');
+        bc.onmessage = (event) => {
+          const msg = event?.data;
+          if (msg && (msg.bookingId === activeTrip.id || msg.id === activeTrip.id)) {
+            if (msg.updatedBooking) {
+              setActiveTrip((prev) => (prev ? { ...prev, ...msg.updatedBooking } : msg.updatedBooking));
+            }
+          }
+        };
+      } catch {}
+    }
+
+    return () => {
+      window.removeEventListener('pasada_booking_updated', handleActiveBookingUpdate);
+      window.removeEventListener('pasada_rebook_extended', handleActiveBookingUpdate);
+      if (bc) bc.close();
+    };
+  }, [activeTrip?.id]);
 
   // 3. Dynamic 1.0 km Proximity & Late-Arrival Zone Entry Detection
   useEffect(() => {
@@ -181,9 +229,35 @@ export const DriverDispatch: React.FC = () => {
       localStorage.setItem('pasada_open_queue', JSON.stringify(filtered));
     } catch {}
 
-    setActiveTrip(booking);
+    const assignedDriverId = driverProfile?.id || user?.id;
+    const acceptedBooking: Booking = {
+      ...booking,
+      driver_id: assignedDriverId,
+      status: 'driver_assigned',
+      driver: driverProfile ? {
+        id: driverProfile.id,
+        body_number: driverProfile.body_number,
+        plate_number: driverProfile.plate_number,
+        tricycle_model: driverProfile.tricycle_model,
+        rating_avg: driverProfile.rating_avg,
+        current_lat: driverProfile.current_lat,
+        current_lng: driverProfile.current_lng,
+        is_available: false,
+        profile: user ? {
+          id: user.id,
+          full_name: user.full_name,
+          phone_number: user.phone_number,
+          role: 'driver',
+          photo_url: user.photo_url,
+          language_pref: user.language_pref,
+          created_at: user.created_at
+        } : driverProfile.profile
+      } as any : booking.driver
+    };
+
+    setActiveTrip(acceptedBooking);
     setTripState('assigned');
-    await updateBookingStatus(booking.id, 'driver_assigned', driverProfile?.id || user?.id);
+    await updateBookingStatus(booking.id, 'driver_assigned', assignedDriverId);
   };
 
   const handleArrivePickup = async () => {
@@ -443,9 +517,14 @@ export const DriverDispatch: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-sm sm:text-base font-black text-[#003f87] dark:text-[#00C1FD]">
+                          <span className="text-sm sm:text-base font-black text-[#003f87] dark:text-[#00C1FD] block leading-tight">
                             ₱{bk.estimated_fare.toFixed(2)}
                           </span>
+                          {isDiscountEligibleType(bk.passenger?.passenger_type || (bk as any)?.passenger_type) && (
+                            <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded-sm inline-block mt-0.5">
+                              -20% {getPassengerTypeInfo(bk.passenger?.passenger_type || (bk as any)?.passenger_type).label}
+                            </span>
+                          )}
                         </div>
                       </div>
 

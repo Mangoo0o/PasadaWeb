@@ -34,16 +34,16 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({ activeTab, setActive
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       return [
         { id: 'admin', label: t('nav.admin', 'Admin'), icon: ShieldCheck },
-        { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
         { id: 'pasada', label: t('nav.pasada', 'Pasada'), icon: Bike },
+        { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
         { id: 'history', label: t('nav.history', 'History'), icon: History },
         { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
       ];
     }
-    // Passenger Tabs: Explore (Home), Pasada (Ride & Map), Profile (Account, History Hub & Safety)
+    // Passenger Tabs: Pasada (Live Map & Ride), Explore (Tourism), Profile (Account, History Hub & Safety)
     return [
-      { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
       { id: 'pasada', label: t('nav.pasada', 'Pasada'), icon: Bike },
+      { id: 'home', label: t('nav.explore', 'Explore'), icon: Compass },
       { id: 'profile', label: t('nav.profile', 'Profile'), icon: User },
     ];
   };

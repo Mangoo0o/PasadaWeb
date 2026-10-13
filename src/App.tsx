@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   const getRoleDefaultTab = (role?: string) => {
     if (role === 'driver') return 'driver';
     if (role === 'admin' || role === 'super_admin') return 'admin';
-    return 'home';
+    return 'pasada';
   };
 
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -33,9 +33,14 @@ export const App: React.FC = () => {
       const saved = localStorage.getItem('pasada_active_tab');
       return (saved && ['driver', 'dispatch', 'profile', 'history'].includes(saved)) ? saved : 'driver';
     }
-    // 3. Passengers default to explore home
+    // 3. Passengers default to live map (pasada)
     const saved = localStorage.getItem('pasada_active_tab');
-    if (saved && ['home', 'pasada', 'history', 'profile'].includes(saved)) {
+    // If previously saved 'home' from the old explore default, migrate to 'pasada'
+    if (saved === 'home') {
+      localStorage.setItem('pasada_active_tab', 'pasada');
+      return 'pasada';
+    }
+    if (saved && ['pasada', 'home', 'history', 'profile'].includes(saved)) {
       return saved;
     }
     return getRoleDefaultTab(user?.role);
@@ -66,7 +71,7 @@ export const App: React.FC = () => {
     } else if (user.role === 'passenger') {
       const savedTab = localStorage.getItem('pasada_active_tab');
       if (!savedTab || !['home', 'pasada', 'history', 'profile'].includes(savedTab) || ['driver', 'dispatch', 'admin'].includes(savedTab)) {
-        handleSetActiveTab('home');
+        handleSetActiveTab('pasada');
       }
     }
   }, [user?.id, user?.role]);
@@ -115,15 +120,15 @@ export const App: React.FC = () => {
     if (user?.role === 'driver' && (activeTab === 'home' || activeTab === 'pasada')) {
       return <DriverDashboard setActiveTab={handleSetActiveTab} />;
     }
-    // Role guard: if user is passenger and on driver-only tabs, render DiscoveryHome
+    // Role guard: if user is passenger and on driver-only tabs, render PassengerHome (Map)
     if (user?.role === 'passenger' && (activeTab === 'driver' || activeTab === 'dispatch')) {
-      return <DiscoveryHome setActiveTab={handleSetActiveTab} onSelectDestination={handleSelectSpotForRide} />;
+      return <PassengerHome preselectedSpot={selectedSpotForRide} />;
     }
     // Role guard: if non-admin tries to access admin tab, redirect to appropriate home
     if (activeTab === 'admin' && user?.role !== 'admin' && (user?.role as string) !== 'super_admin') {
       return user?.role === 'driver' 
         ? <DriverDashboard setActiveTab={handleSetActiveTab} />
-        : <DiscoveryHome setActiveTab={handleSetActiveTab} onSelectDestination={handleSelectSpotForRide} />;
+        : <PassengerHome preselectedSpot={selectedSpotForRide} />;
     }
 
     switch (activeTab) {
@@ -144,7 +149,7 @@ export const App: React.FC = () => {
       default:
         return user?.role === 'driver' 
           ? <DriverDashboard setActiveTab={handleSetActiveTab} /> 
-          : <DiscoveryHome setActiveTab={handleSetActiveTab} onSelectDestination={handleSelectSpotForRide} />;
+          : <PassengerHome preselectedSpot={selectedSpotForRide} />;
     }
   };
 

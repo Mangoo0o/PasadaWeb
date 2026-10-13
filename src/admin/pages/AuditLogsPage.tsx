@@ -458,6 +458,39 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                 </div>
               </div>
 
+              {/* Specialized Trip Surcharge Audit Card */}
+              {selectedLog.action_type === 'TRIP_ADDITIONAL_FARE_APPLIED' && selectedLog.details_json && (
+                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/70 space-y-2 text-xs">
+                  <div className="flex items-center justify-between font-black text-amber-900 dark:text-amber-200">
+                    <span className="uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                      <span>🏷️</span>
+                      <span>Tricycle Trip Surcharge Record</span>
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      ₱{Number(selectedLog.details_json.final_fare || 0).toFixed(2)} Total Collected
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1 border-t border-amber-200/60 dark:border-amber-800/60">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Base Taripa:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">₱{Number(selectedLog.details_json.base_fare || 0).toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Karagdagang Singil:</span>
+                      <span className="font-bold text-amber-700 dark:text-amber-400">+₱{Number(selectedLog.details_json.additional_fare || 0).toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Diskwento:</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">-₱{Number(selectedLog.details_json.discount_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Dahilan ng Singil:</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate block">{selectedLog.details_json.additional_fare_reason || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* JSON Payload Inspector */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

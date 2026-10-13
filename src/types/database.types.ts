@@ -134,6 +134,14 @@ export interface Booking {
   estimated_distance_km: number;
   estimated_duration_min: number;
   estimated_fare: number;
+  original_destination_name?: string;
+  original_fare?: number;
+  extension_fare?: number;
+  rebook_count?: number;
+  base_fare?: number;
+  additional_fare?: number;
+  additional_fare_reason?: string;
+  discount_amount?: number;
   final_fare?: number;
   cancellation_fee?: number;
   cancellation_reason?: string;
