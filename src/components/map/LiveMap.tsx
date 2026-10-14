@@ -295,8 +295,15 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     const fetchRoadRoute = async () => {
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`;
-        const res = await fetch(url);
+        const startLat = (bookingStatus === 'in_transit' && isValidCoord(rawAssignedLat, rawAssignedLng)) ? rawAssignedLat : originLat;
+        const startLng = (bookingStatus === 'in_transit' && isValidCoord(rawAssignedLat, rawAssignedLng)) ? rawAssignedLng : originLng;
+        const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (!res.ok) throw new Error('Route fetch failed');
         const data = await res.json();
 
@@ -313,8 +320,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         }
       } catch {
         if (!isCancelled) {
+          const startLat = (bookingStatus === 'in_transit' && isValidCoord(rawAssignedLat, rawAssignedLng)) ? rawAssignedLat : originLat;
+          const startLng = (bookingStatus === 'in_transit' && isValidCoord(rawAssignedLat, rawAssignedLng)) ? rawAssignedLng : originLng;
           setRoadRouteCoords([
-            [originLat, originLng],
+            [startLat, startLng],
             [destLat, destLng]
           ]);
         }
@@ -326,11 +335,11 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [originLat, originLng, destLat, destLng, onRouteDistanceCalculated]);
+  }, [originLat, originLng, destLat, destLng, onRouteDistanceCalculated, bookingStatus, rawAssignedLat, rawAssignedLng]);
 
   // Fetch Driver -> Client Pickup Route when driver is assigned
   useEffect(() => {
-    if (!hasAssignedDriver || !originLat || !originLng) {
+    if (!hasAssignedDriver || bookingStatus === 'in_transit' || !originLat || !originLng) {
       setDriverToPickupRoute([]);
       return;
     }
@@ -368,7 +377,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   }, [hasAssignedDriver, assignedDriverCoords[0], assignedDriverCoords[1], originLat, originLng, bookingStatus]);
 
   const passengerFocusPoints: [number, number][] = hasAssignedDriver
-    ? [assignedDriverCoords, [originLat, originLng]]
+    ? [assignedDriverCoords, (bookingStatus === 'in_transit' && destLat && destLng) ? [destLat, destLng] : [originLat, originLng]]
     : destLat && destLng
     ? [[originLat, originLng], [destLat, destLng]]
     : [[originLat, originLng]];
@@ -400,7 +409,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         <MapInvalidator />
         {onSelectMapLocation && <MapClickHandler onSelect={onSelectMapLocation} />}
         <MapFocusDestination destLat={destLat} destLng={destLng} disabled={hasAssignedDriver} />
-        <AutoFitPassengerBounds points={passengerFocusPoints} triggerKey={`${bookingStatus}-${hasAssignedDriver}`} />
+        <AutoFitPassengerBounds points={passengerFocusPoints} triggerKey={`${bookingStatus}-${hasAssignedDriver}-${destLat}-${destLng}`} />
 
         {/* Current Location / Passenger Marker */}
         <Marker 
@@ -469,7 +478,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         )}
 
         {/* ═══════════ LEG 1: Driver to Client Pickup Road Path (Cyan Dashed) ═══════════ */}
-        {hasAssignedDriver && driverToPickupRoute.length > 0 && (
+        {hasAssignedDriver && bookingStatus !== 'in_transit' && driverToPickupRoute.length > 0 && (
           <>
             <Polyline
               positions={driverToPickupRoute}

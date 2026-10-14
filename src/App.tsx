@@ -33,17 +33,9 @@ export const App: React.FC = () => {
       const saved = localStorage.getItem('pasada_active_tab');
       return (saved && ['driver', 'dispatch', 'profile', 'history'].includes(saved)) ? saved : 'driver';
     }
-    // 3. Passengers default to live map (pasada)
-    const saved = localStorage.getItem('pasada_active_tab');
-    // If previously saved 'home' from the old explore default, migrate to 'pasada'
-    if (saved === 'home') {
-      localStorage.setItem('pasada_active_tab', 'pasada');
-      return 'pasada';
-    }
-    if (saved && ['pasada', 'home', 'history', 'profile'].includes(saved)) {
-      return saved;
-    }
-    return getRoleDefaultTab(user?.role);
+    // 3. Passengers always default to live map ('pasada') on refresh or initial load
+    localStorage.setItem('pasada_active_tab', 'pasada');
+    return 'pasada';
   });
 
   const handleSetActiveTab = (tab: string) => {
@@ -69,10 +61,8 @@ export const App: React.FC = () => {
         handleSetActiveTab('driver');
       }
     } else if (user.role === 'passenger') {
-      const savedTab = localStorage.getItem('pasada_active_tab');
-      if (!savedTab || !['home', 'pasada', 'history', 'profile'].includes(savedTab) || ['driver', 'dispatch', 'admin'].includes(savedTab)) {
-        handleSetActiveTab('pasada');
-      }
+      // When relogging in or initializing session as a passenger, always start on the map page
+      handleSetActiveTab('pasada');
     }
   }, [user?.id, user?.role]);
 

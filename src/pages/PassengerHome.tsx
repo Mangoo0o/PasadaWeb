@@ -604,7 +604,12 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   };
 
   // Select Destination Terminal
-  const handleSelectTerminal = () => {
+  const handleSelectTerminal = (term?: Terminal) => {
+    if (term) {
+      setOriginLat(term.lat);
+      setOriginLng(term.lng);
+      setOriginName(term.name);
+    }
     if (destLat !== undefined && destLng !== undefined) {
       resolveLocationFare(destLat, destLng, locationFares);
     }
@@ -777,6 +782,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           originLat={originLat}
           originLng={originLng}
           destLat={destLat}
+          destLng={destLng}
           terminals={terminals}
           locationFares={filteredLocationFares}
           selectedLocationFare={selectedLocationFare}

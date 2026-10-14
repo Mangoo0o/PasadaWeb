@@ -106,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pasada_auth_user');
       localStorage.removeItem('pasada_auth_driver');
       localStorage.removeItem('pasada_admin_profile');
+      localStorage.setItem('pasada_active_tab', 'pasada');
     };
 
     const handleDriverStatusChanged = (e: any) => {
@@ -137,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('pasada_auth_user');
         localStorage.removeItem('pasada_auth_driver');
         localStorage.removeItem('pasada_admin_profile');
+        localStorage.setItem('pasada_active_tab', 'pasada');
       }
     });
 
@@ -346,6 +348,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setUser(studentUser);
           localStorage.setItem('pasada_auth_user', JSON.stringify(studentUser));
+          localStorage.setItem('pasada_active_tab', 'pasada');
           return {};
         }
 
@@ -362,6 +365,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setUser(regularUser);
           localStorage.setItem('pasada_auth_user', JSON.stringify(regularUser));
+          localStorage.setItem('pasada_active_tab', 'pasada');
           return {};
         }
 
@@ -430,6 +434,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(studentUser);
         localStorage.setItem('pasada_auth_user', JSON.stringify(studentUser));
+        localStorage.setItem('pasada_active_tab', 'pasada');
         return {};
       }
 
@@ -446,6 +451,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(regularUser);
         localStorage.setItem('pasada_auth_user', JSON.stringify(regularUser));
+        localStorage.setItem('pasada_active_tab', 'pasada');
         return {};
       }
 
@@ -464,6 +470,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setDriverProfile(regUser.driverProfile);
             localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
+            localStorage.setItem('pasada_active_tab', 'driver');
+          } else {
+            localStorage.setItem('pasada_active_tab', 'pasada');
           }
           if (regUser.profile?.id) {
             loadUserProfile(regUser.profile.id).catch(() => {});
@@ -498,6 +507,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
               setDriverProfile(regUser.driverProfile);
               localStorage.setItem('pasada_auth_driver', JSON.stringify(regUser.driverProfile));
+              localStorage.setItem('pasada_active_tab', 'driver');
+            } else {
+              localStorage.setItem('pasada_active_tab', 'pasada');
             }
             return {};
           }
@@ -520,6 +532,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
                 setDriverProfile(cachedUser.driverProfile);
                 localStorage.setItem('pasada_auth_driver', JSON.stringify(cachedUser.driverProfile));
+                localStorage.setItem('pasada_active_tab', 'driver');
+              } else {
+                localStorage.setItem('pasada_active_tab', 'pasada');
               }
               return {};
             }
@@ -742,6 +757,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pasada_auth_user');
       localStorage.removeItem('pasada_auth_driver');
       localStorage.removeItem('pasada_admin_profile');
+      localStorage.setItem('pasada_active_tab', 'pasada');
     }
   };
 
