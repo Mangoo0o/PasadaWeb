@@ -43,9 +43,9 @@ export const fetchTouristSpots = async (): Promise<TouristSpot[]> => {
           // Add as a destination spot
           let cat: 'historical' | 'nature' | 'church' | 'food' | 'recreation' = 'recreation';
           if (fare.icon === 'church') cat = 'church';
-          else if (fare.icon === 'farm' || fare.icon === 'park') cat = 'nature';
+          else if (fare.icon === 'farm' || fare.icon === 'park' || fare.icon === 'beach') cat = 'nature';
           else if (fare.icon === 'market' || fare.icon === 'food') cat = 'food';
-          else if (fare.icon === 'landmark') cat = 'historical';
+          else if (fare.icon === 'landmark' || fare.icon === 'museum' || fare.icon === 'plaza') cat = 'historical';
 
           const spotImgs = (Array.isArray(fare.images) && fare.images.length > 0)
             ? fare.images

@@ -295,6 +295,14 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const [focusKey, setFocusKey] = useState<number>(0);
 
+  const [passengerCancelledNotice, setPassengerCancelledNotice] = useState<{
+    show: boolean;
+    passengerName: string;
+    originName: string;
+    destinationName: string;
+    fare: number;
+  } | null>(null);
+
   // Commuter discount profile and base tariff resolution (reflects accumulated fare if rebooked)
   const rawPassengerType = currentBooking.passenger?.passenger_type || (currentBooking as any)?.passenger_type || 'regular';
   const isEligibleDiscount = isDiscountEligibleType(rawPassengerType);
@@ -315,13 +323,37 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   const parsedAdditionalFare = Math.max(0, Number(additionalFareInput) || 0);
   const currentSettlementCalc = calculateTripCompletionFare(baseTariff, parsedAdditionalFare, isEligibleDiscount);
 
-  // Subscribe to real-time booking updates (e.g. passenger rebooks or extends destination)
+  // Subscribe to real-time booking updates (e.g. passenger cancels, rebooks or extends destination)
   useEffect(() => {
     if (!booking?.id) return;
 
     const handleBookingUpdate = (latest: Booking) => {
       if (!latest) return;
       const prev = currentBookingRef.current;
+
+      // Detect if passenger cancelled the trip
+      if (latest.status === 'cancelled') {
+        const passName =
+          latest.passenger?.full_name ||
+          latest.passenger_name ||
+          prev.passenger?.full_name ||
+          prev.passenger_name ||
+          'Pasahero';
+
+        soundService.playTripCancelledAlert({
+          passengerName: passName,
+          pickupName: latest.origin_name || prev.origin_name,
+        });
+
+        setPassengerCancelledNotice({
+          show: true,
+          passengerName: passName,
+          originName: latest.origin_name || prev.origin_name || 'Pickup Point',
+          destinationName: latest.destination_name || prev.destination_name || 'Destination',
+          fare: Number(latest.estimated_fare || prev.estimated_fare || 0),
+        });
+        return;
+      }
 
       const destNameChanged =
         Boolean(latest.destination_name && latest.destination_name !== prev.destination_name);
@@ -368,6 +400,41 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     return () => {
       unsubscribe();
     };
+  }, [booking.id]);
+
+  // Immediate listener for window cancellation events
+  useEffect(() => {
+    if (!booking?.id) return;
+
+    const handleCancelledEvent = (e: any) => {
+      const detail = e?.detail;
+      if (detail && (detail.id === booking.id || detail.bookingId === booking.id)) {
+        if (detail.status === 'cancelled') {
+          const passName =
+            detail.updatedBooking?.passenger?.full_name ||
+            detail.updatedBooking?.passenger_name ||
+            currentBookingRef.current.passenger?.full_name ||
+            currentBookingRef.current.passenger_name ||
+            'Pasahero';
+
+          soundService.playTripCancelledAlert({
+            passengerName: passName,
+            pickupName: currentBookingRef.current.origin_name,
+          });
+
+          setPassengerCancelledNotice({
+            show: true,
+            passengerName: passName,
+            originName: currentBookingRef.current.origin_name || 'Pickup Point',
+            destinationName: currentBookingRef.current.destination_name || 'Destination',
+            fare: Number(currentBookingRef.current.estimated_fare || 0),
+          });
+        }
+      }
+    };
+
+    window.addEventListener('pasada_booking_updated', handleCancelledEvent);
+    return () => window.removeEventListener('pasada_booking_updated', handleCancelledEvent);
   }, [booking.id]);
 
   // Driver submits destination rebook / extension (e.g. verbally requested by commuter)
@@ -1179,6 +1246,70 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
               className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 active:scale-98 transition-all cursor-pointer"
             >
               {t('driver.backToTerminal', 'Return to Dashboard')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. PASSENGER CANCELLED NOTIFICATION MODAL */}
+      {passengerCancelledNotice?.show && (
+        <div className="fixed inset-0 z-[10200] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center space-y-5 shadow-2xl border-2 border-rose-500/40 dark:border-rose-500/50 animate-in zoom-in-95">
+            {/* Animated Warning Icon with Pulse */}
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-rose-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-lg border-2 border-rose-300 dark:border-rose-700">
+                <AlertCircle className="w-9 h-9" strokeWidth={2.5} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[11px] font-black uppercase tracking-wider">
+                <span>{t('driver.bookingCancelledBadge', 'Kanselado ang Booking')}</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
+                {t('driver.passengerCancelledTitle', 'Kinansela ng Pasahero ang Biyahe')}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed px-1">
+                {i18n.language === 'en'
+                  ? `The passenger (${passengerCancelledNotice.passengerName}) has cancelled this booking. Your line is now available to accept new dispatches.`
+                  : `Ipinagbigay-alam ng pasahero (${passengerCancelledNotice.passengerName}) na kinansela ang biyahe na ito. Bukas muli ang iyong linya para tumanggap ng bagong dispatch.`}
+              </p>
+            </div>
+
+            {/* Trip Details Card */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5 text-left border border-slate-200 dark:border-slate-700/70 space-y-2 text-xs">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">Pickup Point</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                    {passengerCancelledNotice.originName}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/50">
+                <Navigation className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">Destination</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                    {passengerCancelledNotice.destinationName}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dismiss / Return to Dispatch Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setPassengerCancelledNotice(null);
+                onExitTravel();
+              }}
+              className="w-full py-3.5 rounded-2xl bg-[#0052d1] hover:bg-[#003f87] text-white font-extrabold text-sm shadow-lg shadow-[#0052d1]/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{t('driver.understandReturn', 'Naintindihan / Bumalik sa Dispatch')}</span>
             </button>
           </div>
         </div>

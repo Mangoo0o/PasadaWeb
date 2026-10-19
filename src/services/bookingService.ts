@@ -544,20 +544,32 @@ export const updateBookingStatus = async (
       }
 
       // Driver State Synchronization in DB
-      if (validDriverId) {
+      let dIdToSync = validDriverId;
+      if (!dIdToSync && isUuid && status === 'cancelled') {
+        try {
+          const { data: bRow } = await supabase
+            .from('bookings')
+            .select('driver_id')
+            .eq('id', bookingId)
+            .maybeSingle();
+          if (bRow?.driver_id) dIdToSync = bRow.driver_id;
+        } catch {}
+      }
+
+      if (dIdToSync) {
         if (status === 'driver_assigned') {
           try {
             await supabase
               .from('drivers')
               .update({ is_available: false })
-              .eq('id', validDriverId);
+              .eq('id', dIdToSync);
           } catch {}
         } else if (status === 'completed') {
           try {
             const { data: driverData } = await supabase
               .from('drivers')
               .select('earnings_today, total_trips')
-              .eq('id', validDriverId)
+              .eq('id', dIdToSync)
               .single();
 
             const prevEarnings = Number(driverData?.earnings_today || 0);
@@ -571,15 +583,22 @@ export const updateBookingStatus = async (
                 earnings_today: prevEarnings + addedFare,
                 total_trips: prevTrips + 1
               })
-              .eq('id', validDriverId);
+              .eq('id', dIdToSync);
           } catch {
             try {
               await supabase
                 .from('drivers')
                 .update({ is_available: true })
-                .eq('id', validDriverId);
+                .eq('id', dIdToSync);
             } catch {}
           }
+        } else if (status === 'cancelled') {
+          try {
+            await supabase
+              .from('drivers')
+              .update({ is_available: true })
+              .eq('id', dIdToSync);
+          } catch {}
         }
       }
     }
@@ -629,8 +648,8 @@ export const updateBookingStatus = async (
         }
       } catch {}
 
-      window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
-      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId } }));
+      window.dispatchEvent(new CustomEvent('pasada_booking_updated', { detail: { id: bookingId, status, driver_id: validDriverId || driverId, updatedBooking } }));
+      window.dispatchEvent(new CustomEvent('pasada_new_dispatch', { detail: { id: bookingId, status, driver_id: validDriverId || driverId, updatedBooking } }));
     } catch {}
 
     // 3. If an additional surcharge was applied on trip completion, record in audit trail

@@ -246,6 +246,26 @@ class SoundNotificationService {
   public playTripCompletedAlert(): void {
     this.playTone([523, 659, 784, 1046], [0.08, 0.08, 0.08, 0.25], 'sine');
   }
+
+  /**
+   * Trip Cancelled Alert: Audible warning chime and notification when passenger cancels an accepted booking
+   */
+  public playTripCancelledAlert(details?: { passengerName?: string; pickupName?: string }): void {
+    // Descending alert tones: 880Hz (A5) -> 659Hz (E5) -> 440Hz (A4) -> 330Hz (E4)
+    this.playTone([880, 659, 440, 330], [0.12, 0.12, 0.15, 0.25], 'sawtooth');
+
+    const name = details?.passengerName || 'Pasahero';
+    this.showDeviceNotification(
+      'Kinansela ang Booking!',
+      `Kinansela ni ${name} ang biyahe. Bukas muli ang iyong linya para sa bagong dispatch.`
+    );
+
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([250, 100, 250, 100, 400]);
+      } catch {}
+    }
+  }
 }
 
 export const soundService = new SoundNotificationService();

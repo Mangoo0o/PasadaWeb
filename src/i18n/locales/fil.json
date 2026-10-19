@@ -196,7 +196,11 @@
     "noFeedback": "Wala pang natatanggap na feedback",
     "noFeedbackDesc": "Lalabas dito ang mga komento at rating mula sa mga nakasakay mong pasahero.",
     "accreditationTitle": "Bauang LGU Transport Board Accreditation",
-    "accreditationDesc": "Ang iyong lisensya at prangkisa ay opisyal na rehistrado sa ilalim ng Bauang Municipal Tricycle Franchising & Regulatory Board (MTFRB)."
+    "accreditationDesc": "Ang iyong lisensya at prangkisa ay opisyal na rehistrado sa ilalim ng Bauang Municipal Tricycle Franchising & Regulatory Board (MTFRB).",
+    "passengerCancelledTitle": "Kinansela ng Pasahero ang Biyahe",
+    "passengerCancelledDesc": "Ipinagbigay-alam ng pasahero ({{name}}) na kinansela ang biyahe na ito. Bukas muli ang iyong linya para tumanggap ng bagong dispatch.",
+    "bookingCancelledBadge": "Kanselado ang Booking",
+    "understandReturn": "Naintindihan / Bumalik sa Dispatch"
   },
   "chat": {
     "inTripChat": "Kausapin ang Kasabay",

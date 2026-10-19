@@ -35,7 +35,6 @@ import {
   ProximityMatchResult,
   getLocationIconEmoji,
   resolveLocationCategory,
-  LOCATION_ICON_OPTIONS,
   calculateFare,
   getPassengerTypeInfo,
   isDiscountEligibleType,
@@ -118,15 +117,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
       },
     ];
 
-    LOCATION_ICON_OPTIONS.forEach((opt) => {
-      if (opt.id === 'pin') return;
-      const count = counts[opt.id] || 0;
-      const parts = opt.label.split('/');
+    CATEGORY_DEFINITIONS.forEach((def) => {
+      const count = counts[def.id] || 0;
       list.push({
-        id: opt.id,
-        name: (parts[1] || parts[0]).trim(),
-        nameFil: parts[0].trim(),
-        icon: opt.icon,
+        id: def.id,
+        name: def.name,
+        nameFil: def.nameFil,
+        icon: def.icon,
         description: `${count} ${isFil ? 'destinasyong nakatala' : 'destinations recorded'}`,
         count,
       });

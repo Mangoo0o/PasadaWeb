@@ -24,6 +24,7 @@ import { fetchOpenDispatches, subscribeToOpenDispatches, updateBookingStatus, fe
 import { BookingPreviewModal } from '../components/booking/BookingPreviewModal';
 import { getDistanceKm, MAX_DISPATCH_RADIUS_KM } from '../services/geoProximityService';
 import { broadcastDriverLocation } from '../services/driverTrackingService';
+import { soundService } from '../services/soundNotificationService';
 
 import { DriverVerificationGate } from '../components/driver/DriverVerificationGate';
 
@@ -130,6 +131,25 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
       clearInterval(interval);
     };
   }, [user?.id]);
+
+  // Synchronize cancellation of ongoing trip
+  useEffect(() => {
+    if (!activeOngoingTrip?.id) return;
+    const handleBookingUpdate = (e: any) => {
+      const detail = e?.detail;
+      if (detail && (detail.id === activeOngoingTrip.id || detail.bookingId === activeOngoingTrip.id)) {
+        if (detail.status === 'cancelled' || detail.updatedBooking?.status === 'cancelled') {
+          soundService.playTripCancelledAlert({
+            passengerName: activeOngoingTrip.passenger?.full_name || activeOngoingTrip.passenger_name,
+            pickupName: activeOngoingTrip.origin_name,
+          });
+          setActiveOngoingTrip(null);
+        }
+      }
+    };
+    window.addEventListener('pasada_booking_updated', handleBookingUpdate);
+    return () => window.removeEventListener('pasada_booking_updated', handleBookingUpdate);
+  }, [activeOngoingTrip?.id]);
 
   // Dynamic 1.0 km Proximity Filter
   useEffect(() => {

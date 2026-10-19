@@ -73,7 +73,7 @@ export const UniswapCategoryFilter: React.FC<UniswapCategoryFilterProps> = ({
         type="button"
         onClick={() => setIsOpen(true)}
         className={cn(
-          'flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-all shadow-md active:scale-95 cursor-pointer border select-none',
+          'flex items-center gap-1.5 rounded-full pl-3.5 pr-2.5 py-1.5 transition-all shadow-md active:scale-95 cursor-pointer border select-none',
           selectedCategory === 'all'
             ? 'bg-white hover:bg-slate-100 border-slate-300 text-slate-800 dark:bg-[#2A2A2A] dark:hover:bg-[#383838] dark:border-[#3E3E3E] dark:text-white'
             : 'bg-white hover:bg-slate-50 border-[#0052d1] ring-2 ring-[#0052d1] text-slate-900 dark:bg-[#2A2A2A] dark:hover:bg-[#383838] dark:border-sky-500 dark:ring-2 dark:ring-sky-500 dark:text-white'
@@ -81,9 +81,7 @@ export const UniswapCategoryFilter: React.FC<UniswapCategoryFilterProps> = ({
         title={isFil ? `Kategorya: ${activeLabel}` : `Category: ${activeLabel}`}
         aria-label={activeLabel}
       >
-        <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-slate-200 dark:border-[#3E3E3E] flex items-center justify-center bg-slate-100 dark:bg-[#1E1E1E] text-sm shadow-2xs">
-          <span>{activeCategory.icon}</span>
-        </div>
+        <span className="text-sm font-semibold whitespace-nowrap">{activeLabel}</span>
         <ChevronDown size={14} className="text-slate-800 dark:text-white shrink-0" strokeWidth={2.5} />
       </button>
 
@@ -205,10 +203,6 @@ export const UniswapCategoryFilter: React.FC<UniswapCategoryFilterProps> = ({
                           )}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            {/* Circular Icon (Watermelon Flag/Icon style) */}
-                            <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-gray-300 dark:border-[#383838] flex items-center justify-center bg-gray-100 dark:bg-[#282828] text-sm">
-                              <span>{cat.icon}</span>
-                            </div>
                             <span
                               className={cn(
                                 'text-sm font-medium transition-colors truncate',

@@ -196,7 +196,11 @@
     "noFeedback": "No feedback received yet",
     "noFeedbackDesc": "Ratings and comments from your passengers will appear here.",
     "accreditationTitle": "Bauang LGU Transport Board Accreditation",
-    "accreditationDesc": "Your license and franchise are officially registered under the Bauang Municipal Tricycle Franchising & Regulatory Board (MTFRB)."
+    "accreditationDesc": "Your license and franchise are officially registered under the Bauang Municipal Tricycle Franchising & Regulatory Board (MTFRB).",
+    "passengerCancelledTitle": "Trip Cancelled by Passenger",
+    "passengerCancelledDesc": "The passenger ({{name}}) has cancelled this booking. Your line is now available to accept new dispatches.",
+    "bookingCancelledBadge": "Booking Cancelled",
+    "understandReturn": "Understood / Return to Dispatch"
   },
   "chat": {
     "inTripChat": "In-Trip Chat",

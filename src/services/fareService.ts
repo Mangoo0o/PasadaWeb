@@ -1,20 +1,162 @@
 import { supabase, isConfigured } from '../api/supabaseClient';
 import { LocationFare } from '../types/database.types';
 
-// Preset icon options for Admin Location Creator & Map Displays
-export const LOCATION_ICON_OPTIONS = [
-  { id: 'landmark', label: 'Munisipyo / Plaza', icon: '🏛️' },
-  { id: 'church', label: 'Simbahan / Church', icon: '⛪' },
-  { id: 'market', label: 'Palengke / Market', icon: '🛒' },
-  { id: 'school', label: 'Paaralan / School', icon: '🏫' },
-  { id: 'farm', label: 'Farm / Vineyard', icon: '🍇' },
-  { id: 'beach', label: 'Beach / Baybayin', icon: '🏖️' },
-  { id: 'resort', label: 'Resort / Coastal', icon: '🌊' },
-  { id: 'hospital', label: 'Ospital / Health', icon: '🏥' },
-  { id: 'barangay', label: 'Barangay / Home', icon: '🏠' },
-  { id: 'gas', label: 'Gas / Junction', icon: '⛽' },
-  { id: 'park', label: 'Park / Nature', icon: '🌲' },
-  { id: 'pin', label: 'General Pin', icon: '📍' },
+// ─── LOCATION CATEGORIES (single source of truth) ───
+// NOTE: Existing IDs (landmark, barangay, park, market, farm, beach, resort, hospital,
+// gas, school, church) are kept for backwards compatibility with saved location_fares rows.
+export interface CategoryMetadata {
+  id: string;
+  label: string; // "Filipino / English" – used by admin icon picker
+  name: string; // English display name
+  nameFil: string; // Filipino display name
+  icon: string;
+  keywords: string[]; // search synonyms
+}
+
+export const CATEGORY_DEFINITIONS: CategoryMetadata[] = [
+  {
+    id: 'landmark',
+    label: 'Munisipyo / Municipal Hall',
+    name: 'Municipal Hall',
+    nameFil: 'Munisipyo',
+    icon: '🏛️',
+    keywords: ['munisipyo', 'municipal', 'municipal hall', 'town hall', 'city hall', 'kapitolyo', 'capitol', 'lgu', 'mayor', 'civic center'],
+  },
+  {
+    id: 'barangay',
+    label: 'Barangay / Barangay',
+    name: 'Barangay',
+    nameFil: 'Barangay',
+    icon: '🏠',
+    keywords: ['barangay', 'brgy', 'baccuit', 'barangay hall', 'home', 'bahay', 'sitio', 'purok', 'poblacion', 'residence', 'komunidad'],
+  },
+  {
+    id: 'park',
+    label: 'Kalikasan / Nature',
+    name: 'Nature',
+    nameFil: 'Kalikasan',
+    icon: '🌲',
+    keywords: ['nature', 'kalikasan', 'valley', 'calumbaya', 'park', 'parke', 'tree', 'bundok', 'mountain', 'falls', 'talon', 'river', 'ilog', 'eco', 'ecopark', 'viewdeck'],
+  },
+  {
+    id: 'market',
+    label: 'Palengke / Market',
+    name: 'Market',
+    nameFil: 'Palengke',
+    icon: '🛒',
+    keywords: ['market', 'palengke', 'trading', 'grocery', 'supermarket', 'talipapa', 'tiangge', 'bagsakan', 'pamilihan', 'tindahan', 'mall', 'bilihan'],
+  },
+  {
+    id: 'farm',
+    label: 'Ubasan / Grapes Farm',
+    name: 'Grapes Farm',
+    nameFil: 'Ubasan',
+    icon: '🍇',
+    keywords: ['grape', 'grapes', 'grapes farm', 'farm', 'vineyard', 'lomboy', 'ubasan', 'ubas', 'bukid', 'agri', 'agritourism', 'plantation'],
+  },
+  {
+    id: 'beach',
+    label: 'Baybayin / Coastal',
+    name: 'Coastal',
+    nameFil: 'Baybayin',
+    icon: '🏖️',
+    keywords: ['coastal', 'coast', 'beach', 'baybayin', 'dagat', 'sunset', 'baybay', 'bagbag', 'tabing dagat', 'shore', 'seashore', 'sand'],
+  },
+  {
+    id: 'resort',
+    label: 'Resort / Resorts',
+    name: 'Resorts',
+    nameFil: 'Resort',
+    icon: '🌊',
+    keywords: ['resort', 'resorts', 'staycation', 'paringao', 'pool', 'swimming', 'cottage', 'bakasyon', 'languyan'],
+  },
+  {
+    id: 'hospital',
+    label: 'Kalusugan / Health',
+    name: 'Health',
+    nameFil: 'Kalusugan',
+    icon: '🏥',
+    keywords: ['health', 'kalusugan', 'hospital', 'clinic', 'health center', 'ospital', 'klinika', 'doctor', 'doktor', 'medical', 'emergency', 'rhu', 'pharmacy', 'botika', 'pagamutan'],
+  },
+  {
+    id: 'gas',
+    label: 'Gasolinahan / Gas Station',
+    name: 'Gas Station',
+    nameFil: 'Gasolinahan',
+    icon: '⛽',
+    keywords: ['gas station', 'gas', 'gasoline', 'gasolinahan', 'petron', 'shell', 'caltex', 'seaoil', 'phoenix', 'cleanfuel', 'junction', 'quinavite'],
+  },
+  {
+    id: 'food',
+    label: 'Kainan / Foods',
+    name: 'Foods',
+    nameFil: 'Kainan',
+    icon: '🍽️',
+    keywords: ['food', 'foods', 'kainan', 'restaurant', 'resto', 'eatery', 'carinderia', 'karinderya', 'cafe', 'coffee', 'bakery', 'panaderya', 'grill', 'jollibee', 'mcdonald', 'chowking', 'kain'],
+  },
+  {
+    id: 'hotel',
+    label: 'Hotel / Hotels',
+    name: 'Hotels',
+    nameFil: 'Hotel',
+    icon: '🏨',
+    keywords: ['hotel', 'hotels', 'inn', 'lodge', 'lodging', 'pension', 'transient', 'hostel', 'tuluyan', 'motel'],
+  },
+  {
+    id: 'museum',
+    label: 'Museo / Museums',
+    name: 'Museums',
+    nameFil: 'Museo',
+    icon: '🖼️',
+    keywords: ['museum', 'museums', 'museo', 'gallery', 'heritage', 'historical', 'makasaysayan', 'exhibit'],
+  },
+  {
+    id: 'school',
+    label: 'Paaralan / Schools',
+    name: 'Schools',
+    nameFil: 'Paaralan',
+    icon: '🏫',
+    keywords: ['school', 'schools', 'paaralan', 'elementary', 'high school', 'college', 'university', 'eskwela', 'academy', 'institute', 'pamantasan'],
+  },
+  {
+    id: 'church',
+    label: 'Simbahan / Church',
+    name: 'Church',
+    nameFil: 'Simbahan',
+    icon: '⛪',
+    keywords: ['church', 'simbahan', 'parish', 'parokya', 'peter', 'paul', 'chapel', 'kapilya', 'cathedral', 'shrine', 'katedral', 'sambahan'],
+  },
+  {
+    id: 'plaza',
+    label: 'Plaza / Plaza',
+    name: 'Plaza',
+    nameFil: 'Plaza',
+    icon: '⛲',
+    keywords: ['plaza', 'town plaza', 'liwasan', 'monumento', 'monument', 'square', 'auditorium', 'court'],
+  },
+  {
+    id: 'bank',
+    label: 'Bangko / Banks',
+    name: 'Banks',
+    nameFil: 'Bangko',
+    icon: '🏦',
+    keywords: ['bank', 'banks', 'bangko', 'atm', 'bdo', 'bpi', 'landbank', 'metrobank', 'pnb', 'rcbc', 'security bank', 'rural bank', 'cebuana', 'palawan express', 'remittance'],
+  },
+];
+
+const GENERAL_PIN_CATEGORY: CategoryMetadata = {
+  id: 'pin',
+  label: 'General Pin',
+  name: 'General Location',
+  nameFil: 'Karaniwang Lokasyon',
+  icon: '📍',
+  keywords: [],
+};
+
+// Preset icon options for Admin Location Creator & Map Displays (derived from categories)
+export const LOCATION_ICON_OPTIONS: { id: string; label: string; icon: string }[] = [
+  ...CATEGORY_DEFINITIONS.map(({ id, label, icon }) => ({ id, label, icon })),
+  { id: GENERAL_PIN_CATEGORY.id, label: GENERAL_PIN_CATEGORY.label, icon: GENERAL_PIN_CATEGORY.icon },
 ];
 
 export const extractIconFromNotes = (notes?: string): string | null => {
@@ -28,162 +170,65 @@ export const stripIconFromNotes = (notes?: string): string => {
   return notes.replace(/\[icon:[a-zA-Z0-9_\-]+\]/g, '').trim();
 };
 
-export const getLocationIconEmoji = (iconId?: string, locationName?: string): string => {
-  if (iconId) {
-    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === iconId || opt.icon === iconId);
-    if (found) return found.icon;
-    if (iconId.length <= 4) return iconId;
-  }
-  // Automatic keyword fallback
-  const name = (locationName || '').toLowerCase();
-  if (name.includes('plaza') || name.includes('munisipyo') || name.includes('hall')) return '🏛️';
-  if (name.includes('church') || name.includes('parish') || name.includes('peter')) return '⛪';
-  if (name.includes('market') || name.includes('palengke') || name.includes('trading')) return '🛒';
-  if (name.includes('school') || name.includes('elementary') || name.includes('high')) return '🏫';
-  if (name.includes('grape') || name.includes('farm') || name.includes('vineyard') || name.includes('lomboy')) return '🍇';
-  if (name.includes('beach') || name.includes('sunset') || name.includes('baybay') || name.includes('bagbag')) return '🏖️';
-  if (name.includes('resort') || name.includes('coast') || name.includes('paringao')) return '🌊';
-  if (name.includes('hospital') || name.includes('clinic') || name.includes('health')) return '🏥';
-  if (name.includes('barangay') || name.includes('center') || name.includes('baccuit')) return '🏠';
-  if (name.includes('junction') || name.includes('highway') || name.includes('quinavite')) return '⛽';
-  if (name.includes('valley') || name.includes('calumbaya')) return '🌲';
-  return '📍';
-};
+// Ordered keyword rules for auto-detecting a category from a location's name/notes.
+// Order matters: more specific categories are checked first (e.g. "Bank" before "Plaza",
+// "Hotel" before "Resort", "Museum" before "Municipal Hall").
+const CATEGORY_DETECTION_RULES: { id: string; words: string[] }[] = [
+  { id: 'bank', words: ['bank', 'bangko', 'atm', 'bdo', 'bpi', 'landbank', 'metrobank', 'pnb', 'rcbc', 'cebuana', 'palawan express'] },
+  { id: 'museum', words: ['museum', 'museo', 'gallery', 'heritage house', 'exhibit'] },
+  { id: 'church', words: ['church', 'parish', 'simbahan', 'parokya', 'chapel', 'kapilya', 'cathedral', 'shrine', 'peter'] },
+  { id: 'school', words: ['school', 'elementary', 'high school', 'college', 'university', 'academy', 'institute', 'paaralan'] },
+  { id: 'hospital', words: ['hospital', 'clinic', 'health', 'ospital', 'klinika', 'medical', 'rhu', 'pharmacy', 'botika'] },
+  { id: 'gas', words: ['gas', 'gas station', 'gasoline', 'gasolinahan', 'petron', 'shell', 'caltex', 'seaoil', 'phoenix', 'cleanfuel', 'junction', 'quinavite'] },
+  { id: 'hotel', words: ['hotel', 'inn', 'lodge', 'lodging', 'pension', 'transient', 'hostel', 'motel'] },
+  { id: 'resort', words: ['resort', 'paringao', 'pool', 'cottage'] },
+  { id: 'food', words: ['food', 'restaurant', 'resto', 'eatery', 'carinderia', 'karinderya', 'kainan', 'cafe', 'coffee', 'bakery', 'panaderya', 'grill', 'jollibee', 'mcdonald', 'chowking'] },
+  { id: 'market', words: ['market', 'palengke', 'trading', 'grocery', 'supermarket', 'talipapa', 'mall'] },
+  { id: 'farm', words: ['grape', 'farm', 'vineyard', 'lomboy', 'ubasan', 'ubas'] },
+  { id: 'beach', words: ['beach', 'coast', 'coastal', 'baybay', 'baybayin', 'bagbag', 'sunset', 'shore', 'dagat'] },
+  { id: 'plaza', words: ['plaza', 'liwasan', 'monument', 'monumento'] },
+  { id: 'landmark', words: ['munisipyo', 'municipal', 'town hall', 'city hall', 'capitol', 'kapitolyo'] },
+  { id: 'barangay', words: ['barangay', 'brgy', 'baccuit', 'purok', 'sitio', 'home'] },
+  { id: 'park', words: ['valley', 'park', 'nature', 'calumbaya', 'falls', 'river', 'mountain', 'bundok', 'eco'] },
+  { id: 'landmark', words: ['hall'] },
+];
 
-export const resolveLocationCategory = (loc: { icon?: string; location_name?: string; notes?: string }): string => {
-  if (loc.icon) {
-    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === loc.icon || opt.icon === loc.icon);
-    if (found) return found.id;
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Whole-word match (allows plural "s"), so "inn" doesn't match "dinner" and "gas" doesn't match "Vegas".
+const matchesWord = (text: string, word: string): boolean =>
+  new RegExp(`\\b${escapeRegex(word)}s?\\b`, 'i').test(text);
+
+const detectCategoryFromText = (text: string): string => {
+  for (const rule of CATEGORY_DETECTION_RULES) {
+    if (rule.words.some((w) => matchesWord(text, w))) return rule.id;
   }
-  const name = (loc.location_name || '').toLowerCase();
-  const notes = (loc.notes || '').toLowerCase();
-  const combined = `${name} ${notes}`;
-  if (combined.includes('plaza') || combined.includes('munisipyo') || combined.includes('hall')) return 'landmark';
-  if (combined.includes('church') || combined.includes('parish') || combined.includes('peter')) return 'church';
-  if (combined.includes('market') || combined.includes('palengke') || combined.includes('trading')) return 'market';
-  if (combined.includes('school') || combined.includes('elementary') || combined.includes('high') || combined.includes('college')) return 'school';
-  if (combined.includes('grape') || combined.includes('farm') || combined.includes('vineyard') || combined.includes('lomboy')) return 'farm';
-  if (combined.includes('beach') || combined.includes('sunset') || combined.includes('baybay') || combined.includes('bagbag')) return 'beach';
-  if (combined.includes('resort') || combined.includes('coast') || combined.includes('paringao')) return 'resort';
-  if (combined.includes('hospital') || combined.includes('clinic') || combined.includes('health') || combined.includes('center')) return 'hospital';
-  if (combined.includes('barangay') || combined.includes('baccuit') || combined.includes('home')) return 'barangay';
-  if (combined.includes('junction') || combined.includes('gas') || combined.includes('highway') || combined.includes('quinavite')) return 'gas';
-  if (combined.includes('valley') || combined.includes('park') || combined.includes('nature') || combined.includes('calumbaya')) return 'park';
   return 'pin';
 };
 
-export interface CategoryMetadata {
-  id: string;
-  label: string;
-  name: string;
-  nameFil: string;
-  icon: string;
-  keywords: string[];
-}
+export const resolveLocationCategory = (loc: { icon?: string; location_name?: string; notes?: string }): string => {
+  // An explicit category icon wins – but 'pin' is the DB default, so fall through to keyword detection
+  if (loc.icon && loc.icon !== 'pin') {
+    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === loc.icon || opt.icon === loc.icon);
+    if (found) return found.id;
+  }
+  return detectCategoryFromText(`${loc.location_name || ''} ${loc.notes || ''}`);
+};
 
-export const CATEGORY_DEFINITIONS: CategoryMetadata[] = [
-  {
-    id: 'landmark',
-    label: 'Munisipyo / Plaza',
-    name: 'Municipal Hall & Plaza',
-    nameFil: 'Munisipyo at Plaza',
-    icon: '🏛️',
-    keywords: ['plaza', 'munisipyo', 'municipal', 'town hall', 'hall', 'kapitolyo', 'monumento', 'court', 'auditorium', 'civic center', 'sentro'],
-  },
-  {
-    id: 'church',
-    label: 'Simbahan / Church',
-    name: 'Churches & Parishes',
-    nameFil: 'Mga Simbahan at Parokya',
-    icon: '⛪',
-    keywords: ['church', 'simbahan', 'parish', 'parokya', 'peter', 'paul', 'chapel', 'kapilya', 'cathedral', 'shrine', 'katedral', 'sambahan'],
-  },
-  {
-    id: 'market',
-    label: 'Palengke / Market',
-    name: 'Markets & Groceries',
-    nameFil: 'Palengke at Pamilihan',
-    icon: '🛒',
-    keywords: ['market', 'palengke', 'trading', 'grocery', 'supermarket', 'talipapa', 'tiangge', 'bagsakan', 'pamilihan', 'tindahan', 'mall', 'bilihan'],
-  },
-  {
-    id: 'school',
-    label: 'Paaralan / School',
-    name: 'Schools & Universities',
-    nameFil: 'Mga Paaralan at Kolehiyo',
-    icon: '🏫',
-    keywords: ['school', 'paaralan', 'elementary', 'high school', 'college', 'university', 'eskwela', 'academy', 'institute', 'eskuwela', 'pamantasan'],
-  },
-  {
-    id: 'farm',
-    label: 'Farm / Vineyard',
-    name: 'Grape Farms & Vineyards',
-    nameFil: 'Ubasan at Bukid',
-    icon: '🍇',
-    keywords: ['grape', 'grapes', 'farm', 'farms', 'vineyard', 'lomboy', 'ubasan', 'ubas', 'bukid', 'agri', 'agritourism', 'plantation', 'ani'],
-  },
-  {
-    id: 'beach',
-    label: 'Beach / Baybayin',
-    name: 'Beaches & Coastal',
-    nameFil: 'Baybayin at Dagat',
-    icon: '🏖️',
-    keywords: ['beach', 'baybayin', 'dagat', 'sunset', 'baybay', 'bagbag', 'tabing dagat', 'shore', 'coast', 'seashore', 'sand', 'coastal'],
-  },
-  {
-    id: 'resort',
-    label: 'Resort / Coastal',
-    name: 'Resorts & Stays',
-    nameFil: 'Resort at Tuluyan',
-    icon: '🌊',
-    keywords: ['resort', 'hotel', 'staycation', 'paringao', 'coast', 'pool', 'swimming', 'cottage', 'inn', 'transient', 'bakasyon', 'pantalan'],
-  },
-  {
-    id: 'hospital',
-    label: 'Ospital / Health',
-    name: 'Hospitals & Clinics',
-    nameFil: 'Ospital at Health Center',
-    icon: '🏥',
-    keywords: ['hospital', 'clinic', 'health', 'center', 'ospital', 'klinika', 'doctor', 'doktor', 'medical', 'emergency', 'rhu', 'gamutan', 'pagamutan'],
-  },
-  {
-    id: 'barangay',
-    label: 'Barangay / Home',
-    name: 'Barangay Halls & Homes',
-    nameFil: 'Barangay at Komunidad',
-    icon: '🏠',
-    keywords: ['barangay', 'brgy', 'baccuit', 'center', 'home', 'bahay', 'hall', 'sitio', 'purok', 'poblacion', 'residence', 'komunidad'],
-  },
-  {
-    id: 'gas',
-    label: 'Gas / Junction',
-    name: 'Gas Stations & Crossings',
-    nameFil: 'Gasolinahan at Crossing',
-    icon: '⛽',
-    keywords: ['junction', 'highway', 'crossing', 'gas', 'gasoline', 'petron', 'shell', 'caltex', 'quinavite', 'intersection', 'sakayan', 'kalsada'],
-  },
-  {
-    id: 'park',
-    label: 'Park / Nature',
-    name: 'Parks & Nature Spots',
-    nameFil: 'Parke at Kalikasan',
-    icon: '🌲',
-    keywords: ['valley', 'calumbaya', 'park', 'parke', 'nature', 'kalikasan', 'tree', 'bundok', 'bukid', 'green', 'eco', 'ecopark', 'viewdeck'],
-  },
-];
+export const getLocationIconEmoji = (iconId?: string, locationName?: string): string => {
+  if (iconId && iconId !== 'pin') {
+    const found = LOCATION_ICON_OPTIONS.find(opt => opt.id === iconId || opt.icon === iconId);
+    if (found) return found.icon;
+    if (iconId.length <= 4) return iconId; // raw emoji
+  }
+  // Automatic keyword fallback
+  const catId = detectCategoryFromText(locationName || '');
+  return LOCATION_ICON_OPTIONS.find(opt => opt.id === catId)?.icon || GENERAL_PIN_CATEGORY.icon;
+};
 
 export const getLocationCategoryMeta = (loc: { icon?: string; location_name?: string; notes?: string }): CategoryMetadata => {
   const catId = resolveLocationCategory(loc);
-  return (
-    CATEGORY_DEFINITIONS.find(c => c.id === catId) || {
-      id: 'pin',
-      label: 'General Pin',
-      name: 'General Location',
-      nameFil: 'Karaniwang Lokasyon',
-      icon: '📍',
-      keywords: [],
-    }
-  );
+  return CATEGORY_DEFINITIONS.find(c => c.id === catId) || GENERAL_PIN_CATEGORY;
 };
 
 /**

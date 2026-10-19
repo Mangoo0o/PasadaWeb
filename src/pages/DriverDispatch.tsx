@@ -49,6 +49,12 @@ export const DriverDispatch: React.FC = () => {
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [completedFare, setCompletedFare] = useState<number | null>(null);
   const [isSoundOn, setIsSoundOn] = useState(() => soundService.isSoundEnabled());
+  const [cancelledTripNotice, setCancelledTripNotice] = useState<{
+    show: boolean;
+    passengerName: string;
+    originName: string;
+    destinationName?: string;
+  } | null>(null);
   const alertedDispatchIdsRef = useRef<Set<string>>(new Set());
 
   // 1. Continuous Live GPS tracking of driver & broadcast to Supabase/listeners
@@ -112,6 +118,9 @@ export const DriverDispatch: React.FC = () => {
 
       // If booking was cancelled, accepted by another driver, or completed:
       if (detail.status && detail.status !== 'searching') {
+        if (activeTrip?.id === detail.id && detail.status === 'cancelled') {
+          setActiveTrip((prev) => (prev ? { ...prev, status: 'cancelled' } : null));
+        }
         setRawDispatches(prev => prev.filter(b => b.id !== detail.id));
         setPreviewBooking(prev => prev?.id === detail.id ? null : prev);
         alertedDispatchIdsRef.current.delete(detail.id);
@@ -134,15 +143,20 @@ export const DriverDispatch: React.FC = () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [user?.id, driverProfile?.id]);
+  }, [user?.id, driverProfile?.id, activeTrip?.id]);
 
-  // Synchronize active trip if passenger rebooks destination or updates fare
+  // Synchronize active trip if passenger rebooks destination or updates fare or cancels
   useEffect(() => {
     if (!activeTrip?.id) return;
 
     const handleActiveBookingUpdate = (e: any) => {
       const detail = e?.detail;
       if (detail && (detail.id === activeTrip.id || detail.bookingId === activeTrip.id)) {
+        if (detail.status === 'cancelled' || detail.updatedBooking?.status === 'cancelled') {
+          setActiveTrip((prev) => (prev ? { ...prev, ...(detail.updatedBooking || {}), status: 'cancelled' } : null));
+          return;
+        }
+
         if (detail.updatedBooking) {
           setActiveTrip((prev) => (prev ? { ...prev, ...detail.updatedBooking } : detail.updatedBooking));
         } else if (detail.destination_name || detail.estimated_fare) {
@@ -169,6 +183,11 @@ export const DriverDispatch: React.FC = () => {
         bc.onmessage = (event) => {
           const msg = event?.data;
           if (msg && (msg.bookingId === activeTrip.id || msg.id === activeTrip.id)) {
+            if (msg.status === 'cancelled' || msg.updatedBooking?.status === 'cancelled') {
+              setActiveTrip((prev) => (prev ? { ...prev, ...(msg.updatedBooking || {}), status: 'cancelled' } : null));
+              return;
+            }
+
             if (msg.updatedBooking) {
               setActiveTrip((prev) => (prev ? { ...prev, ...msg.updatedBooking } : msg.updatedBooking));
             }
@@ -632,6 +651,42 @@ export const DriverDispatch: React.FC = () => {
               className="w-full py-3.5 rounded-full bg-[#003f87] hover:bg-[#0056b3] text-white font-bold text-sm shadow-md shadow-[#003f87]/20 active:scale-98 transition-all cursor-pointer"
             >
               {t('driver.backToTerminal', 'Return to Dashboard')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Passenger Cancelled Notice Modal (when in dispatch queue view) */}
+      {cancelledTripNotice?.show && (
+        <div className="fixed inset-0 z-[10100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center space-y-4 shadow-2xl border border-rose-500/30 animate-in zoom-in-95">
+            <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-rose-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-md border border-rose-300 dark:border-rose-700">
+                <AlertCircle className="w-8 h-8" strokeWidth={2.5} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-black uppercase">
+                <span>{t('driver.bookingCancelledBadge', 'Kanselado ang Booking')}</span>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                {t('driver.passengerCancelledTitle', 'Kinansela ng Pasahero ang Biyahe')}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                {i18n.language === 'en'
+                  ? `The passenger (${cancelledTripNotice.passengerName}) has cancelled the ride from ${cancelledTripNotice.originName}. Your line is now available to accept new dispatches.`
+                  : `Ipinagbigay-alam ng pasahero (${cancelledTripNotice.passengerName}) na kinansela ang biyahe mula ${cancelledTripNotice.originName}. Bukas muli ang iyong linya sa ibang pasahero.`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCancelledTripNotice(null)}
+              className="w-full py-3.5 rounded-2xl bg-[#0052d1] hover:bg-[#003f87] text-white font-extrabold text-sm shadow-md transition-all cursor-pointer"
+            >
+              {t('driver.understandReturn', 'Naintindihan')}
             </button>
           </div>
         </div>
