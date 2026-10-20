@@ -19,7 +19,8 @@ import {
   Mail,
   User,
   ShieldAlert,
-  FileText
+  FileText,
+  ArrowDownWideNarrow
 } from 'lucide-react';
 import { 
   fetchAdminUsers, 
@@ -54,6 +55,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'super_admin' | 'admin'>('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -150,6 +152,14 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
       return matchesSearch && matchesRole;
     });
   }, [admins, search, roleFilter]);
+
+  const sortedAdmins = useMemo(() => {
+    return [...filteredAdmins].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [filteredAdmins, sortOrder]);
 
   const handleGeneratePassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
@@ -366,11 +376,23 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
             })}
           </div>
 
-          {/* Right: Search Input & Match Counter */}
-          <div className="flex items-center gap-3 py-2 shrink-0">
+          {/* Right: Sort Button, Search Input & Match Counter */}
+          <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
             <span className="hidden md:inline text-xs text-slate-400 font-medium">
-              Showing {filteredAdmins.length} {filteredAdmins.length === 1 ? 'official' : 'officials'}
+              Showing {sortedAdmins.length} {sortedAdmins.length === 1 ? 'official' : 'officials'}
             </span>
+
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+            >
+              <ArrowDownWideNarrow size={14} className={cn("text-[#0052d1] dark:text-sky-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+              <span className="hidden sm:inline">Sort:</span>
+              <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+            </button>
+
             <div className="relative w-64 max-w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
@@ -398,7 +420,16 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Administrative Officer</th>
+                <th 
+                  onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                  className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-[#0052d1] select-none"
+                  title="Click to sort by date (Newest / Oldest)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Administrative Officer</span>
+                    <ArrowDownWideNarrow size={12} className={cn("text-[#0052d1] transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                  </div>
+                </th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role Authority</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department / Office</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Employee ID</th>
@@ -412,14 +443,14 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                     Loading municipal administrators...
                   </td>
                 </tr>
-              ) : filteredAdmins.length === 0 ? (
+              ) : sortedAdmins.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-16 text-slate-400 font-medium">
                     No administrators found matching criteria.
                   </td>
                 </tr>
               ) : (
-                filteredAdmins.map((admin) => {
+                sortedAdmins.map((admin) => {
                   const isAdminSuper = admin.role === 'super_admin';
                   const isCurrent = admin.id === currentUser.id;
                   const initials = admin.full_name
@@ -457,6 +488,11 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               {admin.email}
                             </div>
+                            {admin.created_at && (
+                              <div className="text-[10px] text-slate-400 font-sans mt-0.5">
+                                Reg: {new Date(admin.created_at).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

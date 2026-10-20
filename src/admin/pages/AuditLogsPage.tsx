@@ -9,7 +9,8 @@ import {
   Copy, 
   Check, 
   ExternalLink,
-  Filter
+  Filter,
+  ArrowDownWideNarrow
 } from 'lucide-react';
 import type { AdminAction } from '../types';
 import { exportAuditLogsToCsv } from '../../services/auditService';
@@ -27,6 +28,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
   const [search, setSearch] = useState(initialSearchQuery);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | '7days' | '30days'>('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   
   const [selectedLog, setSelectedLog] = useState<AdminAction | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
@@ -91,6 +93,14 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
     });
   }, [auditLogs, search, categoryFilter, dateFilter]);
 
+  const sortedAndFiltered = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [filtered, sortOrder]);
+
   const handleCopyJson = () => {
     if (!selectedLog) return;
     navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2));
@@ -132,7 +142,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
 
         <button
           type="button"
-          onClick={() => exportAuditLogsToCsv(filtered)}
+          onClick={() => exportAuditLogsToCsv(sortedAndFiltered)}
           className="h-9 px-3.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto shadow-2xs shrink-0"
         >
           <Download size={15} />
@@ -176,11 +186,22 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
             })}
           </div>
 
-          {/* Right: Date Filter, Search Input & Match Counter */}
+          {/* Right: Date Filter, Sort Button, Search Input & Match Counter */}
           <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
             <span className="hidden md:inline text-xs text-slate-400 font-medium">
-              Showing {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
+              Showing {sortedAndFiltered.length} {sortedAndFiltered.length === 1 ? 'record' : 'records'}
             </span>
+
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+            >
+              <ArrowDownWideNarrow size={14} className={cn("text-[#0052d1] dark:text-sky-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+              <span className="hidden sm:inline">Sort:</span>
+              <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+            </button>
 
             <select
               value={dateFilter}
@@ -227,7 +248,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                 {search}
               </span>
               <span className="text-slate-500 dark:text-slate-400">
-                ({filtered.length} {filtered.length === 1 ? 'movement' : 'movements'} recorded)
+                ({sortedAndFiltered.length} {sortedAndFiltered.length === 1 ? 'movement' : 'movements'} recorded)
               </span>
             </div>
             <button
@@ -246,7 +267,16 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Timestamp</th>
+                <th 
+                  onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                  className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-[#0052d1] select-none"
+                  title="Click to sort by timestamp (Newest / Oldest)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Timestamp</span>
+                    <ArrowDownWideNarrow size={12} className={cn("text-[#0052d1] transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                  </div>
+                </th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Movement Event</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Official Actor</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Target Component</th>
@@ -255,7 +285,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
-              {filtered.length === 0 ? (
+              {sortedAndFiltered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-16 text-slate-400 font-medium">
                     <FileText size={28} className="mx-auto mb-2 opacity-40" />
@@ -276,7 +306,7 @@ export const AuditLogsPage: React.FC<AuditLogsPageProps> = ({
                   </td>
                 </tr>
               ) : (
-                filtered.map((log) => {
+                sortedAndFiltered.map((log) => {
                   const adminName = log.admin?.full_name || log.details_json?.admin_name || 'System';
                   const isSuper = (log.admin?.role || log.details_json?.admin_role) === 'super_admin';
 

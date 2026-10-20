@@ -93,9 +93,9 @@ const AdminContent: React.FC = () => {
       ] = await Promise.all([
         supabase.from('terminals').select('*'),
         supabase.from('drivers').select('*, profile:profiles(*), terminals(*)'),
-        supabase.from('profiles').select('*'),
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('fare_matrix').select('*, terminals(*)'),
-        supabase.from('bookings').select('*, passenger:profiles!bookings_passenger_id_fkey(*), driver:drivers(*, profile:profiles(*))'),
+        supabase.from('bookings').select('*, passenger:profiles!bookings_passenger_id_fkey(*), driver:drivers(*, profile:profiles(*))').order('created_at', { ascending: false }),
         supabase.from('complaints').select('*').order('created_at', { ascending: false }),
         supabase.from('tourist_spots').select('*'),
         fetchLocationFares()
@@ -178,7 +178,12 @@ const AdminContent: React.FC = () => {
         }
       });
 
-      setDrivers(Array.from(driverMap.values()));
+      const sortedDriverList = Array.from(driverMap.values()).sort((a, b) => {
+        const timeA = new Date(a.documents_submitted_at || (a as any).created_at || a.profile?.created_at || 0).getTime();
+        const timeB = new Date(b.documents_submitted_at || (b as any).created_at || b.profile?.created_at || 0).getTime();
+        return timeB - timeA;
+      });
+      setDrivers(sortedDriverList);
 
       if (resLocationFares) {
         setLocationFares(resLocationFares);
@@ -211,6 +216,7 @@ const AdminContent: React.FC = () => {
           } catch {}
           return b;
         });
+        mergedBookings.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
         setBookings(mergedBookings as Booking[]);
       }
 
@@ -228,12 +234,14 @@ const AdminContent: React.FC = () => {
           driver: c.driver || drv || undefined
         };
       });
+      mappedComplaints.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       setComplaints(mappedComplaints);
 
       if (resTouristSpots.data) {
         setTouristSpots(resTouristSpots.data as TouristSpot[]);
       }
 
+      passengerProfiles.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       setPassengers(passengerProfiles);
     } catch (err) {
       console.error('Error fetching live Supabase data:', err);

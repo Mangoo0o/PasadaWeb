@@ -17,10 +17,12 @@ import {
   Minimize2,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowDownWideNarrow
 } from 'lucide-react';
 import type { Driver, Terminal, VerificationStatus } from '../types';
 import { DriverDocument, DriverDocumentType } from '../../types/database.types';
+import { cn } from '../../lib/utils';
 import { 
   fetchDriverDocuments, 
   REQUIRED_DRIVER_DOCUMENTS, 
@@ -71,12 +73,25 @@ export const DriversPage: React.FC<DriversPageProps> = ({
     }
   }, [drivers, selectedDriver]);
 
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
   const filteredDrivers = drivers.filter(d => {
     const matchesStatus = filterStatus === 'all' || d.verification_status === filterStatus;
     const name = d.profile?.full_name?.toLowerCase() || '';
     const plate = d.plate_number?.toLowerCase() || '';
     const matchesSearch = name.includes(search.toLowerCase()) || plate.includes(search.toLowerCase());
     return matchesStatus && matchesSearch;
+  });
+
+  const getDriverDate = (d: Driver): number => {
+    const raw = d.documents_submitted_at || (d as any).created_at || d.profile?.created_at || d.reviewed_at;
+    return raw ? new Date(raw).getTime() : 0;
+  };
+
+  const sortedDrivers = [...filteredDrivers].sort((a, b) => {
+    const timeA = getDriverDate(a);
+    const timeB = getDriverDate(b);
+    return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
   });
 
   const activeDriversCount = drivers.filter(d => d.verification_status === 'approved' || d.verification_status === 'verified').length;
@@ -249,11 +264,23 @@ export const DriversPage: React.FC<DriversPageProps> = ({
             })}
           </div>
 
-          {/* Right: Search Input & Match Counter */}
-          <div className="flex items-center gap-3 py-2 shrink-0">
+          {/* Right: Sort Button, Search Input & Match Counter */}
+          <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
             <span className="hidden md:inline text-xs text-slate-400 font-medium">
-              Showing {filteredDrivers.length} {filteredDrivers.length === 1 ? 'driver' : 'drivers'}
+              Showing {sortedDrivers.length} {sortedDrivers.length === 1 ? 'driver' : 'drivers'}
             </span>
+
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+            >
+              <ArrowDownWideNarrow size={14} className={cn("text-[#0052d1] dark:text-sky-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+              <span className="hidden sm:inline">Sort:</span>
+              <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+            </button>
+
             <div className="relative w-64 max-w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
@@ -281,7 +308,16 @@ export const DriversPage: React.FC<DriversPageProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Driver / ID</th>
+                <th 
+                  onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                  className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-[#0052d1] select-none"
+                  title="Click to sort by date (Newest / Oldest)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Driver / Registration</span>
+                    <ArrowDownWideNarrow size={12} className={cn("text-[#0052d1] transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                  </div>
+                </th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vehicle Details</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">TODA / Terminal</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
@@ -289,18 +325,19 @@ export const DriversPage: React.FC<DriversPageProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-              {filteredDrivers.length === 0 ? (
+              {sortedDrivers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-10 text-slate-400 font-medium">
                     No drivers found matching criteria.
                   </td>
                 </tr>
               ) : (
-                filteredDrivers.map((d) => {
+                sortedDrivers.map((d) => {
                   const driverName = d.profile?.full_name || 'Registered Driver';
                   const initials = driverName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'DR';
                   const terminalName = d.terminal?.name || terminals.find(t => t.id === d.terminal_id)?.name || 'Central TODA';
                   const driverId = d.profile_id || d.id || '';
+                  const regDate = d.documents_submitted_at || (d as any).created_at || d.profile?.created_at;
 
                   return (
                     <tr key={driverId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -313,6 +350,11 @@ export const DriversPage: React.FC<DriversPageProps> = ({
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{driverName}</div>
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                               ID: {driverId.substring(0, 8)}
+                              {regDate && (
+                                <span className="ml-1 text-slate-400 font-sans">
+                                  • {new Date(regDate).toLocaleDateString()}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

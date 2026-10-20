@@ -22,7 +22,8 @@ import {
   Image as ImageIcon,
   Video,
   Play,
-  Music
+  Music,
+  ArrowDownWideNarrow
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -436,11 +437,21 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
     }
   };
 
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
   const filteredLocationFares = locationFares.filter(loc => {
     return matchesLocationSearch(loc, searchRule);
   });
 
-  const activeLocation = selectedLocation || testResult?.matchedLocation || locationFares[0] || null;
+  const sortedLocationFares = React.useMemo(() => {
+    return [...filteredLocationFares].sort((a, b) => {
+      const timeA = a.created_at || a.updated_at ? new Date(a.created_at || a.updated_at!).getTime() : 0;
+      const timeB = b.created_at || b.updated_at ? new Date(b.created_at || b.updated_at!).getTime() : 0;
+      return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [filteredLocationFares, sortOrder]);
+
+  const activeLocation = selectedLocation || testResult?.matchedLocation || sortedLocationFares[0] || null;
 
   // Strictly calculate active approved vehicles whose live GPS coordinates fall within the selected location radius
   const liveVehiclesAtLocation = React.useMemo(() => {
@@ -510,7 +521,18 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
               Regulated Location Rates
             </h3>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              <button
+                type="button"
+                onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+                title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+              >
+                <ArrowDownWideNarrow size={14} className={cn("text-[#0052d1] dark:text-sky-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                <span className="hidden sm:inline">Sort:</span>
+                <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+              </button>
+
               <div className="relative">
                 <input
                   type="text"
@@ -536,7 +558,16 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200/60 dark:border-slate-800">
-                  <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DESTINATION / LOCATION</th>
+                  <th 
+                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                    className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-[#0052d1] select-none"
+                    title="Click to sort by date (Newest / Oldest)"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>DESTINATION / LOCATION</span>
+                      <ArrowDownWideNarrow size={12} className={cn("text-[#0052d1] transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                    </div>
+                  </th>
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">STANDARD FARE</th>
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DISCOUNT FARE</th>
                   <th className="pb-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">PROXIMITY RADIUS</th>
@@ -545,7 +576,7 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                {filteredLocationFares.map((loc) => {
+                {sortedLocationFares.map((loc) => {
                   const isSelected = activeLocation?.id === loc.id;
                   const radiusKm = (loc.proximity_radius_meters / 1000).toFixed(1);
                   const isSurge = loc.location_name.includes('Stadium') || loc.notes?.includes('Surge');
@@ -576,7 +607,14 @@ export const FareMatrixPage: React.FC<FareMatrixPageProps> = ({
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 dark:text-white text-xs">{loc.location_name}</p>
-                            <p className="text-[12px] text-slate-500 dark:text-slate-400">{loc.notes || 'Regulated Destination'}</p>
+                            <p className="text-[12px] text-slate-500 dark:text-slate-400">
+                              {loc.notes || 'Regulated Destination'}
+                              {(loc.created_at || loc.updated_at) && (
+                                <span className="text-[10px] text-slate-400 ml-1.5">
+                                  • {new Date(loc.created_at || loc.updated_at || '').toLocaleDateString()}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
                       </td>

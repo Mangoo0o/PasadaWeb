@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Users, Globe, Shield, Search, X, Percent, CheckCircle } from 'lucide-react';
+import { Users, Globe, Shield, Search, X, Percent, CheckCircle, ArrowDownWideNarrow } from 'lucide-react';
 import type { Profile } from '../types';
+import { cn } from '../../lib/utils';
 
 interface PassengersPageProps {
   passengers: Profile[];
@@ -9,6 +10,7 @@ interface PassengersPageProps {
 export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) => {
   const [search, setSearch] = useState('');
   const [filterTariff, setFilterTariff] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const regularCount = passengers.filter(p => !p.passenger_type || p.passenger_type === 'regular' || (!p.is_discount_eligible && p.passenger_type !== 'student' && p.passenger_type !== 'senior' && p.passenger_type !== 'pwd')).length;
   const discountedCount = passengers.filter(p => p.is_discount_eligible || p.passenger_type === 'student' || p.passenger_type === 'senior' || p.passenger_type === 'pwd').length;
@@ -33,6 +35,12 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
       return p.is_discount_eligible || type === 'student' || type === 'senior' || type === 'pwd';
     }
     return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
   });
 
   const getTariffBadge = (p: Profile) => {
@@ -119,11 +127,23 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
             })}
           </div>
 
-          {/* Right: Search Input & Match Counter */}
-          <div className="flex items-center gap-3 py-2 shrink-0">
+          {/* Right: Sort Button, Search Input & Match Counter */}
+          <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
             <span className="hidden md:inline text-xs text-slate-400 font-medium">
-              Showing {filtered.length} {filtered.length === 1 ? 'commuter' : 'commuters'}
+              Showing {sorted.length} {sorted.length === 1 ? 'commuter' : 'commuters'}
             </span>
+
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+            >
+              <ArrowDownWideNarrow size={14} className={cn("text-[#0052d1] dark:text-sky-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+              <span className="hidden sm:inline">Sort:</span>
+              <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+            </button>
+
             <div className="relative w-64 max-w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
@@ -155,19 +175,28 @@ export const PassengersPage: React.FC<PassengersPageProps> = ({ passengers }) =>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email Address</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Contact</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Language</th>
-                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Registered Date</th>
+                <th 
+                  onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                  className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-[#0052d1] select-none"
+                  title="Click to sort by date (Newest / Oldest)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Registered Date</span>
+                    <ArrowDownWideNarrow size={12} className={cn("text-[#0052d1] transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                  </div>
+                </th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-              {filtered.length === 0 ? (
+              {sorted.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-slate-400 font-medium">
                     No passenger records found.
                   </td>
                 </tr>
               ) : (
-                filtered.map(p => (
+                sorted.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="py-3.5 px-6">
                       <div className="flex items-center gap-3">

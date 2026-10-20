@@ -14,7 +14,8 @@ import {
   CircleDollarSign,
   Ban,
   UserX,
-  Package
+  Package,
+  ArrowDownWideNarrow
 } from 'lucide-react';
 import type { Complaint, ComplaintStatus } from '../types';
 import { cn } from '../../lib/utils';
@@ -41,6 +42,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +60,12 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
     const bodyNum = (c.driver_body_number || '').toLowerCase();
     const desc = (c.description || '').toLowerCase();
     return passName.includes(q) || driverName.includes(q) || bodyNum.includes(q) || desc.includes(q);
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
   });
 
   const handleOpenTriage = (c: Complaint) => {
@@ -130,8 +138,19 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
           {/* Right: Controls & Search */}
           <div className="flex items-center gap-2.5 py-2 shrink-0 flex-wrap sm:flex-nowrap">
             <span className="hidden md:inline text-xs text-slate-400 font-medium">
-              Showing {filtered.length} {filtered.length === 1 ? 'case' : 'cases'}
+              Showing {sorted.length} {sorted.length === 1 ? 'case' : 'cases'}
             </span>
+
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="h-9 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title={`Sorted ${sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}. Click to toggle.`}
+            >
+              <ArrowDownWideNarrow size={14} className={cn("text-rose-600 dark:text-rose-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+              <span className="hidden sm:inline">Sort:</span>
+              <span>{sortOrder === 'newest' ? 'Newest to Oldest' : 'Oldest to Newest'}</span>
+            </button>
 
             <FilterDisclosure
               items={COMPLAINT_CATEGORY_ITEMS}
@@ -175,13 +194,13 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
         {/* Content: Card Feed or Table */}
         {viewMode === 'cards' ? (
           <div className="p-6 bg-slate-50/40 dark:bg-slate-900/30">
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <div className="py-16 text-center text-slate-400 font-medium">
                 No active complaints matching criteria.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filtered.map(c => {
+                {sorted.map(c => {
                   const isOvercharging = c.category === 'overcharging';
                   const isResolved = c.status === 'resolved';
                   const isReviewing = c.status === 'reviewing';
@@ -266,7 +285,16 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                  <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date Filed</th>
+                  <th 
+                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                    className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-rose-600 dark:hover:text-rose-400 select-none"
+                    title="Click to sort by date filed (Newest / Oldest)"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Date Filed</span>
+                      <ArrowDownWideNarrow size={12} className={cn("text-rose-600 dark:text-rose-400 transition-transform", sortOrder === 'oldest' && "rotate-180")} />
+                    </div>
+                  </th>
                   <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Category</th>
                   <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Complainant</th>
                   <th className="py-3.5 px-6 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reported Driver</th>
@@ -275,14 +303,14 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                {filtered.length === 0 ? (
+                {sorted.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-10 text-slate-400 font-medium">
                       No complaints found.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map(c => (
+                  sorted.map(c => (
                     <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="py-3.5 px-6 text-slate-600 dark:text-slate-300 font-mono text-[11px] tabular-nums">
                         {new Date(c.created_at).toLocaleDateString()}
