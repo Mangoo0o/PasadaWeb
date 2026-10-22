@@ -474,7 +474,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
           )}
 
-          {/* 1.0 km Proximity Verification Badge */}
+          {/* Proximity Verification Badge */}
           {isDriverWithin1Km ? (
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-[10px] text-[#003f87] dark:text-[#00C1FD] font-semibold">
               <div className="flex items-center gap-1.5">
@@ -484,14 +484,14 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
                 </span>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-black text-[9px]">
-                {i18n.language === 'en' ? 'Within 1.0 km Zone' : 'Nasa 1.0 km Zone'}
+                {i18n.language === 'en' ? `Within ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km Zone` : `Nasa ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km Zone`}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
               <span className="shrink-0 text-xs">⚠️</span>
               <span>
-                {formatProximityDistance(driverDistanceToPickup, i18n.language)} {i18n.language === 'en' ? 'away. You are outside the 1.0 km pickup zone for this request.' : 'ang layo. Nasa labas ka na ng 1.0 km pickup zone para sa biyaheng ito.'}
+                {formatProximityDistance(driverDistanceToPickup, i18n.language)} {i18n.language === 'en' ? `away. You are outside the ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km pickup zone for this request.` : `ang layo. Nasa labas ka ng ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km pickup zone para sa biyaheng ito.`}
               </span>
             </div>
           )}

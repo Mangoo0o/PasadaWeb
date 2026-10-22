@@ -204,18 +204,25 @@ export const DriverDispatch: React.FC = () => {
     };
   }, [activeTrip?.id]);
 
-  // 3. Dynamic 1.0 km Proximity & Late-Arrival Zone Entry Detection
+  // 3. Dynamic Proximity & Zone Entry Detection
   useEffect(() => {
-    // Filter raw dispatches to strictly those within 1.0 km of driver's current position
-    const within1Km = rawDispatches.filter((bk) => {
-      if (!bk.origin_lat || !bk.origin_lng) return false;
+    // Filter raw dispatches to those within MAX_DISPATCH_RADIUS_KM (3.0 km) of driver's current position
+    const withinRadius = rawDispatches.filter((bk) => {
+      if (!bk.origin_lat || !bk.origin_lng || !driverLocation.lat || !driverLocation.lng) return true;
       const dist = getDistanceKm(driverLocation.lat, driverLocation.lng, bk.origin_lat, bk.origin_lng);
       return dist <= MAX_DISPATCH_RADIUS_KM;
     });
 
-    // Detect any dispatches entering the 1.0 km zone (new booking OR driver traveled into range)
+    // Sort dispatches: closest pickup distance first
+    const sorted = [...withinRadius].sort((a, b) => {
+      const distA = getDistanceKm(driverLocation.lat, driverLocation.lng, a.origin_lat, a.origin_lng);
+      const distB = getDistanceKm(driverLocation.lat, driverLocation.lng, b.origin_lat, b.origin_lng);
+      return distA - distB;
+    });
+
+    // Detect any dispatches entering the zone (new booking OR driver traveled into range)
     if (isOnline && !activeTrip) {
-      const newlyEntered = within1Km.filter(d => !alertedDispatchIdsRef.current.has(d.id));
+      const newlyEntered = sorted.filter(d => !alertedDispatchIdsRef.current.has(d.id));
       if (newlyEntered.length > 0) {
         const newest = newlyEntered[0];
         soundService.playDispatchAlert({
@@ -227,7 +234,7 @@ export const DriverDispatch: React.FC = () => {
       }
     }
 
-    setOpenDispatches(within1Km);
+    setOpenDispatches(sorted);
   }, [rawDispatches, driverLocation.lat, driverLocation.lng, isOnline, activeTrip]);
 
   // Auto-dismiss preview modal if booking was cancelled by passenger or taken by another driver
@@ -544,7 +551,7 @@ export const DriverDispatch: React.FC = () => {
                             {t('driver.incomingRequest', 'New Passenger Request!')}
                           </span>
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-sky-100 dark:bg-sky-950 text-[#003f87] dark:text-[#00C1FD]">
-                            📍 {formattedDist} {i18n.language === 'en' ? 'away (≤1km)' : 'layo (≤1km)'}
+                            📍 {formattedDist} {i18n.language === 'en' ? 'away' : 'layo'}
                           </span>
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
                             <Users className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
@@ -632,8 +639,8 @@ export const DriverDispatch: React.FC = () => {
                 <Clock className="w-6 h-6 text-slate-300 dark:text-slate-600" />
                 <span className="font-medium max-w-xs leading-relaxed">
                   {i18n.language === 'en'
-                    ? 'No requests within 1.0 km right now. Dispatches will dynamically alert you when you drive into their 1.0 km radius!'
-                    : 'Walang pasahero sa loob ng 1.0 km ngayon. Awtomatikong magpapadala ng alerto kapag pumasok ka sa 1.0 km sakop ng pasahero!'}
+                    ? `No requests within ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km right now. Dispatches will dynamically alert you when you drive into their pickup radius!`
+                    : `Walang pasahero sa loob ng ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km ngayon. Awtomatikong magpapadala ng alerto kapag pumasok ka sa sakop ng pasahero!`}
                 </span>
               </div>
             )}

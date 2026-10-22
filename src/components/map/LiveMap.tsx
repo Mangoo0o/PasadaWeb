@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { Terminal, LocationFare } from '../../types/database.types';
 import { getLocationIconEmoji } from '../../services/fareService';
 import { subscribeToDriverLocation } from '../../services/driverTrackingService';
+import { MAX_DISPATCH_RADIUS_KM } from '../../services/geoProximityService';
 
 // Custom SVG Icons
 const createTricycleIcon = () => {
@@ -430,11 +431,11 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </Popup>
         </Marker>
 
-        {/* 1.0 km Dispatch Perimeter Radar Circle when Searching for Drivers */}
+        {/* Dispatch Perimeter Radar Circle when Searching for Drivers */}
         {bookingStatus === 'searching' && (
           <Circle
             center={[originLat, originLng]}
-            radius={1000}
+            radius={MAX_DISPATCH_RADIUS_KM * 1000}
             pathOptions={{
               color: '#0052d1',
               fillColor: '#38bdf8',

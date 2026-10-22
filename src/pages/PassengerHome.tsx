@@ -1232,7 +1232,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0052d1] animate-ping"></span>
-                  <span>1.0 KM RADAR DISPATCH</span>
+                  <span>{MAX_DISPATCH_RADIUS_KM.toFixed(1)} KM RADAR DISPATCH</span>
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
                   <Users className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
@@ -1250,8 +1250,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <div className="text-left min-w-0 flex-1">
                   <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                     {nearbyDriversWithin1Km.length > 0
-                      ? (i18n.language === 'en' ? `Notifying drivers within 1.0 km for ${passengerCount} passenger${passengerCount > 1 ? 's' : ''}...` : `Inaabisuhan ang mga drayber sa 1.0 km para sa ${passengerCount} pasahero...`)
-                      : (i18n.language === 'en' ? `Waiting for drivers in 1.0 km zone (${passengerCount} pax)...` : `Naka-antabay sa drayber para sa ${passengerCount} pasahero...`)}
+                      ? (i18n.language === 'en' ? `Notifying drivers within ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km for ${passengerCount} passenger${passengerCount > 1 ? 's' : ''}...` : `Inaabisuhan ang mga drayber sa ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km para sa ${passengerCount} pasahero...`)
+                      : (i18n.language === 'en' ? `Waiting for drivers in ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km zone (${passengerCount} pax)...` : `Naka-antabay sa drayber para sa ${passengerCount} pasahero...`)}
                   </h4>
                   <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 flex-wrap mt-0.5">
                     <span>{selectedLocationFare?.location_name || destinationName} •</span>
@@ -1275,8 +1275,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <Sparkles className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400 shrink-0 mt-0.5" />
                   <span>
                     {i18n.language === 'en'
-                      ? 'No drivers currently inside 1.0 km. Your booking remains active and will instantly alert any driver who drives into your 1.0 km pickup area!'
-                      : 'Kasalukuyang walang drayber sa loob ng 1.0 km. Naka-abang ang iyong biyahe at agad aabisuhan ang sinumang drayber na papasok sa 1.0 km!'}
+                      ? `No drivers currently inside ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km. Your booking remains active and will instantly alert any driver who drives into your ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km pickup area!`
+                      : `Kasalukuyang walang drayber sa loob ng ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km. Naka-abang ang iyong biyahe at agad aabisuhan ang sinumang drayber na papasok sa ${MAX_DISPATCH_RADIUS_KM.toFixed(1)} km!`}
                   </span>
                 </div>
               )}

@@ -152,12 +152,18 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
     return () => window.removeEventListener('pasada_booking_updated', handleBookingUpdate);
   }, [activeOngoingTrip?.id]);
 
-  // Dynamic 1.0 km Proximity Filter
+  // Dynamic Proximity Filter
   useEffect(() => {
     const filtered = rawDispatches.filter((bk) => {
-      if (!bk.origin_lat || !bk.origin_lng) return false;
+      if (!bk.origin_lat || !bk.origin_lng || !driverLocation.lat || !driverLocation.lng) return true;
       const dist = getDistanceKm(driverLocation.lat, driverLocation.lng, bk.origin_lat, bk.origin_lng);
       return dist <= MAX_DISPATCH_RADIUS_KM;
+    });
+    // Sort closest first
+    filtered.sort((a, b) => {
+      const distA = getDistanceKm(driverLocation.lat, driverLocation.lng, a.origin_lat, a.origin_lng);
+      const distB = getDistanceKm(driverLocation.lat, driverLocation.lng, b.origin_lat, b.origin_lng);
+      return distA - distB;
     });
     setOpenDispatches(filtered);
   }, [rawDispatches, driverLocation.lat, driverLocation.lng]);

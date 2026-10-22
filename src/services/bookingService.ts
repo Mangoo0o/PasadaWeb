@@ -2,6 +2,9 @@ import { supabase } from '../api/supabaseClient';
 import { Booking, BookingStatus, PaymentMethod, Profile } from '../types/database.types';
 import { logTripSurchargeAudit, logTripRebookExtensionAudit } from './auditService';
 
+// Cache whether additional_fare / base_fare columns exist in remote Supabase schema cache
+let isSurchargeColumnAvailableInDb: boolean | null = false;
+
 export const createBookingRequest = async (params: {
   passengerId: string;
   passenger?: Profile | null;
@@ -26,9 +29,12 @@ export const createBookingRequest = async (params: {
 
     const count = Math.max(1, Math.min(4, Math.round(Number(params.passengerCount) || 1)));
     const extraHeadFare = Math.max(0, (count - 1) * 10);
-    const baseFareVal = params.baseFare ?? params.estimatedFare;
+    const baseFareVal = params.baseFare ?? Math.max(0, params.estimatedFare - extraHeadFare);
+    const resolvedPassengerType = params.passengerType || params.passenger?.passenger_type || 'regular';
 
-    const newBooking: any = {
+    // DB Payload: passenger_count and additional_head_fare exist in DB schema.
+    // base_fare and additional_fare are omitted by default unless confirmed present in DB schema cache.
+    const dbPayload: any = {
       origin_name: params.originName,
       origin_lat: params.originLat,
       origin_lng: params.originLng,
@@ -38,8 +44,6 @@ export const createBookingRequest = async (params: {
       estimated_distance_km: params.estimatedDistanceKm,
       estimated_duration_min: params.estimatedDurationMin,
       estimated_fare: params.estimatedFare,
-      base_fare: baseFareVal,
-      additional_fare: params.additionalFare ?? extraHeadFare,
       passenger_count: count,
       additional_head_fare: params.additionalHeadFare ?? extraHeadFare,
       status: 'searching' as BookingStatus,
@@ -48,43 +52,66 @@ export const createBookingRequest = async (params: {
     };
 
     if (safePassengerId) {
-      newBooking.passenger_id = safePassengerId;
+      dbPayload.passenger_id = safePassengerId;
+    }
+
+    if (isSurchargeColumnAvailableInDb === true) {
+      dbPayload.base_fare = baseFareVal;
+      dbPayload.additional_fare = params.additionalFare ?? extraHeadFare;
     }
 
     let { data, error } = await supabase
       .from('bookings')
-      .insert(newBooking)
+      .insert(dbPayload)
       .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
       .single();
 
-    // If initial insert fails due to foreign key violation or missing new columns on remote DB:
+    // If initial insert fails due to foreign key violation or missing columns on remote DB:
     if (error) {
       console.warn('Booking insertion retry handler triggered:', error.message);
-      const fallbackPayload = { ...newBooking };
-      if (newBooking.passenger_id && (error.code === '23503' || error.message?.includes('foreign key') || (error as any).status === 409)) {
-        delete fallbackPayload.passenger_id;
+      const retryPayload = { ...dbPayload };
+      if (retryPayload.passenger_id && (error.code === '23503' || error.message?.includes('foreign key') || (error as any).status === 409)) {
+        delete retryPayload.passenger_id;
       }
-      // If DB schema doesn't yet have passenger_count or additional_head_fare column:
-      if (error.message?.includes('passenger_count') || error.message?.includes('additional_head_fare') || error.message?.includes('base_fare') || error.code === 'PGRST204') {
-        delete fallbackPayload.passenger_count;
-        delete fallbackPayload.additional_head_fare;
+      delete retryPayload.base_fare;
+      delete retryPayload.additional_fare;
+      delete retryPayload.additional_fare_reason;
+      delete retryPayload.discount_amount;
+      if (error.message?.includes('passenger_count') || error.message?.includes('additional_head_fare') || error.code === 'PGRST204') {
+        delete retryPayload.passenger_count;
+        delete retryPayload.additional_head_fare;
       }
+
+      // Retry with plain select to ensure no FK join failure
       const retry = await supabase
         .from('bookings')
-        .insert(fallbackPayload)
-        .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
+        .insert(retryPayload)
+        .select('*')
         .single();
       data = retry.data;
       error = retry.error;
     }
 
-    const resolvedPassengerType = params.passengerType || params.passenger?.passenger_type || 'regular';
-
     if (error || !data) {
-      console.warn('Booking insertion note:', error?.message);
+      console.warn('Booking insertion fallback triggered:', error?.message);
       const fallbackBooking: Booking = {
         id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `bk-${Date.now()}`,
-        ...newBooking,
+        passenger_id: safePassengerId || params.passengerId || 'guest',
+        origin_name: params.originName,
+        origin_lat: params.originLat,
+        origin_lng: params.originLng,
+        destination_name: params.destinationName,
+        destination_lat: params.destinationLat,
+        destination_lng: params.destinationLng,
+        estimated_distance_km: params.estimatedDistanceKm,
+        estimated_duration_min: params.estimatedDurationMin,
+        estimated_fare: params.estimatedFare,
+        base_fare: baseFareVal,
+        additional_fare: params.additionalFare ?? extraHeadFare,
+        passenger_count: count,
+        additional_head_fare: extraHeadFare,
+        status: 'searching' as BookingStatus,
+        payment_method: 'cash' as PaymentMethod,
         passenger_name: params.passenger?.full_name || 'Ka-Pasada Commuter',
         passenger: {
           id: params.passengerId || 'guest',
@@ -110,10 +137,10 @@ export const createBookingRequest = async (params: {
 
     const returnedBooking: Booking = {
       ...(data as Booking),
-      passenger_count: (data as any)?.passenger_count || newBooking.passenger_count || 1,
-      additional_head_fare: (data as any)?.additional_head_fare ?? newBooking.additional_head_fare ?? 0,
-      base_fare: (data as any)?.base_fare ?? newBooking.base_fare ?? newBooking.estimated_fare,
-      additional_fare: (data as any)?.additional_fare ?? newBooking.additional_fare ?? 0,
+      passenger_count: (data as any)?.passenger_count || count,
+      additional_head_fare: (data as any)?.additional_head_fare ?? extraHeadFare,
+      base_fare: (data as any)?.base_fare ?? baseFareVal,
+      additional_fare: (data as any)?.additional_fare ?? extraHeadFare,
       passenger: {
         ...((data as any)?.passenger || params.passenger || {}),
         passenger_type: ((data as any)?.passenger?.passenger_type || resolvedPassengerType) as any
@@ -453,9 +480,6 @@ export const subscribeToBooking = (
     window.removeEventListener('storage', handleLocal);
   };
 };
-
-// Cache whether additional_fare column exists in remote Supabase schema cache (default false until migration is run in Supabase)
-let isSurchargeColumnAvailableInDb: boolean | null = false;
 
 export const updateBookingStatus = async (
   bookingId: string,
@@ -986,11 +1010,24 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
       });
 
       // Directly synchronize localStorage queue to match exact ground-truth bookings
+      // while preserving any recent local searching bookings (< 10 minutes old)
+      let localPending: Booking[] = [];
       try {
-        localStorage.setItem('pasada_open_queue', JSON.stringify(serverBookings));
+        const queue: Booking[] = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
+        const now = Date.now();
+        localPending = queue.filter(b => 
+          b && b.status === 'searching' && 
+          !serverBookings.some(sb => sb.id === b.id) &&
+          (now - new Date(b.created_at || now).getTime() < 10 * 60 * 1000)
+        );
       } catch {}
 
-      return serverBookings;
+      const mergedBookings = [...serverBookings, ...localPending];
+      try {
+        localStorage.setItem('pasada_open_queue', JSON.stringify(mergedBookings));
+      } catch {}
+
+      return mergedBookings;
     }
 
     // Offline / network fallback only if Supabase call failed

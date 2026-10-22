@@ -3,7 +3,7 @@
  * Handles distance calculations, proximity boundary checks, and formatters for PasadaWeb dispatches.
  */
 
-export const MAX_DISPATCH_RADIUS_KM = 1.0; // Strict 1.0 km radius limit
+export const MAX_DISPATCH_RADIUS_KM = 3.0; // 3.0 km radius for Bauang municipality coverage
 
 /**
  * Calculates the great-circle distance between two geographic coordinates in kilometers
@@ -38,7 +38,7 @@ export function getDistanceKm(
 }
 
 /**
- * Checks if two coordinates are within the dispatch radius (default 1.0 km).
+ * Checks if two coordinates are within the dispatch radius (default 3.0 km).
  */
 export function isWithinDispatchRadius(
   driverLat?: number | null,
@@ -47,6 +47,7 @@ export function isWithinDispatchRadius(
   pickupLng?: number | null,
   maxRadiusKm: number = MAX_DISPATCH_RADIUS_KM
 ): boolean {
+  if (!driverLat || !driverLng || !pickupLat || !pickupLng) return true;
   const distance = getDistanceKm(driverLat, driverLng, pickupLat, pickupLng);
   return distance <= maxRadiusKm;
 }
