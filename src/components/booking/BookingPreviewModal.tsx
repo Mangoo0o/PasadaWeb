@@ -420,7 +420,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
             {hasAdditionalPassengers ? (
               <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
-                +₱{additionalHeadFare.toFixed(2)} (+₱10/head)
+                {passengerCount} Pasahero ({passengerCount}× Taripa)
               </span>
             ) : (
               <span className="text-[10px] font-medium text-slate-400">
@@ -452,7 +452,7 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               <div className="flex items-center gap-1 justify-end flex-wrap">
                 {hasAdditionalPassengers && (
                   <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-1.5 py-0.5 rounded-md inline-block">
-                    +{passengerCount - 1} Head (+₱{additionalHeadFare.toFixed(0)})
+                    {passengerCount}× Taripa
                   </span>
                 )}
                 {hasDiscount && (

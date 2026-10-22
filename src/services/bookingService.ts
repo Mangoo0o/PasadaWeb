@@ -28,8 +28,10 @@ export const createBookingRequest = async (params: {
     const safePassengerId = uuidRegex.test(params.passengerId) ? params.passengerId : null;
 
     const count = Math.max(1, Math.min(4, Math.round(Number(params.passengerCount) || 1)));
-    const extraHeadFare = Math.max(0, (count - 1) * 10);
-    const baseFareVal = params.baseFare ?? Math.max(0, params.estimatedFare - extraHeadFare);
+    const unitPrice = params.baseFare ?? (count > 0 ? (params.estimatedFare / count) : params.estimatedFare);
+    const extraHeads = Math.max(0, count - 1);
+    const extraHeadFare = params.additionalHeadFare ?? (extraHeads * unitPrice);
+    const baseFareVal = params.baseFare ?? unitPrice;
     const resolvedPassengerType = params.passengerType || params.passenger?.passenger_type || 'regular';
 
     // DB Payload: passenger_count and additional_head_fare exist in DB schema.
@@ -991,7 +993,7 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
 
         const pType = b.passenger?.passenger_type || b.passenger_type || cachedPassenger?.passenger_type || 'regular';
         const pCount = b.passenger_count || cachedItem?.passenger_count || 1;
-        const addHeadFare = b.additional_head_fare ?? cachedItem?.additional_head_fare ?? Math.max(0, (pCount - 1) * 10);
+        const addHeadFare = b.additional_head_fare ?? cachedItem?.additional_head_fare ?? 0;
 
         return {
           ...b,

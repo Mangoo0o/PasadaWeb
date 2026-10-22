@@ -206,7 +206,7 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
             );
             const passengerCount = (b as any)?.passenger_count || 1;
             const hasAdditionalPassengers = passengerCount > 1;
-            const additionalHeadFare = (b as any)?.additional_head_fare ?? ((passengerCount - 1) * 10);
+            const additionalHeadFare = (b as any)?.additional_head_fare ?? (hasAdditionalPassengers ? (standardSubtotal - (standardSubtotal / passengerCount)) : 0);
 
             const extFare = Number(
               b.extension_fare ||
@@ -323,7 +323,7 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                             <Users className="w-3 h-3" />
                             <span>Bilang ng Pasahero ({passengerCount} Pasahero)</span>
                           </span>
-                          <span>+₱{additionalHeadFare.toFixed(2)} (+₱10/head)</span>
+                          <span>{passengerCount}× Taripa</span>
                         </div>
                       )}
                       {isRebooked ? (

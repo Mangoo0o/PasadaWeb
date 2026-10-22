@@ -38,7 +38,6 @@ import {
   resolveLocationCategory,
   calculateFare,
   calculateFareWithPassengers,
-  ADDITIONAL_FARE_PER_HEAD,
   MAX_PASSENGER_CAPACITY,
   getPassengerTypeInfo,
   isDiscountEligibleType,
@@ -1168,7 +1167,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                     {passengerCount === 1 
                       ? (i18n.language === 'en' ? '1 Passenger (Solo ride • Standard rate)' : '1 Pasahero (Solo sakay • Karaniwang taripa)')
-                      : (i18n.language === 'en' ? `${passengerCount} Passengers (+₱${(passengerCount - 1) * ADDITIONAL_FARE_PER_HEAD} per-head surcharge)` : `${passengerCount} Pasahero (+₱${(passengerCount - 1) * ADDITIONAL_FARE_PER_HEAD} dagdag sa ulo)`)}
+                      : (i18n.language === 'en' ? `${passengerCount} Passengers (${passengerCount} × ₱${passengerFareCalc.baseFare.toFixed(0)} per head)` : `${passengerCount} Pasahero (${passengerCount} × ₱${passengerFareCalc.baseFare.toFixed(0)} bawat ulo)`)}
                   </p>
                 </div>
 
@@ -1199,14 +1198,13 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
               {passengerCount > 1 && (
                 <div className="px-2 py-1 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-dashed border-slate-200/70 dark:border-slate-700/60 pt-1.5">
                   <span className="flex items-center gap-1 flex-wrap">
-                    <span>Base (₱{passengerFareCalc.baseFare.toFixed(2)})</span>
-                    <span>+</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">
-                      {passengerCount - 1} Dagdag Ulo (+₱{passengerFareCalc.totalAdditionalHeadFare.toFixed(2)})
+                    <span className="text-[#0052d1] dark:text-sky-400 font-bold">
+                      {passengerCount} Pasahero × ₱{passengerFareCalc.baseFare.toFixed(2)}
                     </span>
+                    <span className="text-slate-400">bawat ulo</span>
                   </span>
                   <span className="font-bold text-slate-700 dark:text-slate-300">
-                    Subtotal: ₱{passengerFareCalc.subtotalGross.toFixed(2)}
+                    Kabuuan: ₱{passengerFareCalc.finalFare.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -1257,8 +1255,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                     <span>{selectedLocationFare?.location_name || destinationName} •</span>
                     <strong className="text-slate-700 dark:text-slate-200">₱{currentFare}.00</strong>
                     {passengerCount > 1 && (
-                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded-md">
-                        +{passengerCount - 1} Ulo
+                      <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.2 rounded-md">
+                        {passengerCount} Ulo ({passengerCount}× Taripa)
                       </span>
                     )}
                     {isDiscountEligible && (

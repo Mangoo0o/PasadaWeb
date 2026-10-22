@@ -713,7 +713,7 @@ export const getPassengerTypeInfo = (type?: string | null): PassengerTypeInfo =>
   }
 };
 
-export const ADDITIONAL_FARE_PER_HEAD = 10; // ₱10.00 standard LGU tariff surcharge per additional passenger head
+export const ADDITIONAL_FARE_PER_HEAD = 10; // Default fallback
 export const MAX_PASSENGER_CAPACITY = 4; // Maximum legal capacity for passenger tricycles
 
 export interface PassengerFareBreakdown {
@@ -737,21 +737,22 @@ export const calculateFareWithPassengers = (
 ): PassengerFareBreakdown => {
   const count = Math.max(1, Math.min(MAX_PASSENGER_CAPACITY, Math.round(Number(passengerCount) || 1)));
   const base = Math.max(0, Number(baseStandardFare) || 20);
+  
+  // Pricing model: per head * price of the location
+  const subtotalGross = base * count;
   const extraHeads = Math.max(0, count - 1);
-  const totalAdditionalHeadFare = extraHeads * ADDITIONAL_FARE_PER_HEAD;
+  const totalAdditionalHeadFare = extraHeads * base;
 
   const isEligible = typeof passengerTypeOrEligible === 'boolean'
     ? passengerTypeOrEligible
     : isDiscountEligibleType(passengerTypeOrEligible);
   const pType = typeof passengerTypeOrEligible === 'string' ? passengerTypeOrEligible : (isEligible ? 'student' : 'regular');
 
-  const subtotalGross = base + totalAdditionalHeadFare;
-
   if (!isEligible) {
     return {
       baseFare: base,
       passengerCount: count,
-      additionalPerHead: ADDITIONAL_FARE_PER_HEAD,
+      additionalPerHead: base,
       totalAdditionalHeadFare,
       subtotalGross,
       discountPercent: 0,
@@ -767,16 +768,14 @@ export const calculateFareWithPassengers = (
     Number(customDiscountedFare) > 0 &&
     Number(customDiscountedFare) < base;
 
-  // Compute 20% statutory discount on subtotal gross
-  const discountAmount = hasValidCustom && count === 1
-    ? Math.max(0, base - Number(customDiscountedFare))
-    : Math.round(subtotalGross * 0.20);
-  const finalFare = Math.max(1, subtotalGross - discountAmount);
+  const perHeadDiscounted = hasValidCustom ? Number(customDiscountedFare) : Math.round(base * 0.80);
+  const finalFare = Math.max(1, perHeadDiscounted * count);
+  const discountAmount = Math.max(0, subtotalGross - finalFare);
 
   return {
     baseFare: base,
     passengerCount: count,
-    additionalPerHead: ADDITIONAL_FARE_PER_HEAD,
+    additionalPerHead: base,
     totalAdditionalHeadFare,
     subtotalGross,
     discountPercent: 20,

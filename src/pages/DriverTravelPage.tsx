@@ -319,7 +319,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
   // Passenger headcount and per-head surcharge
   const passengerCount = (currentBooking as any)?.passenger_count || 1;
   const hasAdditionalPassengers = passengerCount > 1;
-  const additionalHeadFare = (currentBooking as any)?.additional_head_fare ?? ((passengerCount - 1) * 10);
+  const additionalHeadFare = (currentBooking as any)?.additional_head_fare ?? (hasAdditionalPassengers ? (Number(currentBooking.estimated_fare || 20) - (Number(currentBooking.estimated_fare || 20) / passengerCount)) : 0);
 
   // Original standard base route tariff before discount (reflects accumulated fare if rebooked)
   const routeBaseTariff = Number(
@@ -727,7 +727,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 </span>
                 {hasAdditionalPassengers && (
                   <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 block leading-tight">
-                    +{passengerCount - 1} Head (+₱{additionalHeadFare.toFixed(0)})
+                    {passengerCount} Pasahero ({passengerCount}× Taripa)
                   </span>
                 )}
                 {isRebooked && (
@@ -1145,8 +1145,8 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
               {hasAdditionalPassengers && (
                 <div className="flex justify-between text-indigo-700 dark:text-indigo-400 font-semibold">
-                  <span>Dagdag Pasahero (+{passengerCount - 1} @ ₱10/head):</span>
-                  <span>+₱{additionalHeadFare.toFixed(2)}</span>
+                  <span>Bilang ng Pasahero ({passengerCount} × Taripa):</span>
+                  <span>₱{totalBaseWithHeadFare.toFixed(2)}</span>
                 </div>
               )}
 
@@ -1252,7 +1252,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                     <Users className="w-3.5 h-3.5 text-indigo-600" />
                     <span>{passengerCount} Pasahero</span>
                   </span>
-                  <span>+₱{additionalHeadFare.toFixed(2)} (+₱10/head)</span>
+                  <span>{passengerCount}× Taripa ng Lokasyon</span>
                 </div>
               )}
 

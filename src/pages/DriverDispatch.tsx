@@ -555,7 +555,7 @@ export const DriverDispatch: React.FC = () => {
                           </span>
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
                             <Users className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
-                            <span>{bk.passenger_count || 1} {Number(bk.passenger_count || 1) > 1 ? `Pasahero (+₱${(Number(bk.passenger_count || 1) - 1) * 10})` : 'Pasahero (Solo)'}</span>
+                            <span>{bk.passenger_count || 1} {Number(bk.passenger_count || 1) > 1 ? `Pasahero (${bk.passenger_count}× Taripa)` : 'Pasahero (Solo)'}</span>
                           </span>
                         </div>
                         <div className="text-right shrink-0">
@@ -563,8 +563,8 @@ export const DriverDispatch: React.FC = () => {
                             ₱{bk.estimated_fare.toFixed(2)}
                           </span>
                           {Number(bk.passenger_count || 1) > 1 && (
-                            <span className="text-[8px] font-extrabold text-amber-600 dark:text-amber-400 block -mt-0.5">
-                              +₱{(Number(bk.passenger_count || 1) - 1) * 10} per head
+                            <span className="text-[8px] font-extrabold text-indigo-600 dark:text-indigo-400 block -mt-0.5">
+                              {bk.passenger_count} × Taripa ng Lokasyon
                             </span>
                           )}
                           {isDiscountEligibleType(bk.passenger?.passenger_type || (bk as any)?.passenger_type) && (
