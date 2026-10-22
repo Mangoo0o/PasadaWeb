@@ -200,7 +200,13 @@
     "passengerCancelledTitle": "Trip Cancelled by Passenger",
     "passengerCancelledDesc": "The passenger ({{name}}) has cancelled this booking. Your line is now available to accept new dispatches.",
     "bookingCancelledBadge": "Booking Cancelled",
-    "understandReturn": "Understood / Return to Dispatch"
+    "understandReturn": "Understood / Return to Dispatch",
+    "passengerHeadcount": "Passenger Count",
+    "passengerHeadcountDesc": "Select number of passengers (max 4). +₱10 per additional head.",
+    "passengersCount": "{{count}} Passengers",
+    "passengerCountSingle": "1 Passenger",
+    "additionalHeadFare": "Additional Head Fare",
+    "extraPassengersNote": "+₱{{amount}} (+₱10/additional head)"
   },
   "chat": {
     "inTripChat": "In-Trip Chat",

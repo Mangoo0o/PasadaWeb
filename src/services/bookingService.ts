@@ -6,6 +6,10 @@ export const createBookingRequest = async (params: {
   passengerId: string;
   passenger?: Profile | null;
   passengerType?: string;
+  passengerCount?: number;
+  baseFare?: number;
+  additionalFare?: number;
+  additionalHeadFare?: number;
   originName: string;
   originLat: number;
   originLng: number;
@@ -20,6 +24,10 @@ export const createBookingRequest = async (params: {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const safePassengerId = uuidRegex.test(params.passengerId) ? params.passengerId : null;
 
+    const count = Math.max(1, Math.min(4, Math.round(Number(params.passengerCount) || 1)));
+    const extraHeadFare = Math.max(0, (count - 1) * 10);
+    const baseFareVal = params.baseFare ?? params.estimatedFare;
+
     const newBooking: any = {
       origin_name: params.originName,
       origin_lat: params.originLat,
@@ -30,6 +38,10 @@ export const createBookingRequest = async (params: {
       estimated_distance_km: params.estimatedDistanceKm,
       estimated_duration_min: params.estimatedDurationMin,
       estimated_fare: params.estimatedFare,
+      base_fare: baseFareVal,
+      additional_fare: params.additionalFare ?? extraHeadFare,
+      passenger_count: count,
+      additional_head_fare: params.additionalHeadFare ?? extraHeadFare,
       status: 'searching' as BookingStatus,
       payment_method: 'cash' as PaymentMethod,
       created_at: new Date().toISOString()
@@ -45,12 +57,18 @@ export const createBookingRequest = async (params: {
       .select('*, passenger:profiles!bookings_passenger_id_fkey(id, full_name, phone_number, passenger_type)')
       .single();
 
-    // If initial insert fails due to foreign key violation on passenger_id (e.g. preset/local mock profile not in DB),
-    // safely retry without passenger_id so the booking is still created in Supabase with a valid UUID!
-    if (error && newBooking.passenger_id && (error.code === '23503' || error.message?.includes('foreign key') || (error as any).status === 409)) {
-      console.warn('Retrying booking insert without foreign key passenger_id...');
+    // If initial insert fails due to foreign key violation or missing new columns on remote DB:
+    if (error) {
+      console.warn('Booking insertion retry handler triggered:', error.message);
       const fallbackPayload = { ...newBooking };
-      delete fallbackPayload.passenger_id;
+      if (newBooking.passenger_id && (error.code === '23503' || error.message?.includes('foreign key') || (error as any).status === 409)) {
+        delete fallbackPayload.passenger_id;
+      }
+      // If DB schema doesn't yet have passenger_count or additional_head_fare column:
+      if (error.message?.includes('passenger_count') || error.message?.includes('additional_head_fare') || error.message?.includes('base_fare') || error.code === 'PGRST204') {
+        delete fallbackPayload.passenger_count;
+        delete fallbackPayload.additional_head_fare;
+      }
       const retry = await supabase
         .from('bookings')
         .insert(fallbackPayload)
@@ -92,6 +110,10 @@ export const createBookingRequest = async (params: {
 
     const returnedBooking: Booking = {
       ...(data as Booking),
+      passenger_count: (data as any)?.passenger_count || newBooking.passenger_count || 1,
+      additional_head_fare: (data as any)?.additional_head_fare ?? newBooking.additional_head_fare ?? 0,
+      base_fare: (data as any)?.base_fare ?? newBooking.base_fare ?? newBooking.estimated_fare,
+      additional_fare: (data as any)?.additional_fare ?? newBooking.additional_fare ?? 0,
       passenger: {
         ...((data as any)?.passenger || params.passenger || {}),
         passenger_type: ((data as any)?.passenger?.passenger_type || resolvedPassengerType) as any
@@ -142,6 +164,12 @@ export const subscribeToOpenDispatches = (onUpdate: (detail?: any) => void) => {
                 if (!item.passenger && existing.passenger) item.passenger = existing.passenger;
                 if (!item.passenger_type && (existing.passenger_type || existing.passenger?.passenger_type)) {
                   item.passenger_type = existing.passenger_type || existing.passenger?.passenger_type;
+                }
+                if (item.passenger_count == null && existing.passenger_count != null) {
+                  item.passenger_count = existing.passenger_count;
+                }
+                if (item.additional_head_fare == null && existing.additional_head_fare != null) {
+                  item.additional_head_fare = existing.additional_head_fare;
                 }
               }
             } catch {}
@@ -274,6 +302,12 @@ export const subscribeToBooking = (
         }
         if (localData.base_fare != null && (data.base_fare == null || Number(localData.base_fare) > 0)) {
           data.base_fare = Number(localData.base_fare);
+        }
+        if (localData.passenger_count != null && (data.passenger_count == null || Number(localData.passenger_count) > 0)) {
+          data.passenger_count = Number(localData.passenger_count);
+        }
+        if (localData.additional_head_fare != null && (data.additional_head_fare == null || Number(localData.additional_head_fare) > 0)) {
+          data.additional_head_fare = Number(localData.additional_head_fare);
         }
         // Only fallback to local destination if DB row was missing destination
         if (!data.destination_name && localData.destination_name) {
@@ -924,15 +958,21 @@ export const fetchOpenDispatches = async (): Promise<Booking[]> => {
     if (!error && data) {
       const serverBookings: Booking[] = (data as any[]).map((b: any) => {
         let cachedPassenger: any = null;
+        let cachedItem: any = null;
         try {
           const queue = JSON.parse(localStorage.getItem('pasada_open_queue') || '[]');
-          cachedPassenger = queue.find((item: any) => item.id === b.id)?.passenger;
+          cachedItem = queue.find((item: any) => item.id === b.id);
+          cachedPassenger = cachedItem?.passenger;
         } catch {}
 
         const pType = b.passenger?.passenger_type || b.passenger_type || cachedPassenger?.passenger_type || 'regular';
+        const pCount = b.passenger_count || cachedItem?.passenger_count || 1;
+        const addHeadFare = b.additional_head_fare ?? cachedItem?.additional_head_fare ?? Math.max(0, (pCount - 1) * 10);
 
         return {
           ...b,
+          passenger_count: pCount,
+          additional_head_fare: addHeadFare,
           passenger_type: pType,
           passenger: b.passenger ? {
             ...b.passenger,

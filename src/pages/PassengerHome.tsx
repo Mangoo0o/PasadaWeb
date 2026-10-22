@@ -22,7 +22,8 @@ import {
   ArrowRight,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LiveMap } from '../components/map/LiveMap';
@@ -36,6 +37,9 @@ import {
   getLocationIconEmoji,
   resolveLocationCategory,
   calculateFare,
+  calculateFareWithPassengers,
+  ADDITIONAL_FARE_PER_HEAD,
+  MAX_PASSENGER_CAPACITY,
   getPassengerTypeInfo,
   isDiscountEligibleType,
   matchesLocationSearch,
@@ -306,10 +310,22 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
   const isDiscountEligible = isDiscountEligibleType(effectivePassengerType);
   const passengerTypeInfo = getPassengerTypeInfo(effectivePassengerType);
 
+  // 3. PASSENGERS: Headcount for the trip (1 to 4 max legal tricycle capacity)
+  const [passengerCount, setPassengerCount] = useState<number>(1);
+
   // Standard tariff amount for current location or proximity match
   const currentStandardFare = Number(
     selectedLocationFare?.standard_fare || proximityResult?.standardFare || 20
   );
+
+  // Calculate dynamic fare with passenger headcount and statutory discount
+  const passengerFareCalc = useMemo(() => {
+    const baseStd = selectedLocationFare
+      ? Number(selectedLocationFare.standard_fare)
+      : (proximityResult ? Number(proximityResult.standardFare) : 20);
+    const customDisc = selectedLocationFare?.discounted_fare || proximityResult?.discountedFare;
+    return calculateFareWithPassengers(baseStd, passengerCount, effectivePassengerType, customDisc);
+  }, [selectedLocationFare, proximityResult, passengerCount, effectivePassengerType]);
 
   // Resolve Price via Location Proximity or Name Match
   const resolveLocationFare = useCallback((
@@ -329,7 +345,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
     if (exactNameMatch) {
       setSelectedLocationFare(exactNameMatch);
-      const calc = calculateFare(Number(exactNameMatch.standard_fare), isDiscountEligible, exactNameMatch.discounted_fare);
+      const calc = calculateFareWithPassengers(Number(exactNameMatch.standard_fare), passengerCount, isDiscountEligible, exactNameMatch.discounted_fare);
       setCurrentFare(calc.finalFare);
       return;
     }
@@ -340,10 +356,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
 
     if (match) {
       setSelectedLocationFare(match.matchedLocation);
-      const calc = calculateFare(Number(match.standardFare), isDiscountEligible, match.discountedFare);
+      const calc = calculateFareWithPassengers(Number(match.standardFare), passengerCount, isDiscountEligible, match.discountedFare);
       setCurrentFare(calc.finalFare);
     }
-  }, [isDiscountEligible]);
+  }, [isDiscountEligible, passengerCount]);
 
   // Synchronize preselected tourist spot from Explore page with tariff resolution
   useEffect(() => {
@@ -364,28 +380,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
     }
   }, [destLat, destLng, locationFares, selectedLocationFare, destinationName, resolveLocationFare]);
 
-  // Automatically recalculate currentFare whenever destination, proximity result, or discount status updates
+  // Automatically recalculate currentFare whenever passengerFareCalc updates
   useEffect(() => {
-    if (selectedLocationFare) {
-      const calc = calculateFare(
-        Number(selectedLocationFare.standard_fare),
-        isDiscountEligible,
-        selectedLocationFare.discounted_fare
-      );
-      setCurrentFare(calc.finalFare);
-    } else if (proximityResult) {
-      const calc = calculateFare(
-        Number(proximityResult.standardFare),
-        isDiscountEligible,
-        proximityResult.discountedFare
-      );
-      setCurrentFare(calc.finalFare);
-    } else {
-      // Baseline default fare with passenger account discount applied automatically
-      const calc = calculateFare(20, isDiscountEligible);
-      setCurrentFare(calc.finalFare);
-    }
-  }, [isDiscountEligible, selectedLocationFare, proximityResult]);
+    setCurrentFare(passengerFareCalc.finalFare);
+  }, [passengerFareCalc]);
 
   // GPS Geolocation Auto-Detect in Background
   const handleUseCurrentGPS = useCallback(() => {
@@ -647,6 +645,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
       passengerId: user.id,
       passenger: user,
       passengerType: effectivePassengerType,
+      passengerCount: passengerCount,
+      baseFare: passengerFareCalc.baseFare,
+      additionalFare: passengerFareCalc.totalAdditionalHeadFare,
+      additionalHeadFare: passengerFareCalc.totalAdditionalHeadFare,
       originName,
       originLat,
       originLng,
@@ -655,7 +657,7 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
       destinationLng: destLng,
       estimatedDistanceKm: estimatedDistance,
       estimatedDurationMin: Math.max(4, Math.round(estimatedDistance * 3.5)),
-      estimatedFare: currentFare,
+      estimatedFare: passengerFareCalc.finalFare,
     });
 
     if (res.error) {
@@ -1108,44 +1110,118 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
             </div>
           )}
 
-          {/* Idle Booking Setup Card */}
+          {/* Idle Booking Setup Card with Passenger Headcount Selector */}
           {bookingState === 'idle' && (
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-full border border-white/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,82,209,0.18)] p-2 sm:p-2.5 px-3 sm:px-4 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className={`px-3 py-1 rounded-full text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-sm ${
-                    isDiscountEligible ? 'bg-emerald-600' : 'bg-[#0052d1]'
-                  }`}>
-                    ₱{currentFare}
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_16px_40px_rgba(0,82,209,0.22)] p-3 sm:p-4 space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
+              {/* Route & Destination Row */}
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#0052d1] to-[#206afa] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#fcd400]" />
                   </div>
-                  {isDiscountEligible && (
-                    <div className="flex flex-col text-left">
-                      <span className="text-[10px] line-through text-slate-400 font-bold leading-none">
-                        ₱{currentStandardFare}
-                      </span>
-                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight leading-tight flex items-center gap-0.5">
-                        <span>-20%</span>
-                        <span>{passengerTypeInfo.label}</span>
-                      </span>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase font-bold text-[#0052d1] dark:text-sky-400 tracking-wider truncate flex items-center gap-1.5">
+                      <span>{estimatedDistance > 30 ? '~1.8 km • ~5 min' : `${estimatedDistance} km • ~${Math.max(4, Math.round(estimatedDistance * 3.5))} min`}</span>
                     </div>
-                  )}
+                    <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                      {selectedLocationFare?.location_name || destinationName}
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[9px] sm:text-[10px] uppercase font-bold text-[#0052d1] dark:text-sky-400 tracking-wider truncate">
-                    {estimatedDistance > 30 ? '~1.8 km • ~5 min' : `${estimatedDistance} km • ~${Math.max(4, Math.round(estimatedDistance * 3.5))} min`}
+
+                {/* Fare Summary */}
+                <div className="text-right shrink-0">
+                  <div className="flex items-baseline justify-end gap-1">
+                    <span className="text-lg sm:text-xl font-black text-[#0052d1] dark:text-sky-400">
+                      ₱{passengerFareCalc.finalFare.toFixed(2)}
+                    </span>
+                    {passengerFareCalc.isDiscounted && (
+                      <span className="text-[10px] line-through text-slate-400 font-bold">
+                        ₱{passengerFareCalc.subtotalGross.toFixed(2)}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-[#191c1e] dark:text-slate-100 truncate">
-                    {selectedLocationFare?.location_name || destinationName}
-                  </div>
+                  {passengerFareCalc.isDiscounted ? (
+                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight block">
+                      -20% {passengerTypeInfo.label}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">
+                      Taripa
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {/* Passenger Headcount Selector (1 to 4 Passengers) */}
+              <div className="bg-slate-50/90 dark:bg-slate-800/70 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Users className="w-3.5 h-3.5 text-[#0052d1] dark:text-sky-400 shrink-0" />
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                      {i18n.language === 'en' ? 'Passengers' : 'Ilan ang Sasakay?'}
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#0052d1]/10 text-[#0052d1] dark:text-sky-300">
+                      Max {MAX_PASSENGER_CAPACITY}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                    {passengerCount === 1 
+                      ? (i18n.language === 'en' ? '1 Passenger (Solo ride • Standard rate)' : '1 Pasahero (Solo sakay • Karaniwang taripa)')
+                      : (i18n.language === 'en' ? `${passengerCount} Passengers (+₱${(passengerCount - 1) * ADDITIONAL_FARE_PER_HEAD} per-head surcharge)` : `${passengerCount} Pasahero (+₱${(passengerCount - 1) * ADDITIONAL_FARE_PER_HEAD} dagdag sa ulo)`)}
+                  </p>
+                </div>
+
+                {/* Headcount Pills (1 to 4) */}
+                <div className="flex items-center gap-1 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  {[1, 2, 3, 4].map((num) => {
+                    const isSelected = passengerCount === num;
+                    return (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setPassengerCount(num)}
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-black text-xs transition-all cursor-pointer flex items-center justify-center ${
+                          isSelected
+                            ? 'bg-[#0052d1] text-white shadow-sm scale-105'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                        title={`${num} ${num === 1 ? 'passenger' : 'passengers'}`}
+                      >
+                        {num}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Itemized Fare Note if passengerCount > 1 */}
+              {passengerCount > 1 && (
+                <div className="px-2 py-1 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-dashed border-slate-200/70 dark:border-slate-700/60 pt-1.5">
+                  <span className="flex items-center gap-1 flex-wrap">
+                    <span>Base (₱{passengerFareCalc.baseFare.toFixed(2)})</span>
+                    <span>+</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">
+                      {passengerCount - 1} Dagdag Ulo (+₱{passengerFareCalc.totalAdditionalHeadFare.toFixed(2)})
+                    </span>
+                  </span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    Subtotal: ₱{passengerFareCalc.subtotalGross.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {/* CTA Action Button */}
               <button
                 onClick={handleStartBooking}
-                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#0052d1] hover:bg-[#206afa] text-white rounded-full font-black text-xs sm:text-sm shadow-md shadow-[#0052d1]/25 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
+                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-[#0052d1] to-[#206afa] hover:from-[#0041a8] hover:to-[#1758d4] text-white rounded-2xl font-black text-xs sm:text-sm shadow-md shadow-[#0052d1]/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
               >
-                <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fcd400]" />
-                <span>{i18n.language === 'en' ? 'Book Ride' : 'Mag-book'}</span>
+                <Bike className="w-4 h-4 text-[#fcd400]" />
+                <span>
+                  {i18n.language === 'en' 
+                    ? `Book Ride for ${passengerCount} Passenger${passengerCount > 1 ? 's' : ''} (₱${passengerFareCalc.finalFare.toFixed(2)})`
+                    : `I-book ang Byahe para sa ${passengerCount} Pasahero (₱${passengerFareCalc.finalFare.toFixed(2)})`}
+                </span>
               </button>
             </div>
           )}
@@ -1158,10 +1234,9 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0052d1] animate-ping"></span>
                   <span>1.0 KM RADAR DISPATCH</span>
                 </span>
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                  {nearbyDriversWithin1Km.length > 0
-                    ? `${nearbyDriversWithin1Km.length} ${i18n.language === 'en' ? 'driver(s) in 1km' : 'drayber sa 1km'}`
-                    : (i18n.language === 'en' ? 'Scanning 1km zone...' : 'Naka-antabay sa 1km...')}
+                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                  <Users className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                  <span>{passengerCount} {passengerCount === 1 ? 'Pasahero' : 'Pasahero'}</span>
                 </span>
               </div>
 
@@ -1175,12 +1250,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                 <div className="text-left min-w-0 flex-1">
                   <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                     {nearbyDriversWithin1Km.length > 0
-                      ? (i18n.language === 'en' ? 'Notifying drivers within 1.0 km...' : 'Inaabisuhan ang mga drayber sa 1.0 km...')
-                      : (i18n.language === 'en' ? 'Waiting for drivers in 1.0 km zone...' : 'Naka-antabay sa drayber sa 1.0 km...')}
+                      ? (i18n.language === 'en' ? `Notifying drivers within 1.0 km for ${passengerCount} passenger${passengerCount > 1 ? 's' : ''}...` : `Inaabisuhan ang mga drayber sa 1.0 km para sa ${passengerCount} pasahero...`)
+                      : (i18n.language === 'en' ? `Waiting for drivers in 1.0 km zone (${passengerCount} pax)...` : `Naka-antabay sa drayber para sa ${passengerCount} pasahero...`)}
                   </h4>
                   <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 flex-wrap mt-0.5">
                     <span>{selectedLocationFare?.location_name || destinationName} •</span>
                     <strong className="text-slate-700 dark:text-slate-200">₱{currentFare}.00</strong>
+                    {passengerCount > 1 && (
+                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded-md">
+                        +{passengerCount - 1} Ulo
+                      </span>
+                    )}
                     {isDiscountEligible && (
                       <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                         -20% {passengerTypeInfo.label}
@@ -1214,10 +1294,16 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           {bookingState === 'assigned' && activeBooking && (
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#0052d1]/30 dark:border-sky-500/30 shadow-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-[#fcd400]" />
-                  <span>{i18n.language === 'en' ? 'DRIVER EN ROUTE TO PICKUP' : 'PAPUNTA NA SI MANONG DRIVER'}</span>
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-sky-100 text-[#0052d1] dark:bg-sky-950 dark:text-sky-300 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#fcd400]" />
+                    <span>{i18n.language === 'en' ? 'DRIVER EN ROUTE TO PICKUP' : 'PAPUNTA NA SI MANONG DRIVER'}</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                    <Users className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                    <span>{activeBooking.passenger_count || passengerCount} {Number(activeBooking.passenger_count || passengerCount) > 1 ? 'Pasahero' : 'Pasahero (Solo)'}</span>
+                  </span>
+                </div>
                 <div className="text-right">
                   <span className="text-[11px] sm:text-xs font-black text-emerald-600 block">
                     ₱{Number(activeBooking.estimated_fare).toFixed(2)}
@@ -1303,11 +1389,17 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           {/* Driver Arrived Notification Banner */}
           {bookingState === 'arrived' && activeBooking && (
             <div className="bg-emerald-500 text-white rounded-2xl p-3 sm:p-4 shadow-xl space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-pulse" />
-                <h4 className="font-black text-xs sm:text-sm">
-                  {i18n.language === 'en' ? 'Driver Arrived at Pickup!' : 'Nasa Sakayan Na ang Iyong Tricycle!'}
-                </h4>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-pulse" />
+                  <h4 className="font-black text-xs sm:text-sm">
+                    {i18n.language === 'en' ? 'Driver Arrived at Pickup!' : 'Nasa Sakayan Na ang Iyong Tricycle!'}
+                  </h4>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-white/20 text-white flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span>{activeBooking.passenger_count || passengerCount} Pasahero</span>
+                </span>
               </div>
               <p className="text-[11px] sm:text-xs text-emerald-100">
                 {i18n.language === 'en' ? `Please look out for Driver with Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).` : `Paki-abangan si Manong Driver na may Body #${activeBooking.driver?.body_number || '0142'} (Plate: ${activeBooking.driver?.plate_number || '1234-AB'}).`}
@@ -1346,9 +1438,15 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
           {bookingState === 'in_transit' && activeBooking && (
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-[#FF6B00]/40 shadow-xl p-3 sm:p-4 space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
-                  {i18n.language === 'en' ? 'TRIP IN PROGRESS' : 'KASALUKUYANG BUMIBIYAHE'}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    {i18n.language === 'en' ? 'TRIP IN PROGRESS' : 'KASALUKUYANG BUMIBIYAHE'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                    <Users className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>{activeBooking.passenger_count || passengerCount} Pasahero</span>
+                  </span>
+                </div>
                 <div className="text-right">
                   <span className="text-[11px] sm:text-xs font-black text-[#0052d1] dark:text-sky-400 block">
                     ₱{Number(activeBooking.final_fare || activeBooking.estimated_fare).toFixed(2)}
@@ -1474,6 +1572,8 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                   const effectiveReason = activeBooking.additional_fare_reason || storedEvent?.additional_fare_reason || '';
                   const effectiveDiscount = Number(activeBooking.discount_amount ?? storedEvent?.discount_amount ?? 0);
                   const effectiveFinalFare = Number(activeBooking.final_fare || storedEvent?.final_fare || activeBooking.estimated_fare || 20);
+                  const effectivePaxCount = activeBooking.passenger_count || storedEvent?.passenger_count || passengerCount || 1;
+                  const effectiveHeadFare = Number(activeBooking.additional_head_fare ?? storedEvent?.additional_head_fare ?? Math.max(0, (effectivePaxCount - 1) * 10));
 
                   return (
                     <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 text-xs space-y-2">
@@ -1482,6 +1582,10 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] uppercase font-bold text-slate-400 block">
                               {i18n.language === 'en' ? 'Fare Paid' : 'Bayad na Pamasahe'}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-0.5">
+                              <Users className="w-2.5 h-2.5" />
+                              <span>{effectivePaxCount} {effectivePaxCount > 1 ? 'Pasahero' : 'Solo'}</span>
                             </span>
                             {isRebooked && (
                               <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
@@ -1530,16 +1634,22 @@ export const PassengerHome: React.FC<PassengerHomeProps> = ({ onOpenAuthModal, p
                       )}
 
                       {/* Itemized Surcharge & Discount Breakdown */}
-                      {(effectiveAddFare > 0 || isRebooked || effectiveDiscount > 0) && (
+                      {(effectiveAddFare > 0 || effectiveHeadFare > 0 || isRebooked || effectiveDiscount > 0) && (
                         <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 text-[10px] text-slate-600 dark:text-slate-300 space-y-0.5 text-left font-medium">
                           <div className="flex justify-between">
                             <span>{i18n.language === 'en' ? 'Base Tariff' : 'Base Taripa'} {isRebooked ? `(${i18n.language === 'en' ? 'Cumulative' : 'Pinagsama'})` : ''}:</span>
                             <span>₱{effectiveBaseFare.toFixed(2)}</span>
                           </div>
-                          {effectiveAddFare > 0 && (
+                          {effectivePaxCount > 1 && (
+                            <div className="flex justify-between font-semibold text-indigo-700 dark:text-indigo-400">
+                              <span>{i18n.language === 'en' ? 'Additional Passenger Surcharge' : 'Dagdag Singil sa Kasama'} ({effectivePaxCount - 1} {i18n.language === 'en' ? 'extra head' : 'dagdag na ulo'}):</span>
+                              <span>+₱{effectiveHeadFare.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {effectiveAddFare > effectiveHeadFare && (
                             <div className="flex justify-between font-semibold text-amber-700 dark:text-amber-400">
-                              <span>{i18n.language === 'en' ? 'Additional Surcharge' : 'Karagdagang Singil'} {effectiveReason ? `(${effectiveReason})` : ''}:</span>
-                              <span>+₱{effectiveAddFare.toFixed(2)}</span>
+                              <span>{i18n.language === 'en' ? 'Trip Surcharge' : 'Iba Pang Singil'} {effectiveReason ? `(${effectiveReason})` : ''}:</span>
+                              <span>+₱{(effectiveAddFare - effectiveHeadFare).toFixed(2)}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-slate-400">

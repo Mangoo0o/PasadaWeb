@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Volume2,
   VolumeX,
-  Globe
+  Globe,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
@@ -406,18 +407,24 @@ export const DriverDispatch: React.FC = () => {
           /* Active Ongoing Trip Card */
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl p-4 sm:p-5 border-2 border-[#003f87]/30 shadow-xl space-y-4 animate-in fade-in">
             <div className="flex items-center justify-between">
-              <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
-                tripState === 'in_transit'
-                  ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
-                  : 'bg-sky-100 text-[#003f87] dark:bg-sky-950 dark:text-[#00C1FD]'
-              }`}>
-                <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
-                <span>
-                  {tripState === 'assigned' && t('driver.headingToPickup', 'PAPUNTA SA SAKAYAN')}
-                  {tripState === 'arrived' && t('driver.atPickup', 'NASA SAKAYAN NA')}
-                  {tripState === 'in_transit' && t('driver.inTransit', 'KASALUKUYANG BUMIBIYAHE')}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
+                  tripState === 'in_transit'
+                    ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                    : 'bg-sky-100 text-[#003f87] dark:bg-sky-950 dark:text-[#00C1FD]'
+                }`}>
+                  <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+                  <span>
+                    {tripState === 'assigned' && t('driver.headingToPickup', 'PAPUNTA SA SAKAYAN')}
+                    {tripState === 'arrived' && t('driver.atPickup', 'NASA SAKAYAN NA')}
+                    {tripState === 'in_transit' && t('driver.inTransit', 'KASALUKUYANG BUMIBIYAHE')}
+                  </span>
                 </span>
-              </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 shadow-2xs">
+                  <Users className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                  <span>{activeTrip.passenger_count || 1} Pasahero</span>
+                </span>
+              </div>
 
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">
@@ -426,6 +433,11 @@ export const DriverDispatch: React.FC = () => {
                 <div className="text-xl font-black text-[#003f87] dark:text-[#00C1FD]">
                   ₱{activeTrip.estimated_fare.toFixed(2)}
                 </div>
+                {Number(activeTrip.passenger_count || 1) > 1 && (
+                  <span className="text-[8px] font-extrabold text-amber-600 dark:text-amber-400 block -mt-0.5">
+                    +₱{(Number(activeTrip.passenger_count || 1) - 1) * 10} dagdag per head
+                  </span>
+                )}
                 {isDiscountEligibleType(activeTrip.passenger?.passenger_type || (activeTrip as any)?.passenger_type) && (
                   <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded-md inline-block">
                     -20% {getPassengerTypeInfo(activeTrip.passenger?.passenger_type || (activeTrip as any)?.passenger_type).label}
@@ -534,11 +546,20 @@ export const DriverDispatch: React.FC = () => {
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-sky-100 dark:bg-sky-950 text-[#003f87] dark:text-[#00C1FD]">
                             📍 {formattedDist} {i18n.language === 'en' ? 'away (≤1km)' : 'layo (≤1km)'}
                           </span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                            <Users className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
+                            <span>{bk.passenger_count || 1} {Number(bk.passenger_count || 1) > 1 ? `Pasahero (+₱${(Number(bk.passenger_count || 1) - 1) * 10})` : 'Pasahero (Solo)'}</span>
+                          </span>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-sm sm:text-base font-black text-[#003f87] dark:text-[#00C1FD] block leading-tight">
                             ₱{bk.estimated_fare.toFixed(2)}
                           </span>
+                          {Number(bk.passenger_count || 1) > 1 && (
+                            <span className="text-[8px] font-extrabold text-amber-600 dark:text-amber-400 block -mt-0.5">
+                              +₱{(Number(bk.passenger_count || 1) - 1) * 10} per head
+                            </span>
+                          )}
                           {isDiscountEligibleType(bk.passenger?.passenger_type || (bk as any)?.passenger_type) && (
                             <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded-sm inline-block mt-0.5">
                               -20% {getPassengerTypeInfo(bk.passenger?.passenger_type || (bk as any)?.passenger_type).label}

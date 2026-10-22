@@ -153,6 +153,8 @@ export interface Booking {
   dropoff_name?: string;
   distance_km?: number;
   base_fare?: number;
+  passenger_count?: number;
+  additional_head_fare?: number;
   additional_fare?: number;
   additional_fare_reason?: string;
   original_destination_name?: string;

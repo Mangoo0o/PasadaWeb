@@ -200,7 +200,13 @@
     "passengerCancelledTitle": "Kinansela ng Pasahero ang Biyahe",
     "passengerCancelledDesc": "Ipinagbigay-alam ng pasahero ({{name}}) na kinansela ang biyahe na ito. Bukas muli ang iyong linya para tumanggap ng bagong dispatch.",
     "bookingCancelledBadge": "Kanselado ang Booking",
-    "understandReturn": "Naintindihan / Bumalik sa Dispatch"
+    "understandReturn": "Naintindihan / Bumalik sa Dispatch",
+    "passengerHeadcount": "Bilang ng Pasahero",
+    "passengerHeadcountDesc": "Pumili ng bilang ng pasahero (hanggang 4). May dagdag na ₱10 bawat dagdag na ulo.",
+    "passengersCount": "{{count}} Pasahero",
+    "passengerCountSingle": "1 Pasahero",
+    "additionalHeadFare": "Dagdag Bawat Ulo",
+    "extraPassengersNote": "+₱{{amount}} (+₱10 bawat dagdag na pasahero)"
   },
   "chat": {
     "inTripChat": "Kausapin ang Kasabay",

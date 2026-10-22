@@ -12,7 +12,8 @@ import {
   MessageSquareWarning,
   User,
   ShieldAlert,
-  Repeat
+  Repeat,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Modal } from '../components/common/Modal';
@@ -203,6 +204,10 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
               (originalDest && originalDest !== b.destination_name) ||
               (b.extension_fare != null && Number(b.extension_fare) > 0)
             );
+            const passengerCount = (b as any)?.passenger_count || 1;
+            const hasAdditionalPassengers = passengerCount > 1;
+            const additionalHeadFare = (b as any)?.additional_head_fare ?? ((passengerCount - 1) * 10);
+
             const extFare = Number(
               b.extension_fare ||
               (isRebooked ? Math.max(0, standardSubtotal - origFare) : 0)
@@ -228,6 +233,12 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
                         <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
                           {b.destination_name || 'Bauang Route'}
                         </h4>
+                        {hasAdditionalPassengers && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[8px] font-bold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-0.5">
+                            <Users className="w-2.5 h-2.5" />
+                            <span>{passengerCount} pax</span>
+                          </span>
+                        )}
                         {isRebooked && (
                           <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
                             <Repeat className="w-2.5 h-2.5" />
@@ -306,6 +317,15 @@ export const HistoryAndReceipts: React.FC<HistoryAndReceiptsProps> = ({ setActiv
 
                     {/* Taripa Breakdown */}
                     <div className="space-y-1 text-slate-600 dark:text-slate-400">
+                      {hasAdditionalPassengers && (
+                        <div className="flex justify-between items-center text-[11px] text-indigo-700 dark:text-indigo-400 font-bold bg-indigo-50/80 dark:bg-indigo-950/40 px-2 py-1 rounded-lg">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            <span>Bilang ng Pasahero ({passengerCount} Pasahero)</span>
+                          </span>
+                          <span>+₱{additionalHeadFare.toFixed(2)} (+₱10/head)</span>
+                        </div>
+                      )}
                       {isRebooked ? (
                         <>
                           <div className="flex justify-between items-center text-[11px]">

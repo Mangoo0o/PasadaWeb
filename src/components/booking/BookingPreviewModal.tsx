@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   Bike, 
   Clock,
-  Navigation
+  Navigation,
+  Users
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Booking } from '../../types/database.types';
@@ -172,6 +173,10 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
   const passengerType = booking?.passenger?.passenger_type || (booking as any)?.passenger_type;
   const hasDiscount = isDiscountEligibleType(passengerType);
   const typeInfo = getPassengerTypeInfo(passengerType);
+
+  const passengerCount = (booking as any)?.passenger_count || 1;
+  const hasAdditionalPassengers = passengerCount > 1;
+  const additionalHeadFare = (booking as any)?.additional_head_fare ?? ((passengerCount - 1) * 10);
 
   const rawDriverLat = Number(driverLat);
   const rawDriverLng = Number(driverLng);
@@ -403,6 +408,27 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
             </div>
           </div>
 
+          {/* Passenger Count Badge */}
+          <div className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                {passengerCount} {passengerCount > 1 ? (i18n.language === 'en' ? 'Passengers' : 'Pasahero') : (i18n.language === 'en' ? 'Passenger' : 'Pasahero')}
+              </span>
+            </div>
+            {hasAdditionalPassengers ? (
+              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+                +₱{additionalHeadFare.toFixed(2)} (+₱10/head)
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium text-slate-400">
+                {i18n.language === 'en' ? 'Solo passenger' : 'Isang pasahero'}
+              </span>
+            )}
+          </div>
+
           {/* Fare & Trip Metrics Bar */}
           <div className="flex items-center justify-between px-0.5">
             <div>
@@ -411,6 +437,11 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               </div>
               <div className="text-[10px] sm:text-xs text-slate-500 font-medium">
                 {booking.estimated_distance_km} km • ~{booking.estimated_duration_min} min
+                {hasAdditionalPassengers && (
+                  <span className="ml-1 text-indigo-600 dark:text-indigo-400 font-bold">
+                    • {passengerCount} pax
+                  </span>
+                )}
               </div>
             </div>
 
@@ -418,11 +449,18 @@ export const BookingPreviewModal: React.FC<BookingPreviewModalProps> = ({
               <div className="text-xl sm:text-2xl font-black text-[#003f87] dark:text-[#00C1FD]">
                 ₱{booking.estimated_fare.toFixed(2)}
               </div>
-              {hasDiscount && (
-                <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded-md inline-block">
-                  -20% {typeInfo.label}
-                </span>
-              )}
+              <div className="flex items-center gap-1 justify-end flex-wrap">
+                {hasAdditionalPassengers && (
+                  <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-1.5 py-0.5 rounded-md inline-block">
+                    +{passengerCount - 1} Head (+₱{additionalHeadFare.toFixed(0)})
+                  </span>
+                )}
+                {hasDiscount && (
+                  <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded-md inline-block">
+                    -20% {typeInfo.label}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

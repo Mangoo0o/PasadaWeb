@@ -19,7 +19,8 @@ import {
   Repeat,
   Search,
   Check,
-  Compass
+  Compass,
+  Users
 } from 'lucide-react';
 import { Booking, LocationFare } from '../types/database.types';
 import { updateBookingStatus, subscribeToBooking, extendBookingDestination } from '../services/bookingService';
@@ -315,13 +316,20 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
     (currentBooking.extension_fare != null && Number(currentBooking.extension_fare) > 0)
   );
 
-  // Original standard tariff before discount (reflects accumulated fare if rebooked)
-  const baseTariff = Number(
+  // Passenger headcount and per-head surcharge
+  const passengerCount = (currentBooking as any)?.passenger_count || 1;
+  const hasAdditionalPassengers = passengerCount > 1;
+  const additionalHeadFare = (currentBooking as any)?.additional_head_fare ?? ((passengerCount - 1) * 10);
+
+  // Original standard base route tariff before discount (reflects accumulated fare if rebooked)
+  const routeBaseTariff = Number(
     currentBooking.base_fare || (isEligibleDiscount && currentBooking.estimated_fare === 16 ? 20 : currentBooking.estimated_fare)
   );
+  // Total base tariff including pre-booked passenger head surcharge
+  const totalBaseWithHeadFare = routeBaseTariff + (hasAdditionalPassengers ? additionalHeadFare : 0);
 
   const parsedAdditionalFare = Math.max(0, Number(additionalFareInput) || 0);
-  const currentSettlementCalc = calculateTripCompletionFare(baseTariff, parsedAdditionalFare, isEligibleDiscount);
+  const currentSettlementCalc = calculateTripCompletionFare(totalBaseWithHeadFare, parsedAdditionalFare, isEligibleDiscount);
 
   // Subscribe to real-time booking updates (e.g. passenger cancels, rebooks or extends destination)
   useEffect(() => {
@@ -668,7 +676,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
 
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-1.5 sm:space-y-2.5">
           
-          {/* Header Row: Active Phase Badge + Phone Action + Fare */}
+          {/* Header Row: Active Phase Badge + Headcount + Phone Action + Fare */}
           <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5 sm:pb-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${isHeadingToPickup ? 'bg-[#00A3FF]' : 'bg-[#FF6B00]'} animate-pulse shrink-0`}></span>
@@ -680,6 +688,11 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   • {currentBooking.passenger.full_name}
                 </span>
               )}
+              {/* Passenger Headcount Indicator */}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-[8px] sm:text-[9px] font-bold text-indigo-700 dark:text-indigo-300 shrink-0">
+                <Users className="w-2.5 h-2.5 text-indigo-500" />
+                <span>{passengerCount} pax</span>
+              </span>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -712,6 +725,11 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 <span className="text-xs sm:text-sm font-black text-[#003f87] dark:text-[#00C1FD] block">
                   ₱{Number(currentBooking.estimated_fare || booking.estimated_fare).toFixed(2)}
                 </span>
+                {hasAdditionalPassengers && (
+                  <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 block leading-tight">
+                    +{passengerCount - 1} Head (+₱{additionalHeadFare.toFixed(0)})
+                  </span>
+                )}
                 {isRebooked && (
                   <span className="text-[8px] font-black text-amber-600 dark:text-amber-400 block leading-tight">
                     +₱{Number(currentBooking.extension_fare || (Number(currentBooking.estimated_fare) - Number(currentBooking.original_fare || 0))).toFixed(2)} Rebooked
@@ -1047,8 +1065,13 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-sm font-black text-slate-900 dark:text-white">
-                    ₱{currentSettlementCalc.baseFare.toFixed(2)}
+                    ₱{totalBaseWithHeadFare.toFixed(2)}
                   </span>
+                  {hasAdditionalPassengers && (
+                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 block">
+                      {passengerCount} Pasahero (+₱{additionalHeadFare.toFixed(0)})
+                    </span>
+                  )}
                 </div>
               </div>
               {isRebooked && (
@@ -1072,7 +1095,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   <span>Karagdagang Singil (Opsyonal)</span>
                 </label>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  Dagdag pasahero / karga
+                  Dagdag bagahe / espesyal na hintay
                 </span>
               </div>
 
@@ -1107,7 +1130,7 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                   type="text"
                   value={additionalFareReason}
                   onChange={(e) => setAdditionalFareReason(e.target.value)}
-                  placeholder="Dahilan (Hal. +1 pasahero, mabigat na bagahi)"
+                  placeholder="Dahilan (Hal. Mabigat na bagahe, karga)"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#003f87]"
                 />
               )}
@@ -1116,13 +1139,20 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
             {/* Live Calculation Breakdown Card */}
             <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-sky-50/40 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-200/80 dark:border-slate-700 space-y-1.5 text-xs">
               <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                <span>Base Taripa:</span>
-                <span className="font-bold">₱{currentSettlementCalc.baseFare.toFixed(2)}</span>
+                <span>Base Taripa (Unang Pasahero):</span>
+                <span className="font-bold">₱{routeBaseTariff.toFixed(2)}</span>
               </div>
+
+              {hasAdditionalPassengers && (
+                <div className="flex justify-between text-indigo-700 dark:text-indigo-400 font-semibold">
+                  <span>Dagdag Pasahero (+{passengerCount - 1} @ ₱10/head):</span>
+                  <span>+₱{additionalHeadFare.toFixed(2)}</span>
+                </div>
+              )}
 
               {currentSettlementCalc.additionalFare > 0 && (
                 <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
-                  <span>Dagdag na Singil:</span>
+                  <span>Karagdagang Singil (Driver Surcharge):</span>
                   <span>+₱{currentSettlementCalc.additionalFare.toFixed(2)}</span>
                 </div>
               )}
@@ -1212,6 +1242,17 @@ export const DriverTravelPage: React.FC<DriverTravelPageProps> = ({
                     <span>2. Bagong Babaan ({currentBooking.destination_name}):</span>
                     <span>+₱{Number(currentBooking.extension_fare || (Number(currentBooking.estimated_fare) - Number(currentBooking.original_fare || 20))).toFixed(2)}</span>
                   </div>
+                </div>
+              )}
+
+              {/* Headcount breakdown in receipt if > 1 passenger */}
+              {hasAdditionalPassengers && (
+                <div className="flex items-center justify-between text-[10px] text-indigo-800 dark:text-indigo-200 font-bold bg-indigo-100/70 dark:bg-indigo-950/60 px-2.5 py-1 rounded-xl border border-indigo-200 dark:border-indigo-800 text-left">
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{passengerCount} Pasahero</span>
+                  </span>
+                  <span>+₱{additionalHeadFare.toFixed(2)} (+₱10/head)</span>
                 </div>
               )}
 

@@ -16,7 +16,8 @@ import {
   UserCheck,
   MapPin,
   Compass,
-  Globe
+  Globe,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Booking } from '../types/database.types';
@@ -364,8 +365,15 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ setActiveTab }
                 className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 hover:border-[#003f87]/50 dark:hover:border-sky-400/50 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className="text-xs min-w-0 flex-1">
-                  <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-[#003f87] dark:group-hover:text-[#00C1FD] transition-colors">
-                    {bk.origin_name} ➔ {bk.destination_name}
+                  <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-[#003f87] dark:group-hover:text-[#00C1FD] transition-colors flex items-center gap-1.5 flex-wrap">
+                    <span className="truncate">{bk.origin_name} ➔ {bk.destination_name}</span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-[9px] font-bold text-indigo-700 dark:text-indigo-300 shrink-0 flex items-center gap-1">
+                      <Users className="w-2.5 h-2.5" />
+                      <span>{bk.passenger_count || 1} pax</span>
+                      {Number(bk.passenger_count || 1) > 1 && (
+                        <span className="text-[8px] opacity-75">(+₱{((Number(bk.passenger_count) - 1) * 10)})</span>
+                      )}
+                    </span>
                   </div>
                   <div className="text-[11px] text-slate-500">
                     {t('driver.distance', 'Distance')}: {bk.estimated_distance_km} km • <strong className="text-[#003f87] dark:text-[#00C1FD]">₱{bk.estimated_fare.toFixed(2)}</strong> • <span className="text-[10px] text-[#003f87] dark:text-[#00C1FD] underline font-bold">{t('driver.viewRoute', 'View Route')}</span>

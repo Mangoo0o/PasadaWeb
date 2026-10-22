@@ -713,6 +713,80 @@ export const getPassengerTypeInfo = (type?: string | null): PassengerTypeInfo =>
   }
 };
 
+export const ADDITIONAL_FARE_PER_HEAD = 10; // ₱10.00 standard LGU tariff surcharge per additional passenger head
+export const MAX_PASSENGER_CAPACITY = 4; // Maximum legal capacity for passenger tricycles
+
+export interface PassengerFareBreakdown {
+  baseFare: number;
+  passengerCount: number;
+  additionalPerHead: number;
+  totalAdditionalHeadFare: number;
+  subtotalGross: number;
+  discountPercent: number;
+  discountAmount: number;
+  finalFare: number;
+  isDiscounted: boolean;
+  passengerType: string;
+}
+
+export const calculateFareWithPassengers = (
+  baseStandardFare: number,
+  passengerCount: number = 1,
+  passengerTypeOrEligible?: string | boolean | null,
+  customDiscountedFare?: number
+): PassengerFareBreakdown => {
+  const count = Math.max(1, Math.min(MAX_PASSENGER_CAPACITY, Math.round(Number(passengerCount) || 1)));
+  const base = Math.max(0, Number(baseStandardFare) || 20);
+  const extraHeads = Math.max(0, count - 1);
+  const totalAdditionalHeadFare = extraHeads * ADDITIONAL_FARE_PER_HEAD;
+
+  const isEligible = typeof passengerTypeOrEligible === 'boolean'
+    ? passengerTypeOrEligible
+    : isDiscountEligibleType(passengerTypeOrEligible);
+  const pType = typeof passengerTypeOrEligible === 'string' ? passengerTypeOrEligible : (isEligible ? 'student' : 'regular');
+
+  const subtotalGross = base + totalAdditionalHeadFare;
+
+  if (!isEligible) {
+    return {
+      baseFare: base,
+      passengerCount: count,
+      additionalPerHead: ADDITIONAL_FARE_PER_HEAD,
+      totalAdditionalHeadFare,
+      subtotalGross,
+      discountPercent: 0,
+      discountAmount: 0,
+      finalFare: subtotalGross,
+      isDiscounted: false,
+      passengerType: 'regular'
+    };
+  }
+
+  // If a preset discounted tariff exists for solo base (e.g. 16 for 20):
+  const hasValidCustom = customDiscountedFare !== undefined &&
+    Number(customDiscountedFare) > 0 &&
+    Number(customDiscountedFare) < base;
+
+  // Compute 20% statutory discount on subtotal gross
+  const discountAmount = hasValidCustom && count === 1
+    ? Math.max(0, base - Number(customDiscountedFare))
+    : Math.round(subtotalGross * 0.20);
+  const finalFare = Math.max(1, subtotalGross - discountAmount);
+
+  return {
+    baseFare: base,
+    passengerCount: count,
+    additionalPerHead: ADDITIONAL_FARE_PER_HEAD,
+    totalAdditionalHeadFare,
+    subtotalGross,
+    discountPercent: 20,
+    discountAmount,
+    finalFare,
+    isDiscounted: discountAmount > 0,
+    passengerType: pType
+  };
+};
+
 export interface FareCalculationResult {
   standardFare: number;
   finalFare: number;

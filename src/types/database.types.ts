@@ -139,6 +139,8 @@ export interface Booking {
   extension_fare?: number;
   rebook_count?: number;
   base_fare?: number;
+  passenger_count?: number;
+  additional_head_fare?: number;
   additional_fare?: number;
   additional_fare_reason?: string;
   discount_amount?: number;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Receipt, Printer, X, Search, Repeat, ArrowDownWideNarrow } from 'lucide-react';
+import { History, Receipt, Printer, X, Search, Repeat, ArrowDownWideNarrow, Users } from 'lucide-react';
 import type { Booking } from '../types';
 import { cn } from '../../lib/utils';
 
@@ -221,7 +221,14 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                       </div>
                     </td>
                     <td className="py-3.5 px-6 text-slate-800 dark:text-slate-200 font-medium">
-                      {b.passenger?.full_name || 'Passenger'}
+                      <div className="font-bold">{b.passenger?.full_name || 'Passenger'}</div>
+                      <div className="inline-flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded mt-0.5">
+                        <Users size={10} />
+                        <span>{b.passenger_count || 1} pax</span>
+                        {Number(b.passenger_count || 1) > 1 && (
+                          <span className="opacity-80">(+₱{((Number(b.passenger_count) - 1) * 10).toFixed(0)})</span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-6">
                       <div className="font-bold text-slate-900 dark:text-white">
@@ -386,6 +393,15 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ bookings }) => {
                         <span className="font-extrabold text-slate-900 dark:text-white truncate block">
                           {selectedBooking.passenger?.full_name || 'Passenger'}
                         </span>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                          <Users size={11} />
+                          <span>{selectedBooking.passenger_count || 1} {Number(selectedBooking.passenger_count || 1) > 1 ? 'Passengers' : 'Passenger'}</span>
+                          {Number(selectedBooking.passenger_count || 1) > 1 && (
+                            <span className="text-[9px] bg-indigo-100 dark:bg-indigo-950 px-1 rounded text-indigo-700 dark:text-indigo-300">
+                              +₱{((Number(selectedBooking.passenger_count) - 1) * 10).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
